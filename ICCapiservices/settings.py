@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,10 +21,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-r=ny1)$yy5jvf#wi)9*#s#zr=tray+h$jkvhv=+bs$w1fx2&!*'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool) 
 
 ALLOWED_HOSTS = []
 
@@ -180,10 +181,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Jazzmin settings
 JAZZMIN_SETTINGS = {
-    "site_title": "City of Glory",
-    "site_header": "City of Glory",
-    "welcome_sign": "Welcome to City of Glory backend System",
-    "copyright" : "edimpact",
+    "site_title": "Innovation CyberCafe",
+    "site_header": "Innovation CyberCafe",
+    "welcome_sign": "Welcome to Innovation CyberCafe",
+    "copyright" : "ICC",
     "search_model": "auth.User",
     "user_avatar": "avatar",
     "topmenu_links": [
