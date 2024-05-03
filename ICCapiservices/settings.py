@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'ckeditor',
 ]
 
 MIDDLEWARE = [
@@ -212,4 +213,21 @@ JAZZMIN_SETTINGS = {
     "show_collapse": False,
     "open_my_account": False,
     "default_collapse": False,
+}
+
+CKEDITOR_CONFIGS = {
+    'default': {
+        'height': '300px',
+        'width': '100%',
+        'toolbar': [
+            ['Format', 'Font', 'FontSize', 'TextColor', 'BGColor'],
+            ['JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
+            ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript'],
+            ['Image', 'Table', 'HorizontalRule', 'SpecialChar'],
+            ['Maximize'],
+            ['Source', 'Undo', 'Redo']
+        ],
+        'font_size': '12px',
+        'colorButton_colors': '000000,ffffff'
+    }
 }
