@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
     'services',
     'emails',
     'payments',
@@ -47,6 +48,9 @@ INSTALLED_APPS = [
     'whatsappAPI',
     'chatbot',
     'customers',
+    'blog',
+    'CBTpractice',
+
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
