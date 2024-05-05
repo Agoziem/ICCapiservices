@@ -8,9 +8,9 @@ from rest_framework import status
 
 # view to get all the Tests
 @api_view(['GET'])
-def get_tests(request):
+def get_tests(request,organization_id):
     try:
-        tests = Test.objects.all()
+        tests = Test.objects.filter(testorganization=organization_id)
         serializer = TestSerializer(tests, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Test.DoesNotExist:
@@ -28,7 +28,7 @@ def get_test(request, test_id):
     
 # view to create a Test
 @api_view(['POST'])
-def add_test(request):
+def add_test(request,organization_id):
     try:
         Subject_id = request.data.get('subjectid')
         TestTypeid = request.data.get('testtypeid')
@@ -38,7 +38,7 @@ def add_test(request):
         Mark = request.data.get('mark', None)
         Time = request.data.get('time', None)
         year = Year.objects.get(id=Year_id)
-        test = Test.objects.create(mark=Mark, time=Time, subject=subject, test_type=testtype, year=year)
+        test = Test.objects.create(testorganization=organization_id,testSubject=subject,texttype=testtype,testYear=year,testMark=Mark,testTime=Time)
     except:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
@@ -92,9 +92,9 @@ def delete_test(request, test_id):
 
 # view to get all testResults
 @api_view(['GET'])
-def get_test_results(request):
+def get_test_results(request,organization_id):
     try:
-        testresults = TestResult.objects.all()
+        testresults = TestResult.objects.filter(organization=organization_id)
         serializer = TestResultSerializer(testresults, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except TestResult.DoesNotExist:

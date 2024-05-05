@@ -28,15 +28,16 @@ def get_blog(request, blog_id):
 
 # Add a Blog view
 @api_view(['POST'])
-def add_blog(request,user_id):
+def add_blog(request,organization_id,user_id):
     try:
         user = User.objects.get(id=user_id)
+        organization = Organization.objects.get(id=organization_id)
         serializer = BlogSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(author=user)
+            serializer.save(author=user,organization=organization)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    except User.DoesNotExist:
+    except User.DoesNotExist or Organization.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # update a Blog view

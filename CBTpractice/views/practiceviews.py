@@ -8,7 +8,7 @@ from rest_framework import status
 
 # view to get Test peculiar to a Student
 @api_view(['POST'])
-def get_student_tests(request):
+def get_student_tests(request,organization_id):
     student_tests=[]
     test = {}
     try:
@@ -25,7 +25,7 @@ def get_student_tests(request):
         subjects = Subject.objects.filter(id__in=subjects_Id)
         for subject in subjects:
             try:
-                test = Test.objects.get(subject=subject, year=year, test_type=test_type)
+                test = Test.objects.get(testorganization=organization_id, testSubject=subject, texttype=test_type, testYear=year)
                 test['id'] = test.id
                 test['questions'] = Question.objects.filter(test=test)
                 student_tests.append(test)
@@ -40,7 +40,7 @@ def get_student_tests(request):
     
 # view to Submit Student Test
 @api_view(['POST'])
-def submit_student_test(request):
+def submit_student_test(request,organization_id):
     try:
         user_id = request.get('user_id')
     except:
@@ -52,16 +52,20 @@ def submit_student_test(request):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     for test in request.data:
         test_score = 0
-        student_test = Test.objects.get(id=test.get('student_test_id'))
-        test_ids.append(student_test.id)
-        for question in test.get('questions', []):
-            question = Question.objects.get(id=question.get('question_id'))
-            if question.answer.is_correct:
-                test_score += question.score
-        Score[student_test.testSubject.subjectname] = test_score
-        Total_test_score += test_score
+        try:
+            test_id = test.get('student_test_id')
+            student_test = Test.objects.get(id=test_id)
+            test_ids.append(student_test.id)
+            for question in test.get('questions', []):
+                question = Question.objects.get(id=question.get('question_id'))
+                if question.answer.is_correct:
+                    test_score += question.score
+            Score[student_test.testSubject.subjectname] = test_score
+            Total_test_score += test_score
+        except:
+            continue 
     Score['Total'] = Total_test_score
-    testresult = TestResult.objects.create(user=user_id, mark=Total_test_score)
+    testresult = TestResult.objects.create(organization=organization_id, user=user_id)
     testresult.tests.add(*test_ids)
     return Response(Score, status=status.HTTP_200_OK)
 

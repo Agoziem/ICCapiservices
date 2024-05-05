@@ -1,7 +1,7 @@
 from django.db import models
 from ckeditor.fields import RichTextField
 from django.contrib.auth.models import User
-
+from ICCapp.models import Organization
 
 # Year model
 class Year(models.Model):
@@ -47,6 +47,7 @@ class Question(models.Model):
 
 # Test model
 class Test(models.Model):
+    testorganization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     texttype = models.ForeignKey(TestType, on_delete=models.CASCADE)
     testSubject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     testYear = models.ForeignKey(Year, on_delete=models.CASCADE)
@@ -63,6 +64,7 @@ class Test(models.Model):
 
 # Test Result model
 class TestResult(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     tests = models.ManyToManyField(Test)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     mark = models.IntegerField(default=0,blank=True)

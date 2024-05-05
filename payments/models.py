@@ -12,6 +12,7 @@ PAYMENT_STATUS = (
 
 # Payment model
 class Payment(models.Model):
+    organization = models.ForeignKey(User, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     services = models.ManyToManyField(Service)
     amount = models.DecimalField(max_digits=10, decimal_places=2)

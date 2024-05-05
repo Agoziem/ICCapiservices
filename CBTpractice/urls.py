@@ -24,12 +24,13 @@ urlpatterns = [
     path('updatetesttype/<int:testtype_id>/', update_testtype),
     path('deletetesttype/<int:testtype_id>/', delete_testtype),
 
-    path('tests/', get_tests),
+    path('tests/<int:organization_id>/', get_tests),
     path('test/<int:test_id>/', get_test),
-    path('addtest/', add_test),
+    path('addtest/<int:organization_id>/', add_test),
     path('updatetest/<int:test_id>/', update_test),
     path('deletetest/<int:test_id>/', delete_test),
+    path('testresult/<int:organization_id>/', get_test_results),
 
-    path('practicetest/', get_student_tests),
-    path('submittest/', submit_student_test),
+    path('practicetest/<int:organization_id>/', get_student_tests),
+    path('submittest/<int:organization_id>/', submit_student_test),
 ]

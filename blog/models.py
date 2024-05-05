@@ -1,7 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
+from ICCapp.models import Organization
 
 class Blog(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     content = models.TextField()
