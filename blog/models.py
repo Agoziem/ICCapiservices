@@ -2,11 +2,11 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class Blog(models.Model):
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
     likes = models.ManyToManyField(User, related_name='liked_posts', through='Like')
     comments = models.ManyToManyField(User, related_name='commented_posts', through='Comment')
 

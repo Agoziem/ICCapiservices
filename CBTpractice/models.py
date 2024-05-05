@@ -2,8 +2,9 @@ from django.db import models
 from ckeditor.fields import RichTextField
 from django.contrib.auth.models import User
 
-# Years model
-class Years(models.Model):
+
+# Year model
+class Year(models.Model):
     year = models.IntegerField(default=2021,blank=False)
     
     def __str__(self):
@@ -16,6 +17,13 @@ class Subject(models.Model):
     def __str__(self):
         return str(self.subjectname)
 
+# Test Type model
+class TestType(models.Model):
+    testtype = models.CharField(max_length=255,default="None",blank=False)
+    
+    def __str__(self):
+        return str(self.testtype)
+    
 # Answer model
 class Answer(models.Model):
     answertext = models.CharField(max_length=255,default="None",blank=False)
@@ -39,8 +47,9 @@ class Question(models.Model):
 
 # Test model
 class Test(models.Model):
+    texttype = models.ForeignKey(TestType, on_delete=models.CASCADE)
     testSubject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    testYear = models.ForeignKey(Years, on_delete=models.CASCADE)
+    testYear = models.ForeignKey(Year, on_delete=models.CASCADE)
     testTime = models.IntegerField(default=0,blank=True)
     testMark = models.IntegerField(default=0,blank=True)
     questions = models.ManyToManyField(Question)

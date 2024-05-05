@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import *
 
-@admin.register(Years)
+@admin.register(Year)
 class YearsAdmin(admin.ModelAdmin):
     list_display = ('year',)
     search_fields = ('year',)

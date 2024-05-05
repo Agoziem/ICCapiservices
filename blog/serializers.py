@@ -2,10 +2,9 @@ from rest_framework import serializers
 from .models import *
 
 class BlogSerializer(serializers.ModelSerializer):
-    likes = serializers.SerializerMethodField()
     no_of_likes = serializers.SerializerMethodField()
     no_of_comments = serializers.SerializerMethodField()
-    comments = serializers.SerializerMethodField()
+
     class Meta:
         model = Blog
         fields = '__all__'
@@ -14,10 +13,11 @@ class BlogSerializer(serializers.ModelSerializer):
         return obj.likes.count()
     
     def get_likes(self, obj):
-        return obj.likes.values_list('username', flat=True)
-    
+        return list(obj.likes.values_list('user__id', 'user__username'))
+
     def get_comments(self, obj):
-        return obj.comments.values_list('content', flat=True)
+        return list(obj.comments.values_list('user__id', 'user__username'))
+
     
     def get_no_of_comments(self, obj):
         return obj.comments.count()
