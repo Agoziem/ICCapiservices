@@ -1,6 +1,6 @@
-from views.blogsviews import *
-from views.commentsviews import *
-from views.likesviews import *
+from .views.blogsviews import *
+from .views.commentsviews import *
+from .views.likesviews import *
 from django.urls import path
 
 urlpatterns = [

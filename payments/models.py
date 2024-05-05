@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from ICCapp.models import Organization
 from services.models import Service
 from customers.models import Customer
 
@@ -12,7 +12,7 @@ PAYMENT_STATUS = (
 
 # Payment model
 class Payment(models.Model):
-    organization = models.ForeignKey(User, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     services = models.ManyToManyField(Service)
     amount = models.DecimalField(max_digits=10, decimal_places=2)

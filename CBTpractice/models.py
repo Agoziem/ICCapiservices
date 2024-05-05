@@ -47,10 +47,10 @@ class Question(models.Model):
 
 # Test model
 class Test(models.Model):
-    testorganization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-    texttype = models.ForeignKey(TestType, on_delete=models.CASCADE)
-    testSubject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    testYear = models.ForeignKey(Year, on_delete=models.CASCADE)
+    testorganization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
+    texttype = models.ForeignKey(TestType, on_delete=models.CASCADE, null=True, blank=True)
+    testSubject = models.ForeignKey(Subject, on_delete=models.CASCADE, null=True, blank=True)
+    testYear = models.ForeignKey(Year, on_delete=models.CASCADE, null=True, blank=True)
     testTime = models.IntegerField(default=0,blank=True)
     testMark = models.IntegerField(default=0,blank=True)
     questions = models.ManyToManyField(Question)
@@ -64,9 +64,9 @@ class Test(models.Model):
 
 # Test Result model
 class TestResult(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     tests = models.ManyToManyField(Test)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     mark = models.IntegerField(default=0,blank=True)
     date = models.DateTimeField(auto_now_add=True)
 

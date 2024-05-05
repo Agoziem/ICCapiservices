@@ -1,8 +1,8 @@
-from views.computingviews import *
-from views.practiceviews import *
-from views.subjectviews import *
-from views.testtypeviews import *
-from views.yearviews import *
+from .views.computingviews import *
+from .views.practiceviews import *
+from .views.subjectviews import *
+from .views.testtypeviews import *
+from .views.yearviews import *
 from django.urls import path
 
 urlpatterns = [

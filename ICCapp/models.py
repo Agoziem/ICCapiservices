@@ -18,7 +18,7 @@ class Organization(models.Model):
     
 # Staff model
 class Staff(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     other_names = models.CharField(max_length=100, blank=True, null=True)
@@ -33,7 +33,7 @@ class Staff(models.Model):
     
 # Testimonials model
 class Testimonial(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     author = models.CharField(max_length=100)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -44,7 +44,7 @@ class Testimonial(models.Model):
     
 # subscription model
 class Subscription(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     email = models.EmailField()
 
     def __str__(self):
@@ -52,7 +52,7 @@ class Subscription(models.Model):
     
 # Notification model attached to the organization
 class Notification(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     title = models.CharField(max_length=200)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

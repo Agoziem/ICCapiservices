@@ -3,7 +3,7 @@ from ICCapp.models import Organization
 
 # Services Model
 class Service(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
