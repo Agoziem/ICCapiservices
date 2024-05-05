@@ -3,10 +3,10 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import *
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from rest_framework.authtoken.models import Token
+from ICCapp.models import Organization
 
-# view to create a new user and return a token and the user id
 @api_view(['POST'])
 def register_user(request):
     try:
@@ -18,11 +18,23 @@ def register_user(request):
             serializer.save()
             user = User.objects.get(username=request.data['username'])
             token = Token.objects.create(user=user)
+            
+            # Check if organization ID is passed in the request
+            if 'organization_id' in request.data:
+                try:
+                    organization = Organization.objects.get(id=request.data['organization_id'])
+                    group_name = organization.name  # Assuming Organization has a 'name' field
+                    group, created = Group.objects.get_or_create(name=group_name)
+                    user.groups.add(group)
+                except Organization.DoesNotExist:
+                    pass  # Handle the case if organization with the provided ID does not exist
+            
             return Response({'token': str(token), 'user_id': user.id}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print(e)
         return Response({'error': 'User does not exist'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 # view to update a user
@@ -49,6 +61,7 @@ def delete_user(request, user_id):
         user = User.objects.get(id=user_id)
         token = Token.objects.get(user=user)
         token.delete() 
+        user.groups.clear()
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     except User.DoesNotExist:

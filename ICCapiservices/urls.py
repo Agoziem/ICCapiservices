@@ -28,6 +28,7 @@ urlpatterns = [
     path('paymentsapi/', include('payments.urls')),
     path('servicesapi/', include('services.urls')),
     path('CBTapi/', include('CBTpractice.urls')),
+    path('productsapi/', include('products.urls')),
 ]
 
 if settings.DEBUG:
