@@ -76,6 +76,8 @@ REST_FRAMEWORK = {
     ),
 }
 
+AUTH_USER_MODEL = 'authentication.CustomUser'
+
 CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'ICCapiservices.urls'
@@ -186,23 +188,24 @@ MEDIA_ROOT= os.path.join(BASE_DIR,'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Jazzmin settings
+from django.conf import settings
+
 JAZZMIN_SETTINGS = {
     "site_title": "Innovation CyberCafe",
     "site_header": "Innovation CyberCafe",
     "welcome_sign": "Welcome to Innovation CyberCafe",
-    "copyright" : "ICC",
-    "search_model": "auth.User",
+    "copyright": "ICC",
+    "search_model": settings.AUTH_USER_MODEL, 
     "user_avatar": "avatar",
     "topmenu_links": [
         {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
         {
             "name": "Support",
-            "url": "    https://www.google.com",   
+            "url": "https://www.google.com",
             "new_window": True,
             "icon": "fas fa-life-ring",
-
         },
-        {"model": "auth.User"},
+        {"model": settings.AUTH_USER_MODEL},
     ],
     "show_ui_builder": True,
     "navigation_expanded": True,
@@ -215,6 +218,7 @@ JAZZMIN_SETTINGS = {
     "open_my_account": False,
     "default_collapse": False,
 }
+
 
 CKEDITOR_CONFIGS = {
     'default': {

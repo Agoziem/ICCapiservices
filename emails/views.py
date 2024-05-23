@@ -32,15 +32,17 @@ def add_email(request, organization_id):
     try:
         name=request.data.get('name')
         email=request.data.get('email')
-        subject=request.data.get('subject')
+        subject=request.data.get('subject', "")
         message=request.data.get('message')
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
     try:
-        email = Email.objects.create(organization=organization_id, name=name, email=email, subject=subject, message=message)
+        organization = Organization.objects.get(id=organization_id)
+        email = Email.objects.create(organization=organization, name=name, email=email, subject=subject, message=message)
         serializer = EmailSerializer(email, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    except:
+    except Exception as e:
+        print(str(e))
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
 # Update an email view

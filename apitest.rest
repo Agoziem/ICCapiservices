@@ -1,0 +1,8 @@
+# get all entries for a School
+POST http://127.0.0.1:8000/authapi/verifyuser/
+Content-Type: application/json
+
+{
+    "email": "chiagoziendukwe90@gmail.com",
+    "password": "Sirnduu1@"
+  }
