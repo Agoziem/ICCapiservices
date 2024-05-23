@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 class CustomUser(AbstractUser):
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     isOauth = models.BooleanField(default=False)
+    Oauthprovider = models.CharField(max_length=100, null=True, blank=True, default='email')
     emailIsVerified = models.BooleanField(default=False)
 
     def __str__(self):

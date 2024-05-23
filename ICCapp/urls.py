@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import testimonialviews, staffviews, subscriptionviews, organizationviews
+from .views import testimonialviews, staffviews, subscriptionviews, organizationviews, notificationviews
 
 urlpatterns = [
     path('organization/', organizationviews.get_organizations, name='get_organizations'),
@@ -25,4 +25,11 @@ urlpatterns = [
     path('subscription/add/<int:organization_id>/', subscriptionviews.add_subscription, name='add_subscription'),
     path('subscription/update/<int:subscription_id>/', subscriptionviews.update_subscription, name='update_subscription'),
     path('subscription/delete/<int:subscription_id>/', subscriptionviews.delete_subscription, name='delete_subscription'),
+
+    path('notification/<int:organization_id>/', notificationviews.get_notifications, name='get_notifications'),
+    path('notification/<int:organization_id>/<str:user_group>/', notificationviews.get_notifications_by_group, name='get_notifications_by_group'),
+    path('notification/<int:notification_id>/', notificationviews.get_single_notification, name='get_single_notification'),
+    path('notification/add/<int:organization_id>/', notificationviews.create_notification, name='create_notification'),
+    path('notification/update/<int:notification_id>/', notificationviews.update_notification, name='update_notification'),
+    path('notification/delete/<int:notification_id>/', notificationviews.delete_notification, name='delete_notification'),
 ]

@@ -39,6 +39,10 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class NotificationSerializer(serializers.ModelSerializer):
+    organization = serializers.SerializerMethodField()
     class Meta:
-        model = Notification
+        model = Notifications
         fields = '__all__'
+
+    def get_organization(self, obj):
+        return {'id': obj.organization.id, 'name': obj.organization.name}
