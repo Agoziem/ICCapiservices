@@ -5,26 +5,38 @@ from .serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from django.contrib.auth import get_user_model
+from .Paystack import Paystack
 
-
+Customer = get_user_model()
 # get all payments
 @api_view(['GET'])
 def get_payments(request, organization_id):
     try:
-        payments = Payment.objects.filter(organization=organization_id)
-        serializer = PaymentSerializer(payments, many=True)
+        orders = Orders.objects.filter(organization=organization_id)
+        serializer = PaymentSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    except Payment.DoesNotExist:
+    except Orders.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+# get all payments by user
+@api_view(['GET'])
+def get_payments_by_user(request, user_id):
+    try:
+        orders = Orders.objects.filter(customer=user_id)
+        serializer = PaymentSerializer(orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Orders.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # get a single payment
 @api_view(['GET'])
 def get_payment(request, payment_id):
     try:
-        payment = Payment.objects.get(id=payment_id)
-        serializer = PaymentSerializer(payment, many=False)
+        order = Orders.objects.get(id=payment_id)
+        serializer = PaymentSerializer(order, many=False)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    except Payment.DoesNotExist:
+    except Orders.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # Add a payment view
@@ -32,7 +44,7 @@ def get_payment(request, payment_id):
 def add_payment(request, organization_id):
     try:
         Customerid = request.data.get('customerid')
-        Amount = request.data.get('amount')
+        Amount = request.data.get('total')
         services = request.data.get('services', [])
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -40,39 +52,60 @@ def add_payment(request, organization_id):
         organization = Organization.objects.get(id=organization_id)
         customer = Customer.objects.get(id=Customerid)
         services = Service.objects.filter(id__in=services)
-        payment = Payment.objects.create(organization=organization, customer=customer, amount=Amount)
-        payment.services.add(*services)
-        serializer = PaymentSerializer(payment, many=False)
+        order = Orders.objects.create(organization=organization, customer=customer, amount=Amount)
+        order.services.add(*services)
+        serializer = PaymentSerializer(order, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except Organization.DoesNotExist or Customer.DoesNotExist or Service.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         print(e)
         return Response(status=status.HTTP_400_BAD_REQUEST)
-    
 
-# update a payment view
+@api_view(['POST'])
+def verify_payment(request):
+    ref = request.data.get('ref')
+    if not ref:
+        return Response({'error': 'Reference is required'}, status=status.HTTP_400_BAD_REQUEST)
+    paystack = Paystack()
+    Paymentstatus, data = paystack.verify_payment(ref)
+    if Paymentstatus:
+        order = Orders.objects.get(reference=ref)
+        order.status = 'Completed'
+        order.save()
+        order_serializer = PaymentSerializer(order)      
+        return Response(order_serializer.data, status=status.HTTP_200_OK)
+    else:
+        order = Orders.objects.get(reference=ref)
+        order.status = 'Failed'
+        order.save()
+        order_serializer = PaymentSerializer(order)
+        return Response(order_serializer.data, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
 @api_view(['PUT'])
 def update_payment(request, payment_id):
     try:
-        payment = Payment.objects.get(id=payment_id)
+        order = Orders.objects.get(id=payment_id)
         try:
-            organization_id = request.data.get('organizationid', payment.organization.id)
-            Customerid = request.data.get('customerid', payment.customer.id)
-            Amount = request.data.get('amount', payment.amount)
-            services = request.data.get('services', payment.services.all())
+            organization_id = request.data.get('organizationid', order.organization.id)
+            Customerid = request.data.get('customerid', order.customer.id)
+            Amount = request.data.get('amount', order.amount)
+            services = request.data.get('services', order.services.all())
             organization = Organization.objects.get(id=organization_id)
             customer = Customer.objects.get(id=Customerid)
             services = Service.objects.filter(id__in=services)
-            payment.organization = organization
-            payment.customer = customer
-            payment.amount = Amount
-            payment.services.clear()
-            payment.services.add(*services)   
+            order.organization = organization
+            order.customer = customer
+            order.amount = Amount
+            order.services.clear()
+            order.services.add(*services)   
         except Exception as e:
             print(e)
             return Response(status=status.HTTP_400_BAD_REQUEST)
-    except Payment.DoesNotExist:
+    except Orders.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 
@@ -80,31 +113,8 @@ def update_payment(request, payment_id):
 @api_view(['DELETE'])
 def delete_payment(request, payment_id):
     try:
-        payment = Payment.objects.get(id=payment_id)
-        payment.delete()
+        order = Orders.objects.get(id=payment_id)
+        order.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    except Payment.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-    
-# payment successful view
-@api_view(['POST'])
-def payment_successful(request, payment_id):
-    try:
-        payment = Payment.objects.get(id=payment_id)
-        payment.status = 'Completed'
-        payment.save()
-        return Response(status=status.HTTP_200_OK)
-    except Payment.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-
-# payment failed view
-@api_view(['POST'])
-def payment_failed(request, payment_id):
-    try:
-        payment = Payment.objects.get(id=payment_id)
-        payment.status = 'Failed'
-        payment.save()
-        return Response(status=status.HTTP_200_OK)
-    except Payment.DoesNotExist:
+    except Orders.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)

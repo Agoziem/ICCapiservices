@@ -82,6 +82,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'ICCapiservices.urls'
 
+PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY')
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

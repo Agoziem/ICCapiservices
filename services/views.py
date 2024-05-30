@@ -33,10 +33,11 @@ def add_service(request, organization_id):
         name=request.data.get('name')
         price=request.data.get('price')
         description=request.data.get('description', None)
+        category = request.data.get('category', 'service')
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
     try:
-        service = Service.objects.create(organization=organization_id, name=name, price=price, description=description)
+        service = Service.objects.create(organization=organization_id, name=name, price=price, description=description, category=category)
         serializer = ServiceSerializer(service, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except:
@@ -51,6 +52,7 @@ def update_service(request, service_id):
             service.name = request.data.get('name', service.name)
             service.price = request.data.get('price', service.price)
             service.description = request.data.get('description', service.description)
+            service.category = request.data.get('category', service.category)
             service.save()
             serializer = ServiceSerializer(service, many=False)
             return Response(serializer.data, status=status.HTTP_200_OK)
