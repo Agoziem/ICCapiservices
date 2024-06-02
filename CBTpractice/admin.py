@@ -13,15 +13,20 @@ class SubjectAdmin(admin.ModelAdmin):
     search_fields = ('subjectname',)
     list_filter = ('subjectname',)
 
+@admin.register(TestType)
+class TestTypeAdmin(admin.ModelAdmin):
+    list_display = ('testtype',)
+    search_fields = ('testtype',)
+    list_filter = ('testtype',)
+
 @admin.register(Answer)
 class AnswerAdmin(admin.ModelAdmin):
-    list_display = ('answertext','isCorrect')
+    list_display = ('answertext',)
     search_fields = ('answertext',)
-    list_filter = ('isCorrect',)
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('truncated_questiontext','questionMark','required')
+    list_display = ('truncated_questiontext','questionMark','required','correctAnswer')
     search_fields = ('questiontext',)
     list_filter = ('required',)
 
@@ -35,9 +40,9 @@ class QuestionAdmin(admin.ModelAdmin):
 
 @admin.register(Test)
 class TestAdmin(admin.ModelAdmin):
-    list_display = ('testSubject','testYear','testTime','testMark')
-    list_filter = ('testSubject','testYear')
-    search_fields = ('testSubject','testYear')
+    list_display = ('testYear','testTime','texttype','testorganization')
+    list_filter = ('testYear','testTime','texttype','testorganization')
+    search_fields = ('testYear','testTime','texttype','testorganization')
 
 @admin.register(TestResult)
 class TestResultAdmin(admin.ModelAdmin):

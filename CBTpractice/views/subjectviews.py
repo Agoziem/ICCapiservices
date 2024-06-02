@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from ..models import Subject
+from ..models import *
 from ..serializers import SubjectSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -8,9 +8,10 @@ from rest_framework import status
 
 # view to get all the subjects
 @api_view(['GET'])
-def get_subjects(request):
+def get_subjects(request,test_id):
     try:
-        subjects = Subject.objects.all()
+        test = Test.objects.get(id=test_id)
+        subjects = test.testSubject.all()
         serializer = SubjectSerializer(subjects, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Subject.DoesNotExist:
@@ -29,13 +30,14 @@ def get_subject(request, subject_id):
     
 # view to create a subject
 @api_view(['POST'])
-def add_subject(request):
+def add_subject(request,test_id):
     try:
+        test = Test.objects.get(id=test_id)
         serializer = SubjectSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
+            test.testSubject.add(serializer.instance)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Subject.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
@@ -54,9 +56,9 @@ def update_subject(request, subject_id):
     
 # view to delete a subject
 @api_view(['DELETE'])
-def delete_subject(request, subject_id):
-    try:
-        subject = Subject.objects.get(id=subject_id)
+def delete_subject(request,subject_id):
+    try: 
+        subject = Subject.objects.get(id=subject_id) 
         subject.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     except Subject.DoesNotExist:

@@ -4,37 +4,36 @@ from ..serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
-# view to get Test peculiar to a Student
 @api_view(['POST'])
-def get_student_tests(request,organization_id):
-    student_tests=[]
-    test = {}
+def get_student_tests(request):
     try:
-        user_id = request.get('user_id')
-        test_type_id = request.get('test_type')
-        subjects_Id = request.get('subjects', [])
-        year_id = request.get('year')
-    except:
+        user_id = request.data.get('user_id')
+        test_id = request.data.get('test_id')
+        subjects = request.data.get('examSubjects', [])
+        subjects_id = [subject.get('id') for subject in subjects]
+    except Exception as e:
+        print(e)
         return Response(status=status.HTTP_400_BAD_REQUEST)
     try:
         User.objects.get(id=user_id)
-        test_type = TestType.objects.get(id=test_type_id)
-        year = Year.objects.get(id=year_id)
-        subjects = Subject.objects.filter(id__in=subjects_Id)
-        for subject in subjects:
-            try:
-                test = Test.objects.get(testorganization=organization_id, testSubject=subject, texttype=test_type, testYear=year)
-                test['id'] = test.id
-                test['questions'] = Question.objects.filter(test=test)
-                student_tests.append(test)
-            except Test.DoesNotExist:
-                continue
-        serializer = TestSerializer(student_tests, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    except User.DoesNotExist or TestType.DoesNotExist or Year.DoesNotExist or Subject.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        student_test = Test.objects.get(id=test_id)
+        Subject.objects.filter(id__in=subjects_id)
+        serializer = TestSerializer(student_test)
+        serialized_data = serializer.data
+        filtered_subjects = [subj for subj in serialized_data['testSubject'] if subj['id'] in subjects_id]
+        serialized_data['testSubject'] = filtered_subjects
+        return Response(serialized_data, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
+    except Test.DoesNotExist:
+        return Response({"error": "Test does not exist"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(str(e))
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
     

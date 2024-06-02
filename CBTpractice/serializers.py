@@ -6,9 +6,9 @@ class YearsSerializer(serializers.ModelSerializer):
         model = Year
         fields = '__all__'
 
-class SubjectSerializer(serializers.ModelSerializer):
+class TestTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Subject
+        model = TestType
         fields = '__all__'
 
 class AnswerSerializer(serializers.ModelSerializer):
@@ -22,8 +22,17 @@ class QuestionSerializer(serializers.ModelSerializer):
         model = Question
         fields = '__all__'
 
-class TestSerializer(serializers.ModelSerializer):
+class SubjectSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True)
+    class Meta:
+        model = Subject
+        fields = '__all__'
+
+
+class TestSerializer(serializers.ModelSerializer):
+    testYear = YearsSerializer(many=False)
+    texttype = TestTypeSerializer(many=False)
+    testSubject = SubjectSerializer(many=True)
     class Meta:
         model = Test
         fields = '__all__'
@@ -34,7 +43,3 @@ class TestResultSerializer(serializers.ModelSerializer):
         model = TestResult
         fields = '__all__'
 
-class TestTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TestType
-        fields = '__all__'

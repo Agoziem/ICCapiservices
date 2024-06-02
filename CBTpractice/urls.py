@@ -12,9 +12,9 @@ urlpatterns = [
     path('updateyear/<int:year_id>/', update_year),
     path('deleteyear/<int:year_id>/', delete_year),
 
-    path('subjects/', get_subjects),
+    path('subjects/<int:test_id>/', get_subjects),
     path('subject/<int:subject_id>/', get_subject),
-    path('addsubject/', add_subject),
+    path('addsubject/<int:test_id>/', add_subject),
     path('updatesubject/<int:subject_id>/', update_subject),
     path('deletesubject/<int:subject_id>/', delete_subject),
 
@@ -31,6 +31,6 @@ urlpatterns = [
     path('deletetest/<int:test_id>/', delete_test),
     path('testresult/<int:organization_id>/', get_test_results),
 
-    path('practicetest/<int:organization_id>/', get_student_tests),
+    path('practicetest/', get_student_tests),
     path('submittest/<int:organization_id>/', submit_student_test),
 ]
