@@ -6,7 +6,7 @@ class UserSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
     class Meta:
         model = CustomUser
-        fields = ('id', 'first_name','last_name','username', 'email', 'avatar', 'groups', 'user_permissions', 'is_staff', 'date_joined',"emailIsVerified")
+        exclude = ('password', 'groups', 'user_permissions')
 
     def get_avatar(self, obj):
         useravatar = obj.avatar

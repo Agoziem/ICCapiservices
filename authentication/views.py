@@ -92,11 +92,15 @@ def verify_user(request):
 def update_user(request, user_id):
     try:
         user = User.objects.get(id=user_id)
-        serializer = UserSerializer(instance=user, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        user.avatar = request.data.get('image', user.avatar)
+        user.address = request.data.get('address', user.address)
+        user.phone = request.data.get('Phonenumber', user.phone)
+        user.Sex = request.data.get('sex',user.Sex)
+        user.first_name = request.data.get('first_name', user.first_name)
+        user.last_name = request.data.get('last_name', user.last_name)
+        user.save()
+        user_serializer = UserSerializer(instance=user)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

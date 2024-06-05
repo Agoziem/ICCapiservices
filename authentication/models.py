@@ -6,6 +6,10 @@ class CustomUser(AbstractUser):
     isOauth = models.BooleanField(default=False)
     Oauthprovider = models.CharField(max_length=100, null=True, blank=True, default='email')
     emailIsVerified = models.BooleanField(default=False)
+    twofactorIsEnabled = models.BooleanField(default=False)
+    address = models.CharField(max_length=100, null=True, blank=True)
+    Sex = models.CharField(max_length=10, null=True, blank=True)
+    phone = models.CharField(max_length=15, null=True, blank=True)
 
     def __str__(self):
         return self.username
