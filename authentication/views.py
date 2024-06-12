@@ -86,7 +86,20 @@ def verify_user(request):
         print(e)
         return Response({'error': 'User does not exist'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# create a view to get Oauth user
+# get a user by ID
+@api_view(['GET'])
+def get_user(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        user_serializer = UserSerializer(instance=user)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(e)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
 # view to update a user
 @api_view(['PUT'])
 def update_user(request, user_id):

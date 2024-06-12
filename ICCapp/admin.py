@@ -17,9 +17,9 @@ class StaffAdmin(admin.ModelAdmin):
 
 @admin.register(Testimonial)
 class TestimonialAdmin(admin.ModelAdmin):
-    list_display = ('organization', 'author', 'created_at', 'last_updated_date')
+    list_display = ('organization', 'name', 'created_at', 'last_updated_date')
     list_filter = ('organization', 'created_at', 'last_updated_date')
-    search_fields = ('organization__name', 'author')
+    search_fields = ('organization__name', 'name')
     ordering = ('organization', 'created_at', 'last_updated_date')
 
 @admin.register(Subscription)

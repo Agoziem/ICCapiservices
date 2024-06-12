@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from .Paystack import Paystack
+from django.db.models import Count,Sum,Avg
 
 Customer = get_user_model()
 # get all payments
@@ -24,8 +25,9 @@ def get_payments(request, organization_id):
 def get_payments_by_user(request, user_id):
     try:
         orders = Orders.objects.filter(customer=user_id)
+        total = orders.count()
         serializer = PaymentSerializer(orders, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"orders":serializer.data,"total":total}, status=status.HTTP_200_OK)
     except Orders.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
@@ -116,5 +118,18 @@ def delete_payment(request, payment_id):
         order = Orders.objects.get(id=payment_id)
         order.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    except Orders.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+
+# get the count of all payments & aggregate the number of customers
+@api_view(['GET'])
+def get_payment_count(request, organization_id):
+    try:
+        orders = Orders.objects.filter(organization=organization_id)
+        customers = orders.values('customer__id','customer__username').annotate(Count('customer'), Sum('amount'), Avg('amount'))
+        totalorders = orders.count()
+        totalcustomers = len(customers)
+        return Response({'totalorders': totalorders, 'totalcustomers': totalcustomers,"customers":customers}, status=status.HTTP_200_OK)
     except Orders.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)

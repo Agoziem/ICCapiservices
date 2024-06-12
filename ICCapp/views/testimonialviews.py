@@ -41,6 +41,7 @@ def add_testimonial(request, organization_id):
 # update a testimonial view
 @api_view(['PUT'])
 def update_testimonial(request, testimonial_id):
+    print(testimonial_id)
     try:
         testimonial = Testimonial.objects.get(id=testimonial_id)
         serializer = TestimonialSerializer(instance=testimonial, data=request.data)

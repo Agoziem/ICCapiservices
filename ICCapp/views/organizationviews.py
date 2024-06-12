@@ -41,16 +41,19 @@ def add_organization(request):
 # update an organization view
 @api_view(['PUT'])
 def update_organization(request, organization_id):
+    data = request.data
     try:
         organization = Organization.objects.get(id=organization_id)
-        serializer = OrganizationSerializer(instance=organization, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        fields_to_update = ['Organizationlogo', 'name', 'description', 'vision', 'mission', 'email', 'phone', 'address']
+        for field in fields_to_update:
+            if field in data:
+                setattr(organization, field, data[field])
+        organization.save()
+        organization_serializer = OrganizationSerializer(organization, many=False)
+        return Response(organization_serializer.data,status=status.HTTP_200_OK)
     except Organization.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    
+
 # delete an organization view
 @api_view(['DELETE'])
 def delete_organization(request, organization_id):
