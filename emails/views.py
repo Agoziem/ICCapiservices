@@ -32,7 +32,7 @@ def add_email(request, organization_id):
     try:
         name=request.data.get('name')
         email=request.data.get('email')
-        subject=request.data.get('subject', "")
+        subject=request.data.get('subject')
         message=request.data.get('message')
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)

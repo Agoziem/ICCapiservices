@@ -1,24 +1,15 @@
 from .models import CustomUser
 from rest_framework import serializers
-import re
+from utils import get_full_image_url
 
 class UserSerializer(serializers.ModelSerializer):
-    avatar = serializers.SerializerMethodField()
+    avatar_url = serializers.SerializerMethodField()
     class Meta:
         model = CustomUser
         exclude = ('password', 'groups', 'user_permissions')
 
-    def get_avatar(self, obj):
+    def get_avatar_url(self, obj):
         useravatar = obj.avatar
-        if not useravatar:
-            return None 
-        
-        useravatar_url = useravatar.url
-        if not useravatar_url.startswith(('http://', 'https://')):
-            useravatar_url = f"http://127.0.0.1:8000{useravatar_url}"  
-        pattern_media = r'^/media/'
-        pattern_percent_3A = r'%3A'
-        modified_url = re.sub(pattern_media, '', useravatar_url)
-        modified_url = re.sub(pattern_percent_3A, ':/', modified_url, count=1)
-        modified_url = re.sub(pattern_percent_3A, ':', modified_url)
-        return modified_url
+        return get_full_image_url(useravatar)
+    
+    # 

@@ -2,18 +2,37 @@ from rest_framework import serializers
 from .models import *
 import re
 from emails.serializers import EmailSerializer
+from utils import *
 
 
 
 class StaffSerializer(serializers.ModelSerializer):
+    img = serializers.ImageField(allow_null=True, required=False)
+    img_url = serializers.SerializerMethodField()
+    img_name = serializers.SerializerMethodField()
     class Meta:
         model = Staff
         fields = '__all__'
 
+    def get_img_url(self, obj):
+        return get_full_image_url(obj.img)
+    
+    def get_img_name(self, obj):
+        return get_image_name(obj.img)
+
 class TestimonialSerializer(serializers.ModelSerializer):
+    img = serializers.ImageField(allow_null=True, required=False)
+    img_url = serializers.SerializerMethodField()
+    img_name = serializers.SerializerMethodField()
     class Meta:
         model = Testimonial
         fields = '__all__'
+
+    def get_img_url(self, obj):
+        return get_full_image_url(obj.img)
+    
+    def get_img_name(self, obj):
+        return get_image_name(obj.img)
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -30,6 +49,8 @@ class NotificationSerializer(serializers.ModelSerializer):
         return {'id': obj.organization.id, 'name': obj.organization.name}
     
 class OrganizationSerializer(serializers.ModelSerializer):
+    logo = serializers.ImageField(allow_null=True, required=False)
+    Organizationlogoname = serializers.SerializerMethodField()
     Organizationlogo = serializers.SerializerMethodField()
     staffs = serializers.SerializerMethodField()
     testimonials = serializers.SerializerMethodField()
@@ -40,19 +61,10 @@ class OrganizationSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
     def get_Organizationlogo(self, obj):
-        Organizationlogo = obj.logo
-        if not Organizationlogo:
-            return None 
-        
-        Organizationlogo_url = Organizationlogo.url
-        if not Organizationlogo_url.startswith(('http://', 'https://')):
-            Organizationlogo_url = f"http://127.0.0.1:8000{Organizationlogo_url}"  
-        pattern_media = r'^/media/'
-        pattern_percent_3A = r'%3A'
-        modified_url = re.sub(pattern_media, '', Organizationlogo_url)
-        modified_url = re.sub(pattern_percent_3A, ':/', modified_url, count=1)
-        modified_url = re.sub(pattern_percent_3A, ':', modified_url)
-        return modified_url
+        return get_full_image_url(obj.logo)
+    
+    def get_Organizationlogoname(self, obj):
+        return get_image_name(obj.logo)
     
     def get_staffs(self, obj):
         staffs = obj.staff_set.all()

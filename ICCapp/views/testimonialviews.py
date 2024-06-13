@@ -1,9 +1,10 @@
 from django.shortcuts import render
 from ..models import *
 from ..serializers import *
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,parser_classes
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # get all testimonials
 @api_view(['GET'])
@@ -27,10 +28,14 @@ def get_testimonial(request, testimonial_id):
     
 # Add a testimonial view
 @api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
 def add_testimonial(request, organization_id):
     try:
         organization = Organization.objects.get(id=organization_id)
-        serializer = TestimonialSerializer(data=request.data)
+        data = request.data.copy()
+        if data.get('img') == '':
+            data['img'] = None
+        serializer = TestimonialSerializer(data=data)
         if serializer.is_valid():
             serializer.save(organization=organization)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -40,11 +45,14 @@ def add_testimonial(request, organization_id):
     
 # update a testimonial view
 @api_view(['PUT'])
+@parser_classes([MultiPartParser, FormParser])
 def update_testimonial(request, testimonial_id):
-    print(testimonial_id)
     try:
         testimonial = Testimonial.objects.get(id=testimonial_id)
-        serializer = TestimonialSerializer(instance=testimonial, data=request.data)
+        data = request.data.copy()
+        if data.get('img') == '':
+            data['img'] = None
+        serializer = TestimonialSerializer(instance=testimonial, data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,9 +1,10 @@
 from django.shortcuts import render
 from ..models import *
 from ..serializers import *
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,parser_classes
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # get all organizations
 @api_view(['GET'])
@@ -28,9 +29,13 @@ def get_organization(request, organization_id):
 
 # Add an organization view
 @api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
 def add_organization(request):
+    data = request.data.copy()
     try:
-        serializer = OrganizationSerializer(data=request.data)
+        if data.get('logo') == '':
+            data['logo'] = None
+        serializer = OrganizationSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -40,17 +45,18 @@ def add_organization(request):
     
 # update an organization view
 @api_view(['PUT'])
+@parser_classes([MultiPartParser, FormParser])
 def update_organization(request, organization_id):
-    data = request.data
+    data = request.data.copy()
     try:
         organization = Organization.objects.get(id=organization_id)
-        fields_to_update = ['Organizationlogo', 'name', 'description', 'vision', 'mission', 'email', 'phone', 'address']
-        for field in fields_to_update:
-            if field in data:
-                setattr(organization, field, data[field])
-        organization.save()
-        organization_serializer = OrganizationSerializer(organization, many=False)
-        return Response(organization_serializer.data,status=status.HTTP_200_OK)
+        if data.get('logo') == '':
+            data['logo'] = None
+        organization_serializer = OrganizationSerializer(instance=organization, data=data)
+        if organization_serializer.is_valid():
+            organization_serializer.save()
+            return Response(organization_serializer.data, status=status.HTTP_200_OK)
+        return Response(organization_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Organization.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
