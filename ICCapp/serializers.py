@@ -1,7 +1,5 @@
 from rest_framework import serializers
 from .models import *
-import re
-from emails.serializers import EmailSerializer
 from utils import *
 
 

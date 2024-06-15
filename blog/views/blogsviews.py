@@ -4,7 +4,9 @@ from ..serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 # get all blogs
 @api_view(['GET'])
 def get_blogs(request,user_id):
@@ -29,10 +31,13 @@ def get_blog(request, blog_id):
 # Add a Blog view
 @api_view(['POST'])
 def add_blog(request,organization_id,user_id):
+    data = request.data.copy()
     try:
         user = User.objects.get(id=user_id)
         organization = Organization.objects.get(id=organization_id)
-        serializer = BlogSerializer(data=request.data)
+        if data.get('img') == '':
+                data['img'] = None
+        serializer = BlogSerializer(data=data)
         if serializer.is_valid():
             serializer.save(author=user,organization=organization)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -43,9 +48,12 @@ def add_blog(request,organization_id,user_id):
 # update a Blog view
 @api_view(['PUT'])
 def update_blog(request, blog_id):
+    data = request.data.copy()
     try:
         blog = Blog.objects.get(id=blog_id)
-        serializer = BlogSerializer(instance=blog, data=request.data)
+        if data.get('img') == '':
+            data['img'] = None
+        serializer = BlogSerializer(instance=blog, data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
