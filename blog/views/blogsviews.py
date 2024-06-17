@@ -7,7 +7,19 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-# get all blogs
+
+# get all blogs by an Organization
+@api_view(['GET'])
+def get_org_blogs(request,organization_id):
+    try:
+        blogs = Blog.objects.filter(organization=organization_id)
+        serializer = BlogSerializer(blogs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Blog.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+
+# get all blogs by a User
 @api_view(['GET'])
 def get_blogs(request,user_id):
     try:

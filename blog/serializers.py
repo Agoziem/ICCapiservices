@@ -12,16 +12,12 @@ class BlogSerializer(serializers.ModelSerializer):
     img_url = serializers.SerializerMethodField()
     img_name = serializers.SerializerMethodField()
     authordata = serializers.SerializerMethodField()
-    likes = serializers.SerializerMethodField() 
-    comments = serializers.SerializerMethodField()
     no_of_likes = serializers.SerializerMethodField()
 
     class Meta:
         model = Blog
         fields = '__all__'
-    
-    def get_comments(self, obj):
-        return CommentSerializer(obj.comments, many=True).data
+
     
     def get_no_of_likes(self, obj):
         return obj.likes.count()

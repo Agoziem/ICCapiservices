@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from ICCapp.models import Organization
 import json
+from ckeditor.fields import RichTextField
 
 class Blog(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
@@ -9,10 +10,10 @@ class Blog(models.Model):
     img = models.ImageField(upload_to='blogs/', null=True, blank=True)
     title = models.CharField(max_length=100)
     subtitle = models.CharField(max_length=100, blank=True, null=True)
-    body = models.TextField()
+    body = RichTextField( blank=True, null=True)
     date = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    tags = models.CharField(max_length=350, blank=True, null=True)
+    # tags = models.CharField(max_length=350, blank=True, null=True)
     slug = models.SlugField(max_length=100, unique=True, blank=True, null=True)
     category = models.CharField(max_length=100, blank=True, null=True)
     readTime = models.IntegerField(default=0)
@@ -23,23 +24,23 @@ class Blog(models.Model):
     def __str__(self):
         return self.title
     
-    def set_tags(self, tags_list):
-        self.tags = json.dumps(tags_list)
+    # def set_tags(self, tags_list):
+    #     self.tags = json.dumps(tags_list)
 
-    def get_tags(self):
-        return json.loads(self.tags) if self.tags else []
+    # def get_tags(self):
+    #     return json.loads(self.tags) if self.tags else []
 
-    def add_tag(self, tag):
-        tags_list = self.get_tags()
-        if tag not in tags_list:
-            tags_list.append(tag)
-            self.set_tags(tags_list)
+    # def add_tag(self, tag):
+    #     tags_list = self.get_tags()
+    #     if tag not in tags_list:
+    #         tags_list.append(tag)
+    #         self.set_tags(tags_list)
 
-    def remove_tag(self, tag):
-        tags_list = self.get_tags()
-        if tag in tags_list:
-            tags_list.remove(tag)
-            self.set_tags(tags_list)
+    # def remove_tag(self, tag):
+    #     tags_list = self.get_tags()
+    #     if tag in tags_list:
+    #         tags_list.remove(tag)
+    #         self.set_tags(tags_list)
 
 
 class Comment(models.Model):
