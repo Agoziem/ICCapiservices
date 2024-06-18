@@ -31,6 +31,7 @@ def get_subject(request, subject_id):
 # view to create a subject
 @api_view(['POST'])
 def add_subject(request,test_id):
+    print(request.data)
     try:
         test = Test.objects.get(id=test_id)
         serializer = SubjectSerializer(data=request.data)
@@ -38,6 +39,7 @@ def add_subject(request,test_id):
             serializer.save()
             test.testSubject.add(serializer.instance)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(serializer.errors)
     except Subject.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
@@ -63,3 +65,4 @@ def delete_subject(request,subject_id):
         return Response(status=status.HTTP_204_NO_CONTENT)
     except Subject.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    

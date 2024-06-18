@@ -30,4 +30,6 @@ class BlogSerializer(serializers.ModelSerializer):
     
     def get_img_name(self, obj):
         return get_image_name(obj.img)
+    
+
 

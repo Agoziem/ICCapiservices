@@ -9,9 +9,9 @@ class YearsAdmin(admin.ModelAdmin):
 
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ('subjectname',)
-    search_fields = ('subjectname',)
-    list_filter = ('subjectname',)
+    list_display = ('subjectname',"subjectduration")
+    search_fields = ('subjectname',"subjectduration")
+    list_filter = ('subjectname',"subjectduration")
 
 @admin.register(TestType)
 class TestTypeAdmin(admin.ModelAdmin):
@@ -40,9 +40,9 @@ class QuestionAdmin(admin.ModelAdmin):
 
 @admin.register(Test)
 class TestAdmin(admin.ModelAdmin):
-    list_display = ('testYear','testTime','texttype','testorganization')
-    list_filter = ('testYear','testTime','texttype','testorganization')
-    search_fields = ('testYear','testTime','texttype','testorganization')
+    list_display = ('testYear','texttype','testorganization')
+    list_filter = ('testYear','texttype','testorganization')
+    search_fields = ('testYear','texttype','testorganization')
 
 @admin.register(TestResult)
 class TestResultAdmin(admin.ModelAdmin):

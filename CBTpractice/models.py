@@ -42,6 +42,7 @@ class Question(models.Model):
 
 # Subject model
 class Subject(models.Model):
+    subjectduration = models.IntegerField(default=0,blank=True)
     subjectname = models.CharField(max_length=255,default="None",blank=False)
     questions = models.ManyToManyField(Question)
     
@@ -54,7 +55,6 @@ class Test(models.Model):
     texttype = models.ForeignKey(TestType, on_delete=models.CASCADE, null=True, blank=True)
     testSubject = models.ManyToManyField(Subject)
     testYear = models.ForeignKey(Year, on_delete=models.CASCADE, null=True, blank=True)
-    testTime = models.IntegerField(default=0,blank=True)
 
     def __str__(self):
         return f"{self.testSubject} - {self.testYear}"

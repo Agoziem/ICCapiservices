@@ -25,3 +25,10 @@ def get_image_name(image_field):
     if not image_field:
         return None 
     return image_field.name.split('/')[-1]
+
+def normalize_img_field(data,key):
+    if data.get(key) == '':
+        data[key] = None
+    elif data.get(key) is not None and not hasattr(data.get(key), 'file'):
+        data.pop(key)
+    return data

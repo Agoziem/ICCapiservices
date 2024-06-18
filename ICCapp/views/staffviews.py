@@ -5,6 +5,7 @@ from ..serializers import *
 from rest_framework.decorators import api_view,parser_classes
 from rest_framework.response import Response
 from rest_framework import status
+from utils import normalize_img_field
 
 # get all staff
 @api_view(['GET'])
@@ -33,8 +34,7 @@ def add_staff(request, organization_id):
     try:
         organization = Organization.objects.get(id=organization_id)
         data = request.data.copy()
-        if data.get('img') == '':
-            data['img'] = None
+        data = normalize_img_field(data,"img")
         serializer = StaffSerializer(data=data)
         if serializer.is_valid():
             serializer.save(organization=organization)
@@ -50,8 +50,7 @@ def update_staff(request, staff_id):
     try:
         staff = Staff.objects.get(id=staff_id)
         data = request.data.copy()
-        if data.get('img') == '':
-            data['img'] = None
+        data = normalize_img_field(data,"img")
         serializer = StaffSerializer(instance=staff, data=data)
         if serializer.is_valid():
             serializer.save()

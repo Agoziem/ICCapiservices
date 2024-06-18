@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view,parser_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
+from utils import normalize_img_field
 
 # get all organizations
 @api_view(['GET'])
@@ -33,8 +34,7 @@ def get_organization(request, organization_id):
 def add_organization(request):
     data = request.data.copy()
     try:
-        if data.get('logo') == '':
-            data['logo'] = None
+        data = normalize_img_field(data,"logo")
         serializer = OrganizationSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -50,8 +50,7 @@ def update_organization(request, organization_id):
     data = request.data.copy()
     try:
         organization = Organization.objects.get(id=organization_id)
-        if data.get('logo') == '':
-            data['logo'] = None
+        data = normalize_img_field(data,"logo")
         organization_serializer = OrganizationSerializer(instance=organization, data=data)
         if organization_serializer.is_valid():
             organization_serializer.save()

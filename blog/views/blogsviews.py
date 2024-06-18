@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
+from utils import normalize_img_field
 
 User = get_user_model()
 
@@ -47,8 +48,7 @@ def add_blog(request,organization_id,user_id):
     try:
         user = User.objects.get(id=user_id)
         organization = Organization.objects.get(id=organization_id)
-        if data.get('img') == '':
-                data['img'] = None
+        data = normalize_img_field(data,"img")
         serializer = BlogSerializer(data=data)
         if serializer.is_valid():
             serializer.save(author=user,organization=organization)
@@ -57,19 +57,18 @@ def add_blog(request,organization_id,user_id):
     except User.DoesNotExist or Organization.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
-# update a Blog view
 @api_view(['PUT'])
 def update_blog(request, blog_id):
     data = request.data.copy()
     try:
         blog = Blog.objects.get(id=blog_id)
-        if data.get('img') == '':
-            data['img'] = None
+        data = normalize_img_field(data,"img")
         serializer = BlogSerializer(instance=blog, data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     except Blog.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     

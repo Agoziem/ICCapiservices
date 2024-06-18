@@ -26,30 +26,34 @@ def get_test(request, test_id):
     except Test.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
-# view to create a Test
 @api_view(['POST'])
 def add_test(request,organization_id):
     try:
-        Subject_id = request.data.get('subjectid')
-        TestTypeid = request.data.get('testtypeid')
-        Year_id = request.data.get('yearid')
-        testtype = TestType.objects.get(id=TestTypeid)
-        subject = Subject.objects.get(id=Subject_id)
-        Mark = request.data.get('mark', None)
-        Time = request.data.get('time', None)
-        year = Year.objects.get(id=Year_id)
-        test = Test.objects.create(testorganization=organization_id,testSubject=subject,texttype=testtype,testYear=year,testMark=Mark,testTime=Time)
-    except:
+        organization = Organization.objects.get(id=organization_id)
+        testyear = request.data.get('testYear', None)
+        testtype = request.data.get('texttype', None).upper()
+        testsubject = request.data.get('testSubject', [])
+        # check if the test already exists
+        test = Test.objects.filter(testorganization=organization,testYear__year=testyear,texttype__testtype=testtype)
+        if test.exists():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # create year, testtype and subject
+            year = Year.objects.create(year=testyear)
+            testType = TestType.objects.create(testtype=testtype)
+            subjectsID = []
+            for subject in testsubject:
+                subject = Subject.objects.create(subjectname=subject)
+                subject.save()
+                subjectsID.append(subject.id)
+            test = Test.objects.create(testorganization=organization,testYear=year,texttype=testType)
+            test.testSubject.add(*subjectsID)
+            test.save()
+            test_serializer = TestSerializer(test, many=False)
+            return Response(test_serializer.data, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        print(e)
         return Response(status=status.HTTP_404_NOT_FOUND)
-    
-    questions = request.data.get('questions', [])
-    for question in questions:
-        question = Question.objects.create(questiontext=question.text,questionMark=question.mark, test=test)
-        answers = question.get('answers', [])
-        for answer in answers:
-            Answer.objects.create(answerText=answer.text, is_correct=answer.is_correct, question=question)
-    serializer = TestSerializer(test, many=False)
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
     
 
 # view to update a Test
