@@ -17,41 +17,19 @@ class AnswerSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class QuestionSerializer(serializers.ModelSerializer):
-    answers = AnswerSerializer(many=True)
+    answers = AnswerSerializer(many=True, required=False)
+    correctAnswer = AnswerSerializer(required=False)
+
     class Meta:
         model = Question
         fields = '__all__'
-
+    
 class SubjectSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True)
     class Meta:
         model = Subject
         fields = '__all__'
-
-    def create(self, validated_data):
-        questions_data = validated_data.pop('questions', [])  # Use an empty list if questions are missing
-
-        subject = Subject.objects.create(**validated_data)
-
-        for question_data in questions_data:
-            question, created = Question.objects.get_or_create(**question_data)
-            subject.questions.add(question)
-
-        return subject
-
-    def update(self, instance, validated_data):
-        questions_data = validated_data.pop('questions', [])  # Use an empty list if questions are missing
-        instance.subjectname = validated_data.get('subjectname', instance.subjectname)
-        instance.subjectduration = validated_data.get('subjectduration', instance.subjectduration)
-        instance.save()
-
-        if questions_data:  # Only update questions if provided
-            instance.questions.clear()
-            for question_data in questions_data:
-                question, created = Question.objects.get_or_create(**question_data)
-                instance.questions.add(question)
-
-        return instance
+        extra_kwargs = {'questions': {'required': False}}
 
 
 class TestSerializer(serializers.ModelSerializer):

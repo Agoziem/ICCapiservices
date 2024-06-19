@@ -3,6 +3,7 @@ from .views.practiceviews import *
 from .views.subjectviews import *
 from .views.testtypeviews import *
 from .views.yearviews import *
+from .views.questionviews import *
 from django.urls import path
 
 urlpatterns = [
@@ -12,11 +13,16 @@ urlpatterns = [
     path('updateyear/<int:year_id>/', update_year),
     path('deleteyear/<int:year_id>/', delete_year),
 
+    path('addQuestion/<int:subject_id>/', create_question),
+    path('updateQuestion/<int:question_id>/', update_question),
+    path('deleteQuestion/<int:question_id>/', delete_question),
+
     path('subjects/<int:test_id>/', get_subjects),
     path('subject/<int:subject_id>/', get_subject),
     path('addsubject/<int:test_id>/', add_subject),
     path('updatesubject/<int:subject_id>/', update_subject),
     path('deletesubject/<int:subject_id>/', delete_subject),
+
 
     path('testtypes/', get_testtypes),
     path('testtype/<int:testtype_id>/', get_testtype),
