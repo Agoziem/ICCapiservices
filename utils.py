@@ -1,7 +1,8 @@
 # utils.py
 import re
+from django.conf import settings
 
-def get_full_image_url(image_field, base_url='http://127.0.0.1:8000'):
+def get_full_image_url(image_field, base_url=settings.DJANGO_IMAGE_URL):
     if not image_field:
         return None 
 

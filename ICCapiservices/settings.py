@@ -238,3 +238,5 @@ CKEDITOR_CONFIGS = {
         'colorButton_colors': '000000,ffffff'
     }
 }
+
+DJANGO_IMAGE_URL = config('DJANGO_IMAGE_URL', default='http://127.0.0.1:8000')
