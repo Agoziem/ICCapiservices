@@ -2,10 +2,24 @@ from rest_framework import serializers
 from .models import *
 from utils import *
 
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = '__all__'
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
 class CommentSerializer(serializers.ModelSerializer):
+    authordata = serializers.SerializerMethodField()
     class Meta:
         model = Comment
         fields = '__all__'
+
+    def get_authordata(self, obj):
+        return {'id': obj.user.id, 'name': obj.user.username, "img": get_full_image_url(obj.user.avatar) if obj.user.avatar else ""}
 
 class BlogSerializer(serializers.ModelSerializer):
     img = serializers.ImageField(allow_null=True, required=False)
@@ -13,6 +27,8 @@ class BlogSerializer(serializers.ModelSerializer):
     img_name = serializers.SerializerMethodField()
     authordata = serializers.SerializerMethodField()
     no_of_likes = serializers.SerializerMethodField()
+    category = CategorySerializer(many=False)
+    tags = TagSerializer(many=True)
 
     class Meta:
         model = Blog

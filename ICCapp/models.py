@@ -13,6 +13,11 @@ class Organization(models.Model):
     address = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated_date = models.DateTimeField(auto_now=True)
+    whatsapplink = models.CharField(max_length=200, blank=True, null=True)
+    facebooklink = models.CharField(max_length=200, blank=True, null=True)
+    instagramlink = models.CharField(max_length=200, blank=True, null=True)
+    twitterlink = models.CharField(max_length=200, blank=True, null=True)
+
 
     def __str__(self):
         return self.name

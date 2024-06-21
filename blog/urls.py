@@ -10,11 +10,13 @@ urlpatterns = [
     path('addblog/<int:organization_id>/<int:user_id>/', add_blog),
     path('updateblog/<int:blog_id>/', update_blog),
     path('deleteblog/<int:blog_id>/', delete_blog),
+    path('addviews/<int:blog_id>/', add_views),
 
+    path("getcomments/<int:blog_id>/", get_comments),
     path('addcomment/<int:blog_id>/<int:user_id>/', add_comment),
     path('updatecomment/<int:comment_id>/', update_comment),
     path('deletecomment/<int:comment_id>/', delete_comment),
 
     path('addlike/<int:blog_id>/<int:user_id>/', add_like),
-    path('deletelike/<int:like_id>/', delete_like),
+    path('deletelike/<int:blog_id>/<int:user_id>/', delete_like),
 ]

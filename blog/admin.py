@@ -14,3 +14,13 @@ class CommentAdmin(admin.ModelAdmin):
     search_fields = ('comment',)
     list_filter = ('date', 'user')
 
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ('tag',)
+    search_fields = ('tag',)
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('category',)
+    search_fields = ('category',)
+
