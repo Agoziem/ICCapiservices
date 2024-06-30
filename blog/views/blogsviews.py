@@ -161,6 +161,18 @@ def add_views(request, blog_id):
     except Exception as e:
         print(e)
         return Response(status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+# get all categories
+@api_view(['GET'])
+def get_categories(request):
+    try:
+        categories = Category.objects.all()
+        serializer = CategorySerializer(categories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Category.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 

@@ -13,6 +13,8 @@ urlpatterns = [
     path('deleteblog/<int:blog_id>/', delete_blog),
     path('addviews/<int:blog_id>/', add_views),
 
+    path('getCategories/', get_categories),
+
     path("getcomments/<int:blog_id>/", get_comments),
     path('addcomment/<int:blog_id>/<int:user_id>/', add_comment),
     path('updatecomment/<int:comment_id>/', update_comment),
