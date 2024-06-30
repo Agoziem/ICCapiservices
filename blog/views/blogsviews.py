@@ -40,6 +40,16 @@ def get_blog(request, blog_id):
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Blog.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    
+# get a single blog by slug
+@api_view(['GET'])
+def get_blog_by_slug(request, slug):
+    try:
+        blog = Blog.objects.get(slug=slug)
+        serializer = BlogSerializer(blog, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Blog.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['POST'])
 def add_blog(request, organization_id, user_id):
