@@ -46,6 +46,40 @@ class NotificationSerializer(serializers.ModelSerializer):
     def get_organization(self, obj):
         return {'id': obj.organization.id, 'name': obj.organization.name}
     
+class DepartmentServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DepartmentService
+        fields = '__all__'
+    
+class DepartmentSerializer(serializers.ModelSerializer):
+    img = serializers.ImageField(allow_null=True, required=False)
+    img_url = serializers.SerializerMethodField()
+    img_name = serializers.SerializerMethodField()
+    staff_in_charge = serializers.SerializerMethodField()
+    organization = serializers.SerializerMethodField()
+    services = serializers.SerializerMethodField()
+    class Meta:
+        model = Department
+        fields = '__all__'
+
+    def get_organization(self, obj):
+        return {'id': obj.organization.id, 'name': obj.organization.name}
+    
+    def get_staff_in_charge(self, obj):
+        return {'id': obj.staff_in_charge.id, 'name': obj.staff_in_charge.first_name + ' ' + obj.staff_in_charge.last_name, "img_url": get_full_image_url(obj.staff_in_charge.img)}
+    
+    def get_services(self, obj):
+        services = obj.services.all()
+        return DepartmentServiceSerializer(services, many=True).data
+    
+    def get_img_url(self, obj):
+        return get_full_image_url(obj.img)
+    
+    def get_img_name(self, obj):
+        return get_image_name(obj.img)
+    
+
+    
 class OrganizationSerializer(serializers.ModelSerializer):
     logo = serializers.ImageField(allow_null=True, required=False)
     Organizationlogoname = serializers.SerializerMethodField()
@@ -54,6 +88,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
     testimonials = serializers.SerializerMethodField()
     subscriptions = serializers.SerializerMethodField()
     messages = serializers.SerializerMethodField()
+    departments = serializers.SerializerMethodField()
     class Meta:
         model = Organization
         fields = '__all__'
@@ -79,5 +114,9 @@ class OrganizationSerializer(serializers.ModelSerializer):
     def get_messages(self, obj):
         messages = obj.emails.all()
         return NotificationSerializer(messages, many=True).data
+    
+    def get_departments(self, obj):
+        departments = obj.department_set.all()
+        return DepartmentSerializer(departments, many=True).data
     
     

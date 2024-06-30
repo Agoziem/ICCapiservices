@@ -2,11 +2,17 @@ from rest_framework import serializers
 from .models import *
 from utils import *
 
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
 class ServiceSerializer(serializers.ModelSerializer):
     organization = serializers.SerializerMethodField()
     preview = serializers.ImageField(allow_null=True, required=False)
     img_url = serializers.SerializerMethodField()
     img_name = serializers.SerializerMethodField()
+    category = CategorySerializer()
     class Meta:
         model = Service
         fields = '__all__'

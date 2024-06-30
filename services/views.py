@@ -79,3 +79,13 @@ def delete_service(request, service_id):
         return Response(status=status.HTTP_204_NO_CONTENT)
     except Service.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    
+# get all categories
+@api_view(['GET'])
+def get_categories(request):
+    try:
+        categories = Category.objects.all()
+        serializer = CategorySerializer(categories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Category.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)

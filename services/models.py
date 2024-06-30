@@ -1,11 +1,14 @@
 from django.db import models
 from ICCapp.models import Organization
 
-category_choices = [
-    ('service', 'service'),
-    ('application', 'application'),
-    ('Other', 'Other'),
-]
+class Category(models.Model):
+    category = models.CharField(max_length=100, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.category
+
+
 # Services Model
 class Service(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
@@ -16,7 +19,7 @@ class Service(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     number_of_times_bought = models.IntegerField(default=0, blank=True, null=True)
-    category = models.CharField(max_length=100, choices=category_choices, default='service')
-
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
+    
     def __str__(self):
         return self.name

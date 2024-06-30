@@ -1,9 +1,16 @@
 from django.contrib import admin
 from .models import *
 
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('category',)
+    search_fields = ('category',)
+    sortable_by = ('category',)
+
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'shortened_description', 'price')
+    list_display = ('name', 'shortened_description', 'price', 'category')
     search_fields = ('name', 'description', 'price')
     list_filter = ('price',)
     sortable_by = ('name', 'price')

@@ -8,9 +8,14 @@ from django.contrib.auth.models import Group
 from django.conf import settings
 from rest_framework.authtoken.models import Token
 from ICCapp.models import Organization
+import uuid
+from django.utils import timezone
 
 User = get_user_model()
 
+# -----------------------------------------------
+# register user without Oauth
+# -----------------------------------------------
 @api_view(['POST'])
 def register_user(request):
     try:
@@ -25,6 +30,10 @@ def register_user(request):
             password=request.data['password']
         )
         token = Token.objects.create(user=new_user)
+        token = uuid.uuid4().hex
+        new_user.verificationToken = token
+        new_user.expiryTime = timezone.now() + timezone.timedelta(hours=2)
+        new_user.save()
         # Check if organization ID is passed in the request
         if 'organization_id' in request.data:
             try:
@@ -40,8 +49,9 @@ def register_user(request):
         print(e)
         return Response({'error': 'User does not exist'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+# -----------------------------------------------
 # register user with Oauth without password
+# -----------------------------------------------
 @api_view(['POST'])
 def register_user_with_oauth(request,provider):
     username = request.data['name']
@@ -69,8 +79,10 @@ def register_user_with_oauth(request,provider):
         print(e)
         return Response({'error': 'User does not exist'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-       
-# verify user with User existance
+# -----------------------------------------------
+# verify user with User Credentials
+# -----------------------------------------------
+
 @api_view(['POST'])
 def verify_user(request):
     try:
@@ -86,7 +98,9 @@ def verify_user(request):
         print(e)
         return Response({'error': 'User does not exist'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# -----------------------------------------------
 # get a user by ID
+# -----------------------------------------------
 @api_view(['GET'])
 def get_user(request, user_id):
     try:
@@ -99,8 +113,56 @@ def get_user(request, user_id):
         print(e)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+# -----------------------------------------------
+# get user by token
+# -----------------------------------------------
+@api_view(['POST'])
+def verify_email(request):
+    try:
+        token = request.data.get('token')
+        user = User.objects.get(verificationToken=token)
+        if user.expiryTime < timezone.now():
+            return Response({'error': 'Token has expired, please try again'}, status=status.HTTP_400_BAD_REQUEST)
+        user.emailIsVerified = True
+        user.verificationToken = None
+        user.expiryTime = None
+        user.save()
+        user_serializer = UserSerializer(instance=user)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({'error': 'user with the Verification Token not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(e)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+# -----------------------------------------------
+# get user by email
+# -----------------------------------------------
+@api_view(['POST'])
+def get_user_by_email(request):
+    try:
+        email = request.data.get('email')
+        user = User.objects.get(email=email,isOauth=False)
+        if not user.emailIsVerified:
+            if user.verificationToken is not None:
+                user.verificationToken = None
+                user.expiryTime = None
+            token = uuid.uuid4().hex
+            user.verificationToken = token
+            user.expiryTime = timezone.now() + timezone.timedelta(hours=2)
+            user.save()
+        user_serializer = UserSerializer(instance=user)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(e)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+# -----------------------------------------------
 # view to update a user
+# -----------------------------------------------
 @api_view(['PUT'])
 def update_user(request, user_id):
     data = request.data.copy()
@@ -119,7 +181,9 @@ def update_user(request, user_id):
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
+# -----------------------------------------------
 # remove a user and the token
+# -----------------------------------------------
 @api_view(['DELETE'])
 def delete_user(request, user_id):
     try:

@@ -8,4 +8,6 @@ urlpatterns = [
     path('getuser/<int:user_id>/', views.get_user, name='get_user'),
     path('update/<int:user_id>/', views.update_user, name='update_user'),
     path('delete/<int:user_id>/', views.delete_user, name='delete_user'),
+    path('getUserbyEmail/', views.get_user_by_email, name='get_verification_token_by_email'),
+    path('verifyEmail/', views.verify_email, name='verify_email'),
 ]

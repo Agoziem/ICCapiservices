@@ -7,6 +7,8 @@ class CustomUser(AbstractUser):
     Oauthprovider = models.CharField(max_length=100, null=True, blank=True, default='email')
     emailIsVerified = models.BooleanField(default=False)
     twofactorIsEnabled = models.BooleanField(default=False)
+    verificationToken = models.CharField(max_length=100, null=True, blank=True,unique=True)
+    expiryTime = models.DateTimeField(null=True, blank=True)
     address = models.CharField(max_length=100, null=True, blank=True)
     Sex = models.CharField(max_length=10, null=True, blank=True)
     phone = models.CharField(max_length=15, null=True, blank=True)

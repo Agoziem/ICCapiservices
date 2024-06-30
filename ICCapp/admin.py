@@ -29,6 +29,20 @@ class SubscriptionAdmin(admin.ModelAdmin):
     search_fields = ('organization__name', 'email')
     ordering = ('organization',)
 
+@admin.register(DepartmentService)
+class DepartmentServiceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('name',)
+    ordering = ('created_at',)
+
+@admin.register(Department)
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = ('organization', 'name', 'staff_in_charge', 'created_at', 'last_updated_date')
+    list_filter = ('organization', 'created_at', 'last_updated_date')
+    search_fields = ('organization__name', 'name', 'staff_in_charge__first_name', 'staff_in_charge__last_name')
+    ordering = ('organization', 'created_at', 'last_updated_date')
+
 @admin.register(Notifications)
 class NNotificationsAdmin(admin.ModelAdmin):
     list_display = ('headline','organization','Notificationdate')

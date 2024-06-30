@@ -65,17 +65,26 @@ class Subscription(models.Model):
 
     def __str__(self):
         return self.email
+
+class DepartmentService(models.Model):
+    name = models.CharField(max_length=300)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return self.name
     
-# Notification model attached to the organization
-class Notification(models.Model):
+# department model
+class Department(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
-    title = models.CharField(max_length=200)
-    content = models.TextField()
+    img = models.ImageField(upload_to='departments/images',blank=True, null=True)
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    staff_in_charge = models.ForeignKey(Staff, on_delete=models.CASCADE, null=True, blank=True)
+    services = models.ManyToManyField(DepartmentService, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated_date = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.title
+        return self.name
     
 user_group=(
 	('admin', 'admin'),
