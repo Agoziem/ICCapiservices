@@ -68,3 +68,30 @@ def delete_organization(request, organization_id):
         return Response(status=status.HTTP_204_NO_CONTENT)
     except Organization.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    
+
+# edit the Organization Privacy Policy
+@api_view(['PUT'])
+def edit_privacy_policy(request, organization_id):
+    data = request.data.copy()
+    try:
+        organization = Organization.objects.get(id=organization_id)
+        organization.privacy_policy = data.get('privacy_policy', organization.privacy_policy)
+        organization.save()
+        organization_serializer = OrganizationSerializer(organization, many=False)
+        return Response(organization_serializer.data, status=status.HTTP_200_OK)
+    except Organization.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+# edit the Organization Terms of Use
+@api_view(['PUT'])
+def edit_terms_of_use(request, organization_id):
+    data = request.data.copy()
+    try:
+        organization = Organization.objects.get(id=organization_id)
+        organization.terms_of_use = data.get('terms_of_use', organization.terms_of_use)
+        organization.save()
+        organization_serializer = OrganizationSerializer(organization, many=False)
+        return Response(organization_serializer.data, status=status.HTTP_200_OK)
+    except Organization.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)

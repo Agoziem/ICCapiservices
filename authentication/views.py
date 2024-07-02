@@ -163,17 +163,24 @@ def get_user_by_email(request):
 # -----------------------------------------------
 # view to update a user
 # -----------------------------------------------
+
 @api_view(['PUT'])
 def update_user(request, user_id):
     data = request.data.copy()
     try:
         user = User.objects.get(id=user_id)
         data = normalize_img_field(data,"avatar")
-        user_serializer = UserSerializer(instance=user, data=data)
-        if user_serializer.is_valid():
-            user_serializer.save()
-            return Response(user_serializer.data, status=status.HTTP_200_OK)
-        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        user.first_name = data.get('first_name', user.first_name)
+        user.last_name = data.get('last_name', user.last_name)
+        user.email = data.get('email', user.email)
+        user.phone = data.get('phone', user.phone)
+        user.address = data.get('address', user.address)
+        if data.get("avatar"):
+            img = data.get("avatar")
+            user.avatar = img
+        user.save()
+        user_serializer = UserSerializer(instance=user)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

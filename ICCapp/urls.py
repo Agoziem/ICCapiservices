@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import testimonialviews, staffviews, subscriptionviews, organizationviews, notificationviews
+from .views import testimonialviews, staffviews, subscriptionviews, organizationviews, notificationviews, deptsviews
 
 urlpatterns = [
     path('organization/', organizationviews.get_organizations, name='get_organizations'),
@@ -7,6 +7,8 @@ urlpatterns = [
     path('organization/add/', organizationviews.add_organization, name='add_organization'),
     path('organization/update/<int:organization_id>/', organizationviews.update_organization, name='update_organization'),
     path('organization/delete/<int:organization_id>/', organizationviews.delete_organization, name='delete_organization'),
+    path('organization/editprivacypolicy/<int:organization_id>/', organizationviews.edit_privacy_policy, name='get_privacy_policy'),
+    path('organization/edittermsofuse/<int:organization_id>/', organizationviews.edit_terms_of_use, name='get_terms_of_use'),
     
     path('testimonial/<int:organization_id>/', testimonialviews.get_testimonials, name='get_testimonials'),
     path('testimonial/<int:testimonial_id>/', testimonialviews.get_testimonial, name='get_testimonial'),
@@ -32,4 +34,10 @@ urlpatterns = [
     path('notification/add/<int:organization_id>/', notificationviews.create_notification, name='create_notification'),
     path('notification/update/<int:notification_id>/', notificationviews.update_notification, name='update_notification'),
     path('notification/delete/<int:notification_id>/', notificationviews.delete_notification, name='delete_notification'),
+
+    path('department/<int:organization_id>/', deptsviews.get_org_depts, name='get_departments'),
+    path('department/add/<int:organization_id>/', deptsviews.add_dept, name='add_department'),
+    path('department/update/<int:department_id>/', deptsviews.update_dept, name='update_department'),
+    path('department/delete/<int:department_id>/', deptsviews.delete_dept, name='delete_department'),
+    
 ]

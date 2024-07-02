@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from ckeditor.fields import RichTextField
 
 # Organization model
 class Organization(models.Model):
@@ -17,7 +18,8 @@ class Organization(models.Model):
     facebooklink = models.CharField(max_length=200, blank=True, null=True)
     instagramlink = models.CharField(max_length=200, blank=True, null=True)
     twitterlink = models.CharField(max_length=200, blank=True, null=True)
-
+    privacy_policy = RichTextField( blank=True, null=True)
+    terms_of_use = RichTextField( blank=True, null=True)
 
     def __str__(self):
         return self.name

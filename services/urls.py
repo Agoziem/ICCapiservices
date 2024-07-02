@@ -8,4 +8,7 @@ urlpatterns = [
     path('update_service/<int:service_id>/', views.update_service, name='update_service'),
     path('delete_service/<int:service_id>/', views.delete_service, name='delete_service'),
     path('categories/', views.get_categories, name='get_categories'),
+    path('add_category/', views.add_category, name='add_category'),
+    path('update_category/<int:category_id>/', views.update_category, name='update_category'),
+    path('delete_category/<int:category_id>/', views.delete_category, name='delete_category'),
 ]

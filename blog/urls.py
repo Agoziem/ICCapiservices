@@ -14,6 +14,9 @@ urlpatterns = [
     path('addviews/<int:blog_id>/', add_views),
 
     path('getCategories/', get_categories),
+    path('addCategory/', add_category),
+    path('updateCategory/<int:category_id>/', update_category),
+    path('deleteCategory/<int:category_id>/', delete_category),
 
     path("getcomments/<int:blog_id>/", get_comments),
     path('addcomment/<int:blog_id>/<int:user_id>/', add_comment),
