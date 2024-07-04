@@ -19,9 +19,10 @@ User = get_user_model()
 @api_view(['POST'])
 def register_user(request):
     try:
-        user = User.objects.get(email=request.data['email'],isOauth=False)
+        user = User.objects.get(email=request.data['email'], isOauth=False)
         return Response({'error': 'User already exists'}, status=status.HTTP_400_BAD_REQUEST)
     except User.DoesNotExist:
+        # Create a new user
         new_user = User.objects.create_user(
             username=request.data['firstname'],
             email=request.data['email'],
@@ -29,11 +30,16 @@ def register_user(request):
             last_name=request.data['lastname'],
             password=request.data['password']
         )
+        
+        # Create an auth token
         token = Token.objects.create(user=new_user)
-        token = uuid.uuid4().hex
-        new_user.verificationToken = token
+        
+        # Set verification token and expiry time
+        verification_token = uuid.uuid4().hex
+        new_user.verificationToken = verification_token
         new_user.expiryTime = timezone.now() + timezone.timedelta(hours=2)
         new_user.save()
+        
         # Check if organization ID is passed in the request
         if 'organization_id' in request.data:
             try:
@@ -43,11 +49,12 @@ def register_user(request):
                 new_user.groups.add(group)
             except Organization.DoesNotExist:
                 pass
+        
         user_serializer = UserSerializer(instance=new_user)
         return Response({'token': token.key, 'user': user_serializer.data}, status=status.HTTP_201_CREATED)
     except Exception as e:
-        print(e)
-        return Response({'error': 'User does not exist'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        print(f"Error during user registration: {e}")
+        return Response({'error': 'An error occurred during registration'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # -----------------------------------------------
 # register user with Oauth without password
