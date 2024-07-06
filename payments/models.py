@@ -23,6 +23,7 @@ class Orders(models.Model):
     status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='Pending')
     reference = models.CharField(max_length=100, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    service_delivered = models.BooleanField(default=False)
     last_updated_date = models.DateTimeField(auto_now=True)
 
     def __str__(self):

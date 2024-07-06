@@ -2,21 +2,24 @@
 import re
 from django.conf import settings
 
+
+
 def get_full_image_url(image_field, base_url=settings.DJANGO_IMAGE_URL):
     if not image_field:
         return None 
 
+    # Get the image URL
     image_url = image_field.url
+    
+    # Define regex patterns
+    pattern_percent_3A = r'%3A'
+
+    # Check if the URL is relative and needs to be prefixed with base URL
     if not image_url.startswith(('http://', 'https://')):
         image_url = f"{base_url}{image_url}"
 
-    # Define regex patterns
-    pattern_media = r'^/media/'
-    pattern_percent_3A = r'%3A'
-
-    # Modify the URL
-    modified_url = re.sub(pattern_media, '', image_url)
-    modified_url = re.sub(pattern_percent_3A, ':/', modified_url, count=1)
+    # Fix percent-encoded colons
+    modified_url = re.sub(pattern_percent_3A, ':/', image_url, count=1)
     modified_url = re.sub(pattern_percent_3A, ':', modified_url)
 
     return modified_url
