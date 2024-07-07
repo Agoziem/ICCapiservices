@@ -10,7 +10,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 @api_view(['GET'])
 def get_services(request, organization_id):
     try:
-        services = Service.objects.filter(organization=organization_id)
+        services = Service.objects.filter(organization=organization_id).order_by('-updated_at')
         serializer = ServiceSerializer(services, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Service.DoesNotExist:

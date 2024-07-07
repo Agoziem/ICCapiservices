@@ -12,7 +12,7 @@ User = get_user_model()
 @api_view(['GET'])
 def get_org_blogs(request,organization_id):
     try:
-        blogs = Blog.objects.filter(organization=organization_id)
+        blogs = Blog.objects.filter(organization=organization_id).order_by('-updated_at')
         serializer = BlogSerializer(blogs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Blog.DoesNotExist:
@@ -23,7 +23,7 @@ def get_org_blogs(request,organization_id):
 @api_view(['GET'])
 def get_blogs(request,user_id):
     try:
-        blogs = Blog.objects.filter(author=user_id)
+        blogs = Blog.objects.filter(author=user_id).order_by('-updated_at')
         serializer = BlogSerializer(blogs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Blog.DoesNotExist:
@@ -57,10 +57,10 @@ def add_blog(request, organization_id, user_id):
         user = User.objects.get(id=user_id)
         organization = Organization.objects.get(id=organization_id)
         data = normalize_img_field(data, "img")
-
         title = data.get('title', None)
         subtitle = data.get('subtitle', None)
         body = data.get('body', None)
+        readTime = data.get('readTime', 0)
         tags = data.get('tags', [])
         tags_list = tags.split(',')
         slug = data.get('slug', None)
@@ -74,7 +74,8 @@ def add_blog(request, organization_id, user_id):
             subtitle=subtitle,
             body=body,
             slug=slug,
-            category=category
+            category=category,
+            readTime=readTime
         )
         
         for tag in tags_list:
@@ -104,6 +105,7 @@ def update_blog(request, blog_id):
         blog.title = data.get('title', blog.title)
         blog.subtitle = data.get('subtitle', blog.subtitle)
         blog.body = data.get('body', blog.body)
+        blog.readTime = data.get('readTime', blog.readTime)
         tags = data.get('tags', [])
         tags_list = tags.split(',')
         blog.slug = data.get('slug', blog.slug)
@@ -113,7 +115,6 @@ def update_blog(request, blog_id):
         blog.tags.clear()
         
         for tag in tags_list:
-            print(tag)
             tag, created = Tag.objects.get_or_create(tag=tag)
             blog.tags.add(tag)
         
