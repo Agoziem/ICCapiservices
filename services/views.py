@@ -32,7 +32,6 @@ def get_service(request, service_id):
 @parser_classes([MultiPartParser, FormParser])
 def add_service(request, organization_id):
     data = request.data.copy()
-    print(data)
     try:
         organization = Organization.objects.get(id=organization_id)
         try:
@@ -61,16 +60,16 @@ def add_service(request, organization_id):
 @parser_classes([MultiPartParser, FormParser])
 def update_service(request, service_id):
     data = request.data.copy()
-    print(data)
     try:
         service = Service.objects.get(id=service_id)
         try:
+            data = normalize_img_field(data,"preview")
             service.name = data.get('name', service.name)
             service.description = data.get('description', service.description)
-            category = Category.objects.get(category=data.get('category', service.category))
+            category = Category.objects.get(category=data.get('category', service.category.category))
             service.category = category
             service.price = data.get('price', service.price)
-            if data.get('preview'):
+            if 'preview' in data:
                 service.preview = data.get('preview')
             service.save()
             serializer = ServiceSerializer(service, many=False)
@@ -80,6 +79,7 @@ def update_service(request, service_id):
             return Response(status=status.HTTP_400_BAD_REQUEST)
     except Service.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+
     
 # Delete a service view
 @api_view(['DELETE'])
