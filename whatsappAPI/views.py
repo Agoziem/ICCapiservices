@@ -40,9 +40,7 @@ def send_whatsapp_message(request):
 
 # webhook to recieve whatsapp messages
 @api_view(['POST'])
-def whatsapp_webhook(request, token):
-    if token != settings.WHATSAPP_WEBHOOK_TOKEN:
-        return Response({'status': 'error', 'message': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+def whatsapp_webhook(request):
     try:
         body = request.data
         print(body)
