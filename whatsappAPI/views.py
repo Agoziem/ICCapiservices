@@ -39,4 +39,23 @@ def send_whatsapp_message(request):
 
 
 # webhook to recieve whatsapp messages
+@api_view(['POST'])
+def whatsapp_webhook(request, token):
+    if token != settings.WHATSAPP_WEBHOOK_TOKEN:
+        return Response({'status': 'error', 'message': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        body = request.data
+        print(body)
+        # if "messages" in body["entry"][0]["changes"][0]["value"]:
+        #     messages = body["entry"][0]["changes"][0]["value"]["messages"]
+        #     for message in messages:
+        #         if message["type"] == "text":
+        #             from_number = message["from"]
+        #             text = message["text"]["body"]
+        #             # Process the message and respond
+        #             response_text = f"Received your message: {text}"
+        #             send_whatsapp_message(from_number, response_text)
+        return Response({'status': 'success'}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 # api view to reply messages
