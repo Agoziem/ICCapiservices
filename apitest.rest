@@ -21,4 +21,4 @@ content-type: application/json
 
 ###
 # recieve whatsapp messages
-POST http://127.0.0.1:8000/whatsappAPI/whatsapp-webhook/WE0RgJlxcyl3v77yYmYdVaiuLgfMyhtBty6Qpq9VOtALCHpEh
+POST http://127.0.0.1:8000/webhook/

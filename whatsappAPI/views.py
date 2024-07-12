@@ -4,6 +4,10 @@ from django.conf import settings
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.response import Response
 from rest_framework import status
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse, HttpResponse
+from rest_framework.parsers import JSONParser
+
 
 # send whatsapp template messages
 @api_view(['POST'])
@@ -39,21 +43,33 @@ def send_whatsapp_message(request):
 
 
 # webhook to recieve whatsapp messages
-@api_view(['POST'])
+@csrf_exempt
+@api_view(['GET', 'POST'])
 def whatsapp_webhook(request):
-    try:
-        body = request.data
-        print(body)
-        # if "messages" in body["entry"][0]["changes"][0]["value"]:
-        #     messages = body["entry"][0]["changes"][0]["value"]["messages"]
-        #     for message in messages:
-        #         if message["type"] == "text":
-        #             from_number = message["from"]
-        #             text = message["text"]["body"]
-        #             # Process the message and respond
-        #             response_text = f"Received your message: {text}"
-        #             send_whatsapp_message(from_number, response_text)
-        return Response({'status': 'success'}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    if request.method == 'GET':
+        VERIFY_TOKEN = settings.WHATSAPP_WEBHOOK_TOKEN
+
+        mode = request.GET.get('hub.mode')
+        token = request.GET.get('hub.verify_token')
+        challenge = request.GET.get('hub.challenge')
+
+        if mode and token:
+            if mode == 'subscribe' and token == VERIFY_TOKEN:
+                return HttpResponse(challenge, status=200)
+            else:
+                return HttpResponse(status=403)
+        return HttpResponse(status=400)
+
+    elif request.method == 'POST':
+        try:
+            data = JSONParser().parse(request)
+            # Handle the webhook payload
+            print("Webhook received:", data)
+
+            # Process the data (e.g., save to database, trigger some action, etc.)
+
+            return JsonResponse({'status': 'success'}, status=200)
+        except Exception as e:
+            print("Error processing webhook:", e)
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 # api view to reply messages
