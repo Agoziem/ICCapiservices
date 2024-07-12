@@ -18,6 +18,9 @@ class Organization(models.Model):
     facebooklink = models.CharField(max_length=200, blank=True, null=True)
     instagramlink = models.CharField(max_length=200, blank=True, null=True)
     twitterlink = models.CharField(max_length=200, blank=True, null=True)
+    tiktoklink = models.CharField(max_length=200, blank=True, null=True)
+    linkedinlink = models.CharField(max_length=200, blank=True, null=True)
+    youtubechannel = models.CharField(max_length=200, blank=True, null=True)
     privacy_policy = RichTextField( blank=True, null=True)
     terms_of_use = RichTextField( blank=True, null=True)
 

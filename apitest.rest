@@ -6,3 +6,15 @@ Content-Type: application/json
     "email": "chiagoziendukwe90@gmail.com",
     "password": "Sirnduu1@"
   }
+
+
+###
+# get send a whatsapp message
+POST http://127.0.0.1:8000/whatsappAPI/send-message/
+content-type: application/json
+
+{
+    "to_phone_number": "2348080982606",
+    "template_name": "Hello world",
+    "language_code": "en_US"
+}

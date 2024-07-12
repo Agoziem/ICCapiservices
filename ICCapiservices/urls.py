@@ -29,10 +29,11 @@ urlpatterns = [
     path('servicesapi/', include('services.urls')),
     path('CBTapi/', include('CBTpractice.urls')),
     path('productsapi/', include('products.urls')),
+    path('whatsappAPI/', include('whatsappAPI.urls')),
 ]
 
-# if settings.DEBUG:
-#   urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+if settings.DEBUG_ENV:
+  urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
 
 admin.site.site_header='ICC Backend'
 admin.site.index_title='Site Administration'
