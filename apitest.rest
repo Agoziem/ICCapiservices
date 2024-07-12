@@ -26,3 +26,10 @@ POST http://127.0.0.1:8000/webhook/
 
 ###
 POST http://127.0.0.1:8000/whatsappAPI/reply_message/
+content-type: application/json
+
+{
+    "to": "2348080982606",
+    "type": "text",
+    "body": "the Response message is working fine"
+}
