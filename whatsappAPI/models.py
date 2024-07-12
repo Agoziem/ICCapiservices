@@ -1,10 +1,5 @@
 from django.db import models
 
-# Create your models here.
-# webhooks/models.py
-
-from django.db import models
-
 class WhatsAppBusinessAccount(models.Model):
     account_id = models.CharField(max_length=255)
     display_phone_number = models.CharField(max_length=20)
