@@ -18,3 +18,7 @@ content-type: application/json
     "template_name": "Hello world",
     "language_code": "en_US"
 }
+
+###
+# recieve whatsapp messages
+POST http://127.0.0.1:8000/whatsappAPI/whatsapp-webhook/WE0RgJlxcyl3v77yYmYdVaiuLgfMyhtBty6Qpq9VOtALCHpEh/
