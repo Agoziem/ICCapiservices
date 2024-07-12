@@ -100,8 +100,8 @@ def whatsapp_webhook(request):
 @api_view(['POST'])
 def reply_message(request):
     details = request.data
-    to = details.get('to_phone_number', '')
-    body = details.get('text', '')
+    to = details.get('to', '')
+    body = details.get('body', '')
     type = details.get('type', 'text')
     url = f"https://graph.facebook.com/{settings.WHATSAPP_VERSION}/{settings.WHATSAPP_FROM_PHONE_NUMBER_ID}/messages"
     headers = {

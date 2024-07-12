@@ -16,6 +16,6 @@ class ContactAdmin(admin.ModelAdmin):
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
-    list_display = ('whatsapp_account', 'contact', 'message_id', 'timestamp', 'text_body', 'message_type')
-    search_fields = ('whatsapp_account', 'contact', 'message_id', 'timestamp', 'text_body', 'message_type')
-    list_filter = ('whatsapp_account', 'contact', 'message_id', 'timestamp', 'text_body', 'message_type')
+    list_display = ('whatsapp_account', 'contact', 'timestamp', 'text_body', 'message_type')
+    search_fields = ('whatsapp_account', 'contact', 'timestamp', 'text_body', 'message_type')
+    list_filter = ('whatsapp_account', 'contact', 'timestamp', 'text_body', 'message_type')

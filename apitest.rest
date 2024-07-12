@@ -31,5 +31,5 @@ content-type: application/json
 {
     "to": "2348080982606",
     "type": "text",
-    "body": "the Response message is working fine"
+    "body": "we are working on it now , thanks for the Remainder"
 }
