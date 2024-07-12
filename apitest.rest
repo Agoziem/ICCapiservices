@@ -22,3 +22,7 @@ content-type: application/json
 ###
 # recieve whatsapp messages
 POST http://127.0.0.1:8000/webhook/
+
+
+###
+POST http://127.0.0.1:8000/whatsappAPI/reply_message/
