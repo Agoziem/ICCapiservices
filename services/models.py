@@ -1,5 +1,6 @@
 from django.db import models
 from ICCapp.models import Organization
+from django.conf import settings
 
 class Category(models.Model):
     category = models.CharField(max_length=100, blank=True, null=True)
@@ -7,7 +8,9 @@ class Category(models.Model):
 
     def __str__(self):
         return self.category
-
+    
+    class Meta:
+        verbose_name_plural = 'Categories'
 
 # Services Model
 class Service(models.Model):
@@ -16,10 +19,11 @@ class Service(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     number_of_times_bought = models.IntegerField(default=0, blank=True, null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
+    usersID_that_purchased_service = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return self.name

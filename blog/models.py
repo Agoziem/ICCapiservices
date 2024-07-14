@@ -23,13 +23,13 @@ class Blog(models.Model):
     subtitle = models.CharField(max_length=100, blank=True, null=True)
     body = RichTextField( blank=True, null=True)
     date = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     tags = models.ManyToManyField(Tag, related_name='tags', blank=True)
     slug = models.SlugField(max_length=100, unique=True, blank=True, null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
     readTime = models.IntegerField(default=0)
     views = models.IntegerField(default=0)
     likes = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='liked_posts', blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
 
     def __str__(self):
