@@ -22,7 +22,7 @@ class Product(models.Model):
     description = models.TextField(default='No description available')
     price = models.DecimalField(max_digits=10, decimal_places=2)
     rating = models.IntegerField(default=0)
-    token = models.CharField(max_length=200, blank=True) # This is the token that will be used to access the product, it will be unique for all products
+    video_token = models.CharField(max_length=200, blank=True) # This is the token that will be used to access the product, it will be unique for all products
     usersID_that_purchased_product = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
     digital = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -36,8 +36,8 @@ class Product(models.Model):
 
     # Save the product
     def save(self, *args, **kwargs):
-        if not self.token:
-            self.token = self.generate_token()
+        if not self.video_token:
+            self.video_token = self.generate_token()
         return super().save(*args, **kwargs)
     
     # Generate a token for the product
