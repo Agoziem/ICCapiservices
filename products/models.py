@@ -23,7 +23,7 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     rating = models.IntegerField(default=0)
     video_token = models.CharField(max_length=200, blank=True) # This is the token that will be used to access the product, it will be unique for all products
-    usersID_that_purchased_product = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
+    userIDs_that_bought_this_product = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
     digital = models.BooleanField(default=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

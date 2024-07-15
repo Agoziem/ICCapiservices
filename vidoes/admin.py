@@ -11,6 +11,6 @@ class VideoAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'description', 'created_at', 'updated_at']
-    list_filter = ['name']
-    search_fields = ['name']
+    list_display = ['category', 'description', 'created_at', 'updated_at']
+    list_filter = ['category']
+    search_fields = ['category']

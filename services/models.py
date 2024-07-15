@@ -1,6 +1,7 @@
 from django.db import models
 from ICCapp.models import Organization
 from django.conf import settings
+from ckeditor.fields import RichTextField
 
 class Category(models.Model):
     category = models.CharField(max_length=100, blank=True, null=True)
@@ -18,10 +19,11 @@ class Service(models.Model):
     preview = models.ImageField(upload_to='services/',null=True, blank=True)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+    service_flow = RichTextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     number_of_times_bought = models.IntegerField(default=0, blank=True, null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
-    usersID_that_purchased_service = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
+    userIDs_that_bought_this_service = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

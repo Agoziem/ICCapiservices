@@ -11,6 +11,8 @@ class VideoSerializer(serializers.ModelSerializer):
     organization = serializers.SerializerMethodField()
     thumbnail = serializers.ImageField(allow_null=True, required=False)
     video = serializers.FileField(allow_null=True, required=False)
+    video_url = serializers.SerializerMethodField()
+    video_name = serializers.SerializerMethodField()
     img_url = serializers.SerializerMethodField()
     img_name = serializers.SerializerMethodField()
     category = CategorySerializer()
@@ -26,3 +28,9 @@ class VideoSerializer(serializers.ModelSerializer):
     
     def get_img_name(self, obj):
         return get_image_name(obj.thumbnail)
+    
+    def get_video_url(self, obj):
+        return get_full_image_url(obj.video)
+    
+    def get_video_name(self, obj):
+        return get_image_name(obj.video)

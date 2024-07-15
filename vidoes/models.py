@@ -1,9 +1,10 @@
 from django.db import models
 from ICCapp.models import Organization
+from django.conf import settings
 
 # Create your models here.
 class Category(models.Model):
-    name = models.CharField(max_length=100)
+    category = models.CharField(max_length=100)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -18,6 +19,7 @@ class Video(models.Model):
     thumbnail = models.ImageField(upload_to='videothumbnails/', null=True, blank=True)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    userIDs_that_bought_this_video = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

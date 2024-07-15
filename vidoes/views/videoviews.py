@@ -32,44 +32,55 @@ def get_video(request, video_id):
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_video(request, organization_id):
-    try:
-        title = request.data.get('title')
-        description = request.data.get('description')
-        category = request.data.get('category')
-        thumbnail = request.data.get('thumbnail')
-        video = request.data.get('video')
-    except:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    data = request.data.copy()
     try:
         organization = Organization.objects.get(id=organization_id)
-        category = Category.objects.get(id=category)
-        video = Video.objects.create(organization=organization, title=title, description=description, category=category, thumbnail=thumbnail, video=video)
+        data = normalize_img_field(data,"thumbnail")
+        data = normalize_img_field(data,"video")
+        category = Category.objects.get(id=data.get('category', None))
+        video = Video.objects.create(
+            organization=organization,
+            title=data.get('title', ''),
+            description=data.get('description', ''),
+            category=category
+        )
+        if data.get('thumbnail'):
+            video.thumbnail = data.get('thumbnail')
+        if data.get('video'):
+            video.video = data.get('video')
+        video.save()
         serializer = VideoSerializer(video, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except Organization.DoesNotExist or Category.DoesNotExist:
         return Response(status=status.HTTP_400_BAD_REQUEST)
-    
+    except Exception as e:
+        print(e)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 # update a video
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_video(request, video_id):
-    try:
-        title = request.data.get('title')
-        description = request.data.get('description')
-        category = request.data.get('category')
-        thumbnail = request.data.get('thumbnail')
-        video = request.data.get('video')
-    except:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    data = request.data.copy()
     try:
         video = Video.objects.get(id=video_id)
-        video.title = title
-        video.description = description
-        video.category = category
-        video.thumbnail = thumbnail
-        video.video = video
-        video.save()
+        try:
+            data = normalize_img_field(data,"thumbnail")
+            data = normalize_img_field(data,"video")
+            video.title = data.get('title', video.title)
+            video.description = data.get('description', video.description)
+            category = Category.objects.get(id=data.get('category', video.category.category))
+            video.category = category
+            if data.get('thumbnail'):
+                video.thumbnail = data.get('thumbnail')
+            if data.get('video'):
+                video.video = data.get('video')
+            video.save()
+        except Category.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(e)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         serializer = VideoSerializer(video, many=False)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Video.DoesNotExist:
