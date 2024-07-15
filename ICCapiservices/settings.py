@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'blog',
     'CBTpractice',
     'products',
+    'vidoes',
 
     'rest_framework',
     'rest_framework.authtoken',

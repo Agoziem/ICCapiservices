@@ -1,9 +1,23 @@
 from django.shortcuts import render
 from .models import *
+from ICCapp.models import Subscription
+from ICCapp.serializers import SubscriptionSerializer
 from .serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+
+
+# get all email addresses
+@api_view(['GET'])
+def get_subscriptions(request,organization_id):
+    try:
+        emails = Subscription.objects.filter(organization=organization_id)
+        serializer = SubscriptionSerializer(emails, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Subscription.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
 
 # get all emails
 @api_view(['GET'])

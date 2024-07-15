@@ -31,6 +31,7 @@ urlpatterns = [
     path('servicesapi/', include('services.urls')),
     path('CBTapi/', include('CBTpractice.urls')),
     path('productsapi/', include('products.urls')),
+    path('vidoesapi/', include('vidoes.urls')),
     path('whatsappAPI/', include('whatsappAPI.urls')),
 ]
 

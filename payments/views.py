@@ -20,7 +20,7 @@ def get_payments(request, organization_id):
     except Orders.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-# get all payments by user
+# get all payments by a user
 @api_view(['GET'])
 def get_payments_by_user(request, user_id):
     try:
@@ -31,7 +31,7 @@ def get_payments_by_user(request, user_id):
     except Orders.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
-# get a single payment
+# get a single payment by id
 @api_view(['GET'])
 def get_payment(request, payment_id):
     try:
@@ -41,7 +41,7 @@ def get_payment(request, payment_id):
     except Orders.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
-# Add a payment view
+# Add a payment to the Organization
 @api_view(['POST'])
 def add_payment(request, organization_id):
     try:
@@ -64,6 +64,7 @@ def add_payment(request, organization_id):
         print(e)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
+# verify a payment
 @api_view(['POST'])
 def verify_payment(request):
     ref = request.data.get('ref')
@@ -84,9 +85,7 @@ def verify_payment(request):
         order_serializer = PaymentSerializer(order)
         return Response(order_serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-
+# update a payment view
 @api_view(['PUT'])
 def update_payment(request, payment_id):
     try:
@@ -122,7 +121,7 @@ def delete_payment(request, payment_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 
-# get the count of all payments & aggregate the number of customers
+# get the total number of payments and customers
 @api_view(['GET'])
 def get_payment_count(request, organization_id):
     try:
