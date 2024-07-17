@@ -7,12 +7,20 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
+class SubCategorySerializer(serializers.ModelSerializer):
+    category = CategorySerializer()
+    
+    class Meta:
+        model = SubCategory
+        fields = '__all__'
+
 class ServiceSerializer(serializers.ModelSerializer):
     organization = serializers.SerializerMethodField()
     preview = serializers.ImageField(allow_null=True, required=False)
     img_url = serializers.SerializerMethodField()
     img_name = serializers.SerializerMethodField()
     category = CategorySerializer()
+    subcategory = SubCategorySerializer()
     class Meta:
         model = Service
         fields = '__all__'
@@ -25,6 +33,9 @@ class ServiceSerializer(serializers.ModelSerializer):
     
     def get_img_name(self, obj):
         return get_image_name(obj.preview)
+    
+
+
 
         
     

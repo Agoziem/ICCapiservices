@@ -33,3 +33,16 @@ content-type: application/json
     "type": "text",
     "body": "we are working on it now , thanks for the Remainder"
 }
+
+# get all products
+###
+GET http://127.0.0.1:8000/productsapi/products/1/
+
+
+# get all services
+###
+GET http://127.0.0.1:8000/servicesapi/services/1/
+
+# get all vidoes
+###
+GET http://127.0.0.1:8000/vidoesapi/videos/1/

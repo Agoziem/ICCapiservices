@@ -13,6 +13,9 @@ class ProductSerializer(serializers.ModelSerializer):
     preview = serializers.ImageField(allow_null=True, required=False)
     img_url = serializers.SerializerMethodField()
     img_name = serializers.SerializerMethodField()
+    product = serializers.FileField(allow_null=True, required=False)
+    product_url = serializers.SerializerMethodField()
+    product_name = serializers.SerializerMethodField()
     category = CategorySerializer()
     
     class Meta:
@@ -27,3 +30,9 @@ class ProductSerializer(serializers.ModelSerializer):
     
     def get_img_name(self, obj):
         return get_image_name(obj.preview)
+    
+    def get_product_url(self, obj):
+        return get_full_image_url(obj.product)
+    
+    def get_product_name(self, obj):
+        return get_image_name(obj.product)

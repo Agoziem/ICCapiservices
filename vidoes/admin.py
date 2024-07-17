@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Video, Category
+from .models import Video, Category, SubCategory
 
 # Register your models here.
 @admin.register(Video)
@@ -11,6 +11,12 @@ class VideoAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['category', 'description', 'created_at', 'updated_at']
+    list_display = ['category', 'description']
     list_filter = ['category']
     search_fields = ['category']
+
+@admin.register(SubCategory)
+class SubCategory(admin.ModelAdmin):
+    list_display = ['category', 'subcategory']
+    list_filter = ['category']
+    search_fields = ['category', 'subcategory']

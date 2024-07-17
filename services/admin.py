@@ -21,3 +21,9 @@ class ServiceAdmin(admin.ModelAdmin):
             return obj.description[:description_length] + '...'
         else:
             return obj.description
+        
+@admin.register(SubCategory)
+class SubCategory(admin.ModelAdmin):
+    list_display = ['category', 'subcategory']
+    list_filter = ['category']
+    search_fields = ['category', 'subcategory']
