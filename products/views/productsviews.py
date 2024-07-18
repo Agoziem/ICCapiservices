@@ -98,7 +98,7 @@ def update_product(request, product_id):
         product = Product.objects.get(id=product_id)
 
         # Normalize image fields
-        image_fields = ['preview']
+        image_fields = ['preview','product']
         for field in image_fields:
             data = normalize_img_field(data, field)
 

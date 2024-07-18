@@ -38,32 +38,33 @@ def get_video(request, video_id):
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_video(request, organization_id):
-    data = request.data.copy()
     try:
         organization = Organization.objects.get(id=organization_id)
-        # Normalize image fields
-        image_fields = ['thumbnail', 'video']
-        for field in image_fields:
-            data = normalize_img_field(data, field)
-        
-        # Extract and parse JSON fields from the QueryDict
+
+        # Extract and parse JSON fields from the request data
         parsed_json_fields = {}
-        for field in data:
+        image_fields = ['thumbnail', 'video']
+        for field in request.data:
             if field not in image_fields:
                 try:
-                    parsed_json_fields[field] = json.loads(data[field])
+                    parsed_json_fields[field] = json.loads(request.data[field])
                 except (json.JSONDecodeError, TypeError):
-                    parsed_json_fields[field] = data[field]
+                    parsed_json_fields[field] = request.data[field]
 
-        category = Category.objects.get(id=parsed_json_fields['category'].get('id'))
+        # Normalize image fields
+        data = request.data
+        for field in image_fields:
+            if field in data:
+                data = normalize_img_field(data, field)
         
+        category = Category.objects.get(id=parsed_json_fields['category'].get('id'))
 
         video = Video.objects.create(
             organization=organization,
             title=parsed_json_fields.get('title', ''),
             description=parsed_json_fields.get('description', ''),
             price=parsed_json_fields.get('price', 0.0),
-            free = parsed_json_fields.get('free', False),
+            free=parsed_json_fields.get('free', False),
             category=category
         )
 
@@ -72,7 +73,7 @@ def add_video(request, organization_id):
             subcategory = SubCategory.objects.get(id=parsed_json_fields['subcategory'].get('id'))
             video.subcategory = subcategory
 
-         # Handle image & file fields
+        # Handle image & file fields
         for field in image_fields:
             if data.get(field):
                 setattr(video, field, data.get(field))
@@ -80,7 +81,7 @@ def add_video(request, organization_id):
         video.save()
         serializer = VideoSerializer(video, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    except Organization.DoesNotExist or Category.DoesNotExist:
+    except (Organization.DoesNotExist, Category.DoesNotExist):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print(e)
@@ -93,7 +94,7 @@ def add_video(request, organization_id):
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_video(request, video_id):
-    data = request.data.copy()
+    data = request.data
     try:
         video = Video.objects.get(id=video_id)
 
