@@ -60,19 +60,21 @@ def add_service(request, organization_id):
         # Retrieve the category object
         category = Category.objects.get(id=parsed_json_fields['category'].get('id'))
 
-        # Retrieve the subcategory object
-        subcategory = SubCategory.objects.get(id=parsed_json_fields['subcategory'].get('id'))
-
         # Create the service
         service = Service.objects.create(
             organization=organization,
             name=parsed_json_fields.get('name', ''),
             description=parsed_json_fields.get('description', ''),
             category=category,
-            subcategory=subcategory,
             price=parsed_json_fields.get('price', 0.0),
             service_flow=parsed_json_fields.get('service_flow', ''),
         )
+
+        # Handle subcategory field if it exist and its not empty (optional fields)
+        if 'subcategory' in parsed_json_fields and parsed_json_fields['subcategory']:
+            subcategory = SubCategory.objects.get(id=parsed_json_fields['subcategory'].get('id'))
+            service.subcategory = subcategory
+
 
         # Handle image fields
         for field in image_fields:
@@ -130,15 +132,14 @@ def update_service(request, service_id):
             except Category.DoesNotExist:
                 return Response({"detail": "Category not found."}, status=status.HTTP_400_BAD_REQUEST)
             
-        # Update subcategory field
-        if 'subcategory' in data:
-            try:
+        # Update subcategory field (optional fields)
+        if 'subcategory' in data and data['subcategory']:
                 subcategory_id = data['subcategory'].get('id')
                 if subcategory_id:
                     subcategory = SubCategory.objects.get(id=subcategory_id)
                     service.subcategory = subcategory
-            except SubCategory.DoesNotExist:
-                return Response({"detail": "Subcategory not found."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            service.subcategory = None
 
         # Handle image fields
         for field in image_fields:

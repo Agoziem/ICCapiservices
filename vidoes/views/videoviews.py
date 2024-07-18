@@ -56,7 +56,7 @@ def add_video(request, organization_id):
                     parsed_json_fields[field] = data[field]
 
         category = Category.objects.get(id=parsed_json_fields['category'].get('id'))
-        subcategory = SubCategory.objects.get(id=parsed_json_fields['subcategory'].get('id'))
+        
 
         video = Video.objects.create(
             organization=organization,
@@ -64,9 +64,13 @@ def add_video(request, organization_id):
             description=parsed_json_fields.get('description', ''),
             price=parsed_json_fields.get('price', 0.0),
             free = parsed_json_fields.get('free', False),
-            category=category,
-            subcategory=subcategory,
+            category=category
         )
+
+        # Handle subcategory field
+        if 'subcategory' in parsed_json_fields and parsed_json_fields['subcategory']:
+            subcategory = SubCategory.objects.get(id=parsed_json_fields['subcategory'].get('id'))
+            video.subcategory = subcategory
 
          # Handle image & file fields
         for field in image_fields:
@@ -122,15 +126,15 @@ def update_video(request, video_id):
             except Category.DoesNotExist:
                 return Response({"detail": "Category not found."}, status=status.HTTP_400_BAD_REQUEST)
             
-        # Update subcategory field
-        if 'subcategory' in data:
-            try:
+        
+        # Update subcategory field (optional fields)
+        if 'subcategory' in data and data['subcategory']:
                 subcategory_id = data['subcategory'].get('id')
                 if subcategory_id:
                     subcategory = SubCategory.objects.get(id=subcategory_id)
                     video.subcategory = subcategory
-            except SubCategory.DoesNotExist:
-                return Response({"detail": "SubCategory not found."}, status=status.HTTP_400_BAD_REQUEST )
+        else:
+            video.subcategory = None
 
         # Handle image fields
         for field in image_fields:
