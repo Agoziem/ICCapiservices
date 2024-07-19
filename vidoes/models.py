@@ -35,6 +35,7 @@ class Video(models.Model):
     subcategory = models.ForeignKey(SubCategory, on_delete=models.CASCADE, null=True)
     video_token = models.CharField(max_length=200, blank=True)
     userIDs_that_bought_this_video = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
+    number_of_times_bought = models.IntegerField(default=0, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     free = models.BooleanField(default=False)

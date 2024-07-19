@@ -1,11 +1,15 @@
 from rest_framework import serializers
 from .models import *
+from services.serializers import ServiceSerializer
+from products.serializers import ProductSerializer
+from vidoes.serializers import VideoSerializer
 
 class PaymentSerializer(serializers.ModelSerializer):
     organization = serializers.SerializerMethodField()
     customer = serializers.SerializerMethodField()
-    services = serializers.SerializerMethodField()
-    products = serializers.SerializerMethodField()
+    services = ServiceSerializer(many=True)
+    products = ProductSerializer(many=True)
+    videos = VideoSerializer(many=True)
     class Meta:
         model = Orders
         fields = '__all__'
@@ -15,12 +19,6 @@ class PaymentSerializer(serializers.ModelSerializer):
     
     def get_customer(self, obj):
         return {'id': obj.customer.id, 'name': obj.customer.username}
-
-    def get_services(self, obj):
-        return [{'id': service.id, 'name': service.name,'price': service.price} for service in obj.services.all()]
-    
-    def get_products(self, obj):
-        return [{'id': product.id, 'name': product.name,"price": product.price} for product in obj.products.all()]
     
 
 

@@ -2,6 +2,7 @@ from django.db import models
 from ICCapp.models import Organization
 from services.models import Service
 from products.models import Product
+from vidoes.models import Video
 from django.conf import settings
 import secrets
 # Payment status choices
@@ -19,6 +20,7 @@ class Orders(models.Model):
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     services = models.ManyToManyField(Service)
     products = models.ManyToManyField(Product)
+    videos = models.ManyToManyField(Video)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='Pending')
     reference = models.CharField(max_length=100, null=True, blank=True)

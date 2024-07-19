@@ -1,5 +1,8 @@
 from django.shortcuts import render
 from .models import *
+from products.models import Product
+from services.models import Service
+from vidoes.models import Video
 from ICCapp.models import Organization
 from .serializers import *
 from rest_framework.decorators import api_view
@@ -48,14 +51,21 @@ def add_payment(request, organization_id):
         Customerid = request.data.get('customerid')
         Amount = request.data.get('total')
         services = request.data.get('services', [])
+        products = request.data.get('products', [])
+        videos = request.data.get('videos', [])
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
     try:
         organization = Organization.objects.get(id=organization_id)
         customer = Customer.objects.get(id=Customerid)
         services = Service.objects.filter(id__in=services)
+        products = Product.objects.filter(id__in=products)
+        videos = Video.objects.filter(id__in=videos)
         order = Orders.objects.create(organization=organization, customer=customer, amount=Amount)
         order.services.add(*services)
+        order.products.add(*products)
+        order.videos.add(*videos)
+        order.save()
         serializer = PaymentSerializer(order, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except Organization.DoesNotExist or Customer.DoesNotExist or Service.DoesNotExist:
@@ -68,6 +78,7 @@ def add_payment(request, organization_id):
 @api_view(['POST'])
 def verify_payment(request):
     ref = request.data.get('ref')
+    customer_id = request.data.get('customer_id')
     if not ref:
         return Response({'error': 'Reference is required'}, status=status.HTTP_400_BAD_REQUEST)
     paystack = Paystack()
@@ -75,6 +86,21 @@ def verify_payment(request):
     if Paymentstatus:
         order = Orders.objects.get(reference=ref)
         order.status = 'Completed'
+        if order.services:
+            for service in order.services.all():
+                service.number_of_times_bought += 1
+                service.userIDs_that_bought_this_service.add(customer_id)
+                service.save()
+        if order.products:
+            for product in order.products.all():
+                product.number_of_times_bought += 1
+                product.userIDs_that_bought_this_product.add(customer_id)
+                product.save()
+        if order.videos:
+            for video in order.videos.all():
+                video.number_of_times_bought += 1
+                video.userIDs_that_bought_this_video.add(customer_id)
+                video.save()
         order.save()
         order_serializer = PaymentSerializer(order)      
         return Response(order_serializer.data, status=status.HTTP_200_OK)
@@ -98,11 +124,16 @@ def update_payment(request, payment_id):
             organization = Organization.objects.get(id=organization_id)
             customer = Customer.objects.get(id=Customerid)
             services = Service.objects.filter(id__in=services)
+            products = Product.objects.filter(id__in=products)
+            videos = Video.objects.filter(id__in=videos)
             order.organization = organization
             order.customer = customer
             order.amount = Amount
             order.services.clear()
-            order.services.add(*services)   
+            order.services.add(*services)
+            order.services.add(*products)
+            order.services.add(*videos)
+            order.save() 
         except Exception as e:
             print(e)
             return Response(status=status.HTTP_400_BAD_REQUEST)
