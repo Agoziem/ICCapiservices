@@ -6,6 +6,7 @@ from .views.subcategoriesviews import *
 urlpatterns = [
     path('videos/<int:organization_id>/', get_videos, name='get_videos'),
     path('video/<int:video_id>/', get_video, name='get_video'),
+    path('video_by_token/<str:videotoken>/', get_video_token, name='get_comments'),
     path('add_video/<int:organization_id>/', add_video, name='add_video'),
     path('update_video/<int:video_id>/', update_video, name='update_video'),
     path('delete_video/<int:video_id>/', delete_video, name='delete_video'),

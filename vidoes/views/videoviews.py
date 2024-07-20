@@ -31,6 +31,18 @@ def get_video(request, video_id):
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Video.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    
+# --------------------------------------------------------------------------
+# get a video by token
+# --------------------------------------------------------------------------
+@api_view(['GET'])
+def get_video_token(request, videotoken):
+    try:
+        video = Video.objects.get(video_token=videotoken)
+        serializer = VideoSerializer(video, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Video.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 # --------------------------------------------------------------------------  
 # add a video

@@ -31,6 +31,18 @@ def get_service(request, service_id):
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Service.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    
+# --------------------------------------------------------------------------
+# get a service by token
+# --------------------------------------------------------------------------
+@api_view(['GET'])
+def get_service_token(request, servicetoken):
+    try:
+        service = Service.objects.get(service_token=servicetoken)
+        serializer = ServiceSerializer(service, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Service.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 # --------------------------------------------------------------------------
 # Add a service view

@@ -2,6 +2,7 @@ from django.db import models
 from ICCapp.models import Organization
 from django.conf import settings
 from ckeditor.fields import RichTextField
+import uuid
 
 class Category(models.Model):
     category = models.CharField(max_length=100, blank=True, null=True)
@@ -29,6 +30,7 @@ class Service(models.Model):
     preview = models.ImageField(upload_to='services/',null=True, blank=True)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+    service_token = models.CharField(max_length=100, blank=True, null=True)
     service_flow = RichTextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     number_of_times_bought = models.IntegerField(default=0, blank=True, null=True)
@@ -43,3 +45,13 @@ class Service(models.Model):
     
     class Meta:
         ordering = ['-updated_at']
+
+    # Save the video
+    def save(self, *args, **kwargs):
+        if not self.service_token:
+            self.service_token = self.generate_token()
+        return super().save(*args, **kwargs)
+    
+    # Generate a token for the video
+    def generate_token(self):
+        return uuid.uuid4().hex
