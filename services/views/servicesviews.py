@@ -2,6 +2,7 @@ from ..models import *
 from ..serializers import *
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from utils import normalize_img_field
@@ -10,13 +11,24 @@ import json
 # --------------------------------------------------------------------------
 # get all services
 # --------------------------------------------------------------------------
+class BlogPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
 @api_view(['GET'])
 def get_services(request, organization_id):
     try:
-        organization = Organization.objects.get(id=organization_id)
-        services = Service.objects.filter(organization=organization).order_by('-updated_at')
-        serializer = ServiceSerializer(services, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        category = request.GET.get('category', None)
+        if category:
+            service_category = Category.objects.get(category=category)
+            services = Service.objects.filter(organization=organization_id, category=service_category).order_by('-updated_at')
+        else:
+            services = Service.objects.filter(organization=organization_id).order_by('-updated_at')
+        paginator = BlogPagination()
+        result_page = paginator.paginate_queryset(services, request)
+        serializer = ServiceSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     except Service.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 

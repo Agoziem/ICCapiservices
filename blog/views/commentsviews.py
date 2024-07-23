@@ -3,18 +3,25 @@ from ..models import *
 from ..serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
+class CommentPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
-# get all comments for a blog
+# get all comments for a blog and paginate them
 @api_view(['GET'])
 def get_comments(request, blog_id):
     try:
-        comments = Comment.objects.filter(blog=blog_id)
-        serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        comments = Comment.objects.filter(blog=blog_id).order_by('-created_at')
+        paginator = CommentPagination()
+        result_page = paginator.paginate_queryset(comments, request)
+        serializer = CommentSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     except Comment.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     

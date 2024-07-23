@@ -2,6 +2,7 @@ from ..models import *
 from ..serializers import *
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from utils import normalize_img_field
@@ -10,13 +11,24 @@ import json
 # --------------------------------------------------------------------------
 # get all videos
 # --------------------------------------------------------------------------
+class VideoPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
 @api_view(['GET'])
 def get_videos(request, organization_id):
     try:
-        organization = Organization.objects.get(id=organization_id)
-        videos = Video.objects.filter(organization=organization).order_by('-updated_at')
-        serializer = VideoSerializer(videos, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        category = request.GET.get('category', None)
+        if category:
+            video_category = Category.objects.get(category=category)
+            videos = Video.objects.filter(organization=organization_id, category=video_category).order_by('-updated_at')
+        else:
+            videos = Video.objects.filter(organization=organization_id).order_by('-updated_at')
+        paginator = VideoPagination()
+        result_page = paginator.paginate_queryset(videos, request)
+        serializer = VideoSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     except Video.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     

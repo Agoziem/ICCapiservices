@@ -18,7 +18,12 @@ class BlogPagination(PageNumberPagination):
 @api_view(['GET'])
 def get_org_blogs(request,organization_id):
     try:
-        blogs = Blog.objects.filter(organization=organization_id).order_by('-updated_at')
+        category = request.GET.get('category', None)
+        if category:
+            blog_category = Category.objects.get(category=category)
+            blogs = Blog.objects.filter(organization=organization_id, category=blog_category).order_by('-updated_at')
+        else:
+            blogs = Blog.objects.filter(organization=organization_id).order_by('-updated_at')
         paginator = BlogPagination()
         result_page = paginator.paginate_queryset(blogs, request)
         serializer = BlogSerializer(result_page, many=True)
