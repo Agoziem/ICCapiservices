@@ -13,7 +13,7 @@ class SubCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SubCategory
         fields = '__all__'
-
+# 
 class ServiceSerializer(serializers.ModelSerializer):
     organization = serializers.SerializerMethodField()
     preview = serializers.ImageField(allow_null=True, required=False)

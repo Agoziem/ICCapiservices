@@ -14,6 +14,17 @@ class Category(models.Model):
     class Meta:
         verbose_name_plural = 'Categories'
 
+# Product Subcategory
+class SubCategory(models.Model):
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    subcategory = models.CharField(max_length=100)
+    
+    def __str__(self):
+        return self.subcategory
+    
+    class Meta:
+        verbose_name_plural = 'SubCategories'
+
 # Product model
 class Product(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
@@ -25,6 +36,7 @@ class Product(models.Model):
     product = models.FileField(upload_to='products/', null=True, blank=True)
     product_token = models.CharField(max_length=200, blank=True) # This is the token that will be used to access the product, it will be unique for all products
     userIDs_that_bought_this_product = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
+    subcategory = models.ForeignKey(SubCategory, on_delete=models.CASCADE, null=True, blank=True)
     number_of_times_bought = models.IntegerField(default=0, blank=True, null=True)
     digital = models.BooleanField(default=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)

@@ -84,6 +84,11 @@ def add_product(request, organization_id):
             free=parsed_json_fields.get('free', False),
         )
 
+         # Handle subcategory field if it exist and its not empty (optional fields)
+        if 'subcategory' in parsed_json_fields and parsed_json_fields['subcategory']:
+            subcategory = SubCategory.objects.get(id=parsed_json_fields['subcategory'].get('id'))
+            product.subcategory = subcategory
+
         # Handle image & file fields
         for field in image_fields:
             if data.get(field):
@@ -141,7 +146,16 @@ def update_product(request, product_id):
                     product.category = category
             except Category.DoesNotExist:
                 return Response({"detail": "Category not found."}, status=status.HTTP_400_BAD_REQUEST)
-            
+        
+        # Update subcategory field (optional fields)
+        if 'subcategory' in data and data['subcategory']:
+                subcategory_id = data['subcategory'].get('id')
+                if subcategory_id:
+                    subcategory = SubCategory.objects.get(id=subcategory_id)
+                    product.subcategory = subcategory
+        else:
+            product.subcategory = None
+
         # Handle image fields
         for field in image_fields:
             if field in data:

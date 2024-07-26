@@ -99,7 +99,6 @@ def add_service(request, organization_id):
             subcategory = SubCategory.objects.get(id=parsed_json_fields['subcategory'].get('id'))
             service.subcategory = subcategory
 
-
         # Handle image fields
         for field in image_fields:
             if data.get(field):

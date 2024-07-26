@@ -8,6 +8,13 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
+class SubCategorySerializer(serializers.ModelSerializer):
+    category = CategorySerializer()
+    
+    class Meta:
+        model = SubCategory
+        fields = '__all__'
+
 class ProductSerializer(serializers.ModelSerializer):
     organization = serializers.SerializerMethodField()
     preview = serializers.ImageField(allow_null=True, required=False)
