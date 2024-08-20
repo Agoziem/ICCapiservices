@@ -36,7 +36,8 @@ class Service(models.Model):
     number_of_times_bought = models.IntegerField(default=0, blank=True, null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
     subcategory = models.ForeignKey(SubCategory, on_delete=models.CASCADE, null=True, blank=True)
-    userIDs_that_bought_this_service = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
+    userIDs_that_bought_this_service = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='userIDs_that_bought_this_service')
+    userIDs_whose_services_have_been_completed = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='userIDs_whose_services_have_been_completed')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

@@ -28,12 +28,15 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 DEBUG_ENV = config('DEBUG_ENV', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['127.0.0.1','web-production-7d611.up.railway.app']
-
+if DEBUG_ENV:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']
+else:
+    ALLOWED_HOSTS = ['web-production-7d611.up.railway.app',"innovationscybercafe.com"]
 
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -48,7 +51,8 @@ INSTALLED_APPS = [
     'ICCapp',
     'authentication',
     'whatsappAPI',
-    'chatbot',
+    'chatroom',
+    'notifications',
     'customers',
     'blog',
     'CBTpractice',
@@ -103,7 +107,24 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'ICCapiservices.wsgi.application'
+# WSGI_APPLICATION = 'ICCapiservices.wsgi.application'
+ASGI_APPLICATION = 'ICCapiservices.asgi.application'
+
+if DEBUG_ENV:
+    CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [(config('REDIS_URL', default='redis://'))],
+            },
+        },
+    }
 
 
 # Database

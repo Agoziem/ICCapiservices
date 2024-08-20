@@ -1,67 +1,45 @@
 from django.db import models
 
-class WhatsAppBusinessAccount(models.Model):
-    account_id = models.CharField(max_length=255)
-    display_phone_number = models.CharField(max_length=20)
-    phone_number_id = models.CharField(max_length=255)
-
-    def __str__(self):
-        return self.account_id
-
 class Contact(models.Model):
-    wa_id = models.CharField(max_length=20)
-    profile_name = models.CharField(max_length=255)
+    wa_id = models.CharField(max_length=50, unique=True)
+    profile_name = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return self.profile_name
+        return self.profile_name or self.wa_id
 
 class Message(models.Model):
-    whatsapp_account = models.ForeignKey(WhatsAppBusinessAccount, on_delete=models.CASCADE)
-    contact = models.ForeignKey(Contact, on_delete=models.CASCADE)
-    message_id = models.CharField(max_length=255)
+    MESSAGE_TYPES = [
+        ('text', 'Text'),
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('audio', 'Audio'),
+        ('document', 'Document'),
+        ('sticker', 'Sticker'),
+    ]
+    
+    message_id = models.CharField(max_length=100, unique=True)
+    contact = models.ForeignKey(Contact, related_name='messages', on_delete=models.CASCADE)
+    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES)
+    content = models.TextField(blank=True, null=True)  # For text messages
+    media_id = models.CharField(max_length=100, blank=True, null=True)
+    mime_type = models.CharField(max_length=100, blank=True, null=True)
     timestamp = models.DateTimeField()
-    text_body = models.TextField()
-    message_type = models.CharField(max_length=50)
 
     def __str__(self):
-        return self.message_id
+        return f"{self.contact}: {self.message_type}"
 
-# {
-#   "object": "whatsapp_business_account",
-#   "entry": [
-#     {
-#       "id": "365421663321122",
-#       "changes": [
-#         {
-#           "value": {
-#             "messaging_product": "whatsapp",
-#             "metadata": {
-#               "display_phone_number": "2347065458493",
-#               "phone_number_id": "344588788746391"
-#             },
-#             "contacts": [
-#               {
-#                 "profile": {
-#                   "name": "Engr Gozzy"
-#                 },
-#                 "wa_id": "2348080982606"
-#               }
-#             ],
-#             "messages": [
-#               {
-#                 "from": "2348080982606",
-#                 "id": "wamid.HBgNMjM0ODA4MDk4MjYwNhUCABIYIDQyQ0FBNUMwM0JDODg4OTlFRjEyQUM5MkM5RDlBQjFGAA==",
-#                 "timestamp": "1720793840",
-#                 "text": {
-#                   "body": "How much is your Service first of all"
-#                 },
-#                 "type": "text"
-#               }
-#             ]
-#           },
-#           "field": "messages"
-#         }
-#       ]
-#     }
-#   ]
-# }
+class Status(models.Model):
+    message = models.ForeignKey(Message, related_name='statuses', on_delete=models.CASCADE)
+    status = models.CharField(max_length=20)  # 'delivered', 'read', etc.
+    timestamp = models.DateTimeField()
+
+    def __str__(self):
+        return f"{self.message.message_id} - {self.status}"
+
+class WebhookEvent(models.Model):
+    event_id = models.CharField(max_length=100, unique=True)
+    payload = models.JSONField()
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.event_id

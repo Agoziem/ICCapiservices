@@ -17,11 +17,11 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from whatsappAPI import views
+from whatsappAPI.views import webhookviews 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('webhook/', views.whatsapp_webhook, name='webhook'),
+    path('webhook/', webhookviews.whatsapp_webhook, name='webhook'),
     path('api/', include('ICCapp.urls')),
     path('emailsapi/', include('emails.urls')),
     path('blogsapi/', include('blog.urls')),
