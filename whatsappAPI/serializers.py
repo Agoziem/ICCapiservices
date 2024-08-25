@@ -1,20 +1,27 @@
 from rest_framework import serializers
-from .models import Contact, Message, Status, WebhookEvent
+from .models import *
 
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
         fields = ['id', 'wa_id', 'profile_name']
 
-class MessageSerializer(serializers.ModelSerializer):
+class RecievedMessageSerializer(serializers.ModelSerializer):
     contact = ContactSerializer()
 
     class Meta:
-        model = Message
-        fields = ['id', 'message_id', 'contact', 'message_type', 'content', 'media_id', 'mime_type', 'timestamp']
+        model = ReceivedMessage
+        fields = "__all__"
+
+class SentMessageSerializer(serializers.ModelSerializer):
+    contact = ContactSerializer()
+
+    class Meta:
+        model = SentMessage
+        fields = "__all__"
 
 class StatusSerializer(serializers.ModelSerializer):
-    message = MessageSerializer()
+    message = RecievedMessageSerializer()
 
     class Meta:
         model = Status

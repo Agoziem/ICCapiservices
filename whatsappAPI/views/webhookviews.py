@@ -1,12 +1,13 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from ..models import WebhookEvent, Contact, Message, Status
+from ..models import *
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.utils.dateparse import parse_datetime
 from django.conf import settings
 import requests
 from rest_framework import status
+from ..serializers import *
 
 # Handle incoming WhatsApp webhook events
 @api_view(['POST'])
@@ -31,7 +32,7 @@ def whatsapp_webhook(request):
 
         # Handle messages
         for message_data in value.get('messages', []):
-            message = Message.objects.create(
+            sentmessage = ReceivedMessage.objects.create(
                 message_id=message_data['id'],
                 contact=contact,
                 message_type=message_data['type'],
@@ -40,7 +41,7 @@ def whatsapp_webhook(request):
                 mime_type=message_data.get(message_data['type'], {}).get('mime_type', ''),
                 timestamp=parse_datetime(message_data.get('timestamp'))
             )
-
+            serialized_message = RecievedMessageSerializer(sentmessage).data
             # Send the message to the appropriate WebSocket room
             room_name = f'whatsappapi_{contact.wa_id}'
             channel_layer = get_channel_layer()
@@ -48,21 +49,14 @@ def whatsapp_webhook(request):
                 room_name,
                 {
                     'type': 'chat_message',
-                    'message': {
-                        'wa_id': contact.wa_id,
-                        'body': message.content,
-                        'timestamp': message.timestamp.isoformat(),
-                        'message_id': message.message_id,
-                        'type': message.message_type,
-                        'media_id': message.media_id,
-                        'mime_type': message.mime_type,
-                    }
+                    'message': serialized_message
                 }
             )
+            print(serialized_message)
 
     # Handle statuses
     for status_data in value.get('statuses', []):
-        message = Message.objects.get(message_id=status_data['id'])
+        message = ReceivedMessage.objects.get(message_id=status_data['id'])
         Status.objects.create(
             message=message,
             status=status_data['status'],
@@ -71,7 +65,71 @@ def whatsapp_webhook(request):
 
     return Response({"status": "success"})
 
-# send whatsapp template messages
+# ----------------------------------------------------------------
+# send messages to whatsapp api
+# ----------------------------------------------------------------
+@api_view(['POST'])
+def send_to_whatsapp_api(request):
+    url = f"https://graph.facebook.com/{settings.WHATSAPP_VERSION}/{settings.WHATSAPP_FROM_PHONE_NUMBER_ID}/messages"
+    headers = {
+        'Authorization': f'Bearer {settings.WHATSAPP_ACCESS_TOKEN}',
+        'Content-Type': 'application/json'
+    }
+
+    # Extracting the message data from the request
+    message = request.data
+
+    # Constructing the payload based on the message type
+    data = {
+        "messaging_product": "whatsapp",
+        "to": message.get('to'),
+        "type": message.get('type', 'text'),
+    }
+
+    if message.get('type') == 'text':
+        data["text"] = {
+            "body": message.get('body', '')
+        }
+    elif message.get('type') == 'image':
+        data["image"] = {
+            "link": message.get('link'),
+            "caption": message.get('caption', '')
+        }
+    elif message.get('type') == 'document':
+        data["document"] = {
+            "link": message.get('link'),
+            "filename": message.get('filename', '')
+        }
+
+    # Sending the POST request to WhatsApp API
+    try:
+        response = requests.post(url, headers=headers, json=data)
+
+        # Return the response from WhatsApp API to the client
+        if response.status_code == 200 or response.status_code == 201:
+            message_id = response.json().get('messages', [{}])[0].get('id')
+            contact = Contact.objects.get(wa_id=message.get('to'))
+            sentmessage = SentMessage.objects.create(
+                message_id=message_id,
+                contact=contact,
+                message_type=message.get('type'),
+                body=message.get('body', ''),
+                link=message.get('link', ''),
+                status='sent'
+            )
+            serialized_message = SentMessageSerializer(sentmessage).data
+            print(serialized_message)
+            return Response(serialized_message, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    except requests.exceptions.RequestException as e:
+        print(str(e))
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# ----------------------------------------------------------------
+# send whatsapp template messages to users
+# ----------------------------------------------------------------
 @api_view(['POST'])
 def send_whatsapp_message(request):
     details = request.data

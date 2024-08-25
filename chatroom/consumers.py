@@ -1,51 +1,3 @@
-"""
-the message CRUD operation is handled by the Websocket consumer in chatroom/consumers.py
-the message will indicate the type of operation to be performed
-
-if the message is a create operation, 
-the message will contain the data to be saved in the database
-the message will contain the user who sent the message
-the message will contain the group to which the message belongs
-the message will contain the type of message (text or file)
-the message will contain the file to be saved in the database
-the message will contain the body of the message
-the message will contain the message id
-
-if the message is a delete operation,
-the message will contain the message id to be deleted
-the message will contain the group to which the message belongs
-the message will contain the user who sent the message
-
-if the message is an update operation,
-the message will contain the message id to be updated
-the message will contain the group to which the message belongs
-the message will contain the user who sent the message
-the message will contain the data to be updated in the database
-the message will contain the type of message (text or file)
-the message will contain the file to be saved in the database
-the message will contain the body of the message
-
-for reply operation,
-the message will contain the message id to be replied to
-the message will contain the group to which the message belongs
-the message will contain the user who sent the message
-the message will contain the data to be saved in the database
-the message will contain the type of message (text or file)
-the message will contain the file to be saved in the database
-the message will contain the body of the message
-
-for seen operation,
-the message will contain the message id to be marked as seen
-the message will contain the group to which the message belongs
-the message will contain the user who sent the message
-
-for typing operation,
-the message will contain the group to which the message belongs
-the message will contain the user who sent the message
-the message will contain the typing status
-
-"""
-
 import json
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
@@ -94,7 +46,7 @@ class ChatConsumer(WebsocketConsumer):
         message_type = data['type']
         body = data.get('body', '')
         file = data.get('file')
-        group = ChatGroup.objects.get(group_name=data['group'])
+        group = ChatGroup.objects.get(group_name=self.group_name)
 
         if message_type == 'text':
             message = GroupMessage.objects.create(
@@ -129,7 +81,7 @@ class ChatConsumer(WebsocketConsumer):
 
     def delete_message(self, data):
         message_id = data['message_id']
-        group = ChatGroup.objects.get(group_name=data['group'])
+        group = ChatGroup.objects.get(group_name=self.group_name)
 
         try:
             message = GroupMessage.objects.get(id=message_id, group=group)
@@ -137,7 +89,7 @@ class ChatConsumer(WebsocketConsumer):
         except GroupMessage.DoesNotExist:
             pass
 
-        async_to_sync(self.channel_layer.group_send)(
+        (self.channel_layer.group_send)(
             self.group_name,
             {
                 'type': 'delete_message',
@@ -149,7 +101,7 @@ class ChatConsumer(WebsocketConsumer):
         message_id = data['message_id']
         body = data.get('body', '')
         file = data.get('file')
-        group = ChatGroup.objects.get(group_name=data['group'])
+        group = ChatGroup.objects.get(group_name=self.group_name)
 
         try:
             message = GroupMessage.objects.get(id=message_id, group=group)
@@ -180,7 +132,7 @@ class ChatConsumer(WebsocketConsumer):
 
     def reply_to_message(self, data, user):
         message_id = data['message_id']
-        group = ChatGroup.objects.get(group_name=data['group'])
+        group = ChatGroup.objects.get(group_name=self.group_name)
         body = data.get('body', '')
         file = data.get('file')
 
@@ -217,7 +169,7 @@ class ChatConsumer(WebsocketConsumer):
 
     def mark_as_seen(self, data, user):
         message_id = data['message_id']
-        group = ChatGroup.objects.get(group_name=data['group'])
+        group = ChatGroup.objects.get(group_name=self.group_name)
 
         try:
             message = GroupMessage.objects.get(id=message_id, group=group)
