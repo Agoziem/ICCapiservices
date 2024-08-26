@@ -28,7 +28,7 @@ class ReceivedMessage(models.Model):
     body = models.TextField(blank=True, null=True)  # For text messages
     media_id = models.CharField(max_length=100, blank=True, null=True) # For media messages
     mime_type = models.CharField(max_length=100, blank=True, null=True) # For media messages
-    timestamp = models.DateTimeField()
+    timestamp = models.DateTimeField(auto_now_add=True)
     message_mode = models.CharField(max_length=20, choices=MESSAGE_MODES, default='received message')
 
     def __str__(self):
@@ -48,7 +48,7 @@ class SentMessage(models.Model):
 class Status(models.Model):
     message = models.ForeignKey(ReceivedMessage, related_name='statuses', on_delete=models.CASCADE)
     status = models.CharField(max_length=20)  # 'delivered', 'read', etc.
-    timestamp = models.DateTimeField()
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.message.message_id} - {self.status}"

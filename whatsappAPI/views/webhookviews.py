@@ -20,7 +20,6 @@ def whatsapp_webhook(request):
     entry = payload.get('entry', [{}])[0]
     event_id = entry.get('id')
     WebhookEvent.objects.get_or_create(event_id=event_id, defaults={'payload': payload})
-    print(payload)
     # Start a database transaction
     with transaction.atomic():
         changes = entry.get('changes', [])[0]
@@ -32,13 +31,9 @@ def whatsapp_webhook(request):
                 wa_id=contact_data['wa_id'],
                 defaults={'profile_name': contact_data.get('profile', {}).get('name', '')}
             )
-            serialized_contact = ContactSerializer(contact).data
-
             # Handle messages
             for message_data in value.get('messages', []):
-                print(message_data)
                 try:
-                    timestamp = parse_datetime(message_data['timestamp'])
                     sent_message = ReceivedMessage.objects.create(
                         message_id=message_data['id'],
                         contact=contact,
@@ -46,7 +41,6 @@ def whatsapp_webhook(request):
                         body=message_data.get('text', {}).get('body', ''),
                         media_id=message_data.get(message_data['type'], {}).get('id', ''),
                         mime_type=message_data.get(message_data['type'], {}).get('mime_type', ''),
-                        timestamp=timestamp
                     )
                     serialized_message = RecievedMessageSerializer(sent_message).data
 
@@ -65,7 +59,8 @@ def whatsapp_webhook(request):
                 except Exception as e:
                     print(f"Error processing message: {e}")
 
-            # Send the contact to the general WebSocket
+            # Serialize the contact
+            serialized_contact = ContactSerializer(contact).data
             general_room_name = 'whatsappapi_general'
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
@@ -82,8 +77,7 @@ def whatsapp_webhook(request):
                 message = ReceivedMessage.objects.get(message_id=status_data['id'])
                 Status.objects.create(
                     message=message,
-                    status=status_data['status'],
-                    timestamp=parse_datetime(status_data['timestamp'])
+                    status=status_data['status']
                 )
             except ReceivedMessage.DoesNotExist:
                 print(f"Message with ID {status_data['id']} not found.")
