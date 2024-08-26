@@ -19,7 +19,7 @@ def whatsapp_webhook(request):
     # Store the entire payload for reference
     entry = payload.get('entry', [{}])[0]
     event_id = entry.get('id')
-    WebhookEvent.objects.get_or_create(event_id=event_id, payload=payload)
+    WebhookEvent.objects.get_or_create(event_id=event_id, defaults={'payload': payload})
     print(payload)
     # Start a database transaction
     with transaction.atomic():
