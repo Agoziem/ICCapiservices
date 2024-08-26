@@ -19,8 +19,8 @@ def whatsapp_webhook(request):
     # Store the entire payload for reference
     entry = payload.get('entry', [{}])[0]
     event_id = entry.get('id')
-    WebhookEvent.objects.create(event_id=event_id, payload=payload)
-
+    WebhookEvent.objects.get_or_create(event_id=event_id, payload=payload)
+    print(payload)
     # Start a database transaction
     with transaction.atomic():
         changes = entry.get('changes', [])[0]
@@ -36,6 +36,7 @@ def whatsapp_webhook(request):
 
             # Handle messages
             for message_data in value.get('messages', []):
+                print(message_data)
                 try:
                     timestamp = parse_datetime(message_data['timestamp'])
                     sent_message = ReceivedMessage.objects.create(
