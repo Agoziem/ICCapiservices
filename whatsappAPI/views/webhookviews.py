@@ -43,7 +43,7 @@ def whatsapp_webhook(request):
                         message_id=message_data['id'],
                         contact=contact,
                         message_type=message_data['type'],
-                        content=message_data.get('text', {}).get('body', ''),
+                        body=message_data.get('text', {}).get('body', ''),
                         media_id=message_data.get(message_data['type'], {}).get('id', ''),
                         mime_type=message_data.get(message_data['type'], {}).get('mime_type', ''),
                         timestamp=timestamp
