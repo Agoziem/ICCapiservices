@@ -11,3 +11,5 @@ urlpatterns = [
     path('media/<str:media_id>/', get_media, name='get_media'),
     path('<int:contact_id>/send_message/', send_to_whatsapp_api, name='send_to_whatsapp_api'),
 ]
+
+# 
