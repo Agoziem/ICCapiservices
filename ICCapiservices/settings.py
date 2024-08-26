@@ -31,7 +31,7 @@ DEBUG_ENV = config('DEBUG_ENV', default=False, cast=bool)
 if DEBUG_ENV:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']
 else:
-    ALLOWED_HOSTS = ['web-production-7d611.up.railway.app',"innovationscybercafe.com"]
+    ALLOWED_HOSTS = ['web-production-7d611.up.railway.app',"innovationscybercafe.com", "www.innovationscybercafe.com"]
 
 # Application definition
 
