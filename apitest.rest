@@ -10,7 +10,7 @@ Content-Type: application/json
 
 ###
 # get send a whatsapp message
-POST http://127.0.0.1:8000/whatsappAPI/send-message/
+POST http://127.0.0.1:8000/whatsappAPI/send-template-message/
 content-type: application/json
 
 {

@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from ..models import *
@@ -9,59 +10,84 @@ import requests
 from rest_framework import status
 from ..serializers import *
 
-# Handle incoming WhatsApp webhook events
+
+
 @api_view(['POST'])
 def whatsapp_webhook(request):
     payload = request.data
 
     # Store the entire payload for reference
-    event_id = payload.get('entry', [{}])[0].get('id')
+    entry = payload.get('entry', [{}])[0]
+    event_id = entry.get('id')
     WebhookEvent.objects.create(event_id=event_id, payload=payload)
 
-    # Extract and store message data
-    entry = payload.get('entry', [])[0]
-    changes = entry.get('changes', [])[0]
-    value = changes.get('value', {})
+    # Start a database transaction
+    with transaction.atomic():
+        changes = entry.get('changes', [])[0]
+        value = changes.get('value', {})
 
-    # Handle contacts
-    for contact_data in value.get('contacts', []):
-        contact, created = Contact.objects.get_or_create(
-            wa_id=contact_data['wa_id'],
-            defaults={'profile_name': contact_data.get('profile', {}).get('name', '')}
-        )
-
-        # Handle messages
-        for message_data in value.get('messages', []):
-            sentmessage = ReceivedMessage.objects.create(
-                message_id=message_data['id'],
-                contact=contact,
-                message_type=message_data['type'],
-                content=message_data.get('text', {}).get('body', ''),
-                media_id=message_data.get(message_data['type'], {}).get('id', ''),
-                mime_type=message_data.get(message_data['type'], {}).get('mime_type', ''),
-                timestamp=parse_datetime(message_data.get('timestamp'))
+        # Handle contacts
+        for contact_data in value.get('contacts', []):
+            contact, created = Contact.objects.get_or_create(
+                wa_id=contact_data['wa_id'],
+                defaults={'profile_name': contact_data.get('profile', {}).get('name', '')}
             )
-            serialized_message = RecievedMessageSerializer(sentmessage).data
-            # Send the message to the appropriate WebSocket room
-            room_name = f'whatsappapi_{contact.wa_id}'
+            serialized_contact = ContactSerializer(contact).data
+
+            # Handle messages
+            for message_data in value.get('messages', []):
+                try:
+                    timestamp = parse_datetime(message_data['timestamp'])
+                    sent_message = ReceivedMessage.objects.create(
+                        message_id=message_data['id'],
+                        contact=contact,
+                        message_type=message_data['type'],
+                        content=message_data.get('text', {}).get('body', ''),
+                        media_id=message_data.get(message_data['type'], {}).get('id', ''),
+                        mime_type=message_data.get(message_data['type'], {}).get('mime_type', ''),
+                        timestamp=timestamp
+                    )
+                    serialized_message = RecievedMessageSerializer(sent_message).data
+
+                    # Send the message to the appropriate WebSocket room
+                    room_name = f'whatsappapi_{contact.wa_id}'
+                    channel_layer = get_channel_layer()
+                    async_to_sync(channel_layer.group_send)(
+                        room_name,
+                        {
+                            'type': 'chat_message',
+                            'message': serialized_message
+                        }
+                    )
+                except KeyError as e:
+                    print(f"Missing key in message data: {e}")
+                except Exception as e:
+                    print(f"Error processing message: {e}")
+
+            # Send the contact to the general WebSocket
+            general_room_name = 'whatsappapi_general'
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
-                room_name,
+                general_room_name,
                 {
                     'type': 'chat_message',
-                    'message': serialized_message
+                    'contact': serialized_contact
                 }
             )
-            print(serialized_message)
 
-    # Handle statuses
-    for status_data in value.get('statuses', []):
-        message = ReceivedMessage.objects.get(message_id=status_data['id'])
-        Status.objects.create(
-            message=message,
-            status=status_data['status'],
-            timestamp=parse_datetime(status_data['timestamp'])
-        )
+        # Handle statuses
+        for status_data in value.get('statuses', []):
+            try:
+                message = ReceivedMessage.objects.get(message_id=status_data['id'])
+                Status.objects.create(
+                    message=message,
+                    status=status_data['status'],
+                    timestamp=parse_datetime(status_data['timestamp'])
+                )
+            except ReceivedMessage.DoesNotExist:
+                print(f"Message with ID {status_data['id']} not found.")
+            except Exception as e:
+                print(f"Error processing status: {e}")
 
     return Response({"status": "success"})
 
@@ -69,7 +95,7 @@ def whatsapp_webhook(request):
 # send messages to whatsapp api
 # ----------------------------------------------------------------
 @api_view(['POST'])
-def send_to_whatsapp_api(request):
+def send_to_whatsapp_api(request,contact_id):
     url = f"https://graph.facebook.com/{settings.WHATSAPP_VERSION}/{settings.WHATSAPP_FROM_PHONE_NUMBER_ID}/messages"
     headers = {
         'Authorization': f'Bearer {settings.WHATSAPP_ACCESS_TOKEN}',
@@ -78,6 +104,7 @@ def send_to_whatsapp_api(request):
 
     # Extracting the message data from the request
     message = request.data
+    message['to'] = Contact.objects.get(id=contact_id).wa_id
 
     # Constructing the payload based on the message type
     data = {
@@ -98,7 +125,7 @@ def send_to_whatsapp_api(request):
     elif message.get('type') == 'document':
         data["document"] = {
             "link": message.get('link'),
-            "filename": message.get('filename', '')
+            "caption": message.get('caption', '') 
         }
 
     # Sending the POST request to WhatsApp API
@@ -108,10 +135,10 @@ def send_to_whatsapp_api(request):
         # Return the response from WhatsApp API to the client
         if response.status_code == 200 or response.status_code == 201:
             message_id = response.json().get('messages', [{}])[0].get('id')
-            contact = Contact.objects.get(wa_id=message.get('to'))
+            contact_id = Contact.objects.get(id=contact_id)
             sentmessage = SentMessage.objects.create(
                 message_id=message_id,
-                contact=contact,
+                contact=contact_id,
                 message_type=message.get('type'),
                 body=message.get('body', ''),
                 link=message.get('link', ''),

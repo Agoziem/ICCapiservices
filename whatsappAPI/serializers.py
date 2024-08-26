@@ -1,24 +1,24 @@
 from rest_framework import serializers
 from .models import *
 
-class ContactSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Contact
-        fields = ['id', 'wa_id', 'profile_name']
-
 class RecievedMessageSerializer(serializers.ModelSerializer):
-    contact = ContactSerializer()
-
     class Meta:
         model = ReceivedMessage
         fields = "__all__"
 
 class SentMessageSerializer(serializers.ModelSerializer):
-    contact = ContactSerializer()
-
     class Meta:
         model = SentMessage
         fields = "__all__"
+
+class ContactSerializer(serializers.ModelSerializer):
+    recieved_messages = RecievedMessageSerializer(many=True, read_only=True)
+    sent_messages = SentMessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Contact
+        fields = ['id', 'wa_id', 'profile_name', 'recieved_messages', 'sent_messages']
+
 
 class StatusSerializer(serializers.ModelSerializer):
     message = RecievedMessageSerializer()
