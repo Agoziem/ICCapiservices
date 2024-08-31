@@ -8,7 +8,9 @@ if it is a reply operation, it will contain the message_id , it is replying to, 
 """
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
-from django.utils.dateparse import parse_datetime
+from .models import Contact, ReceivedMessage
+from channels.db import database_sync_to_async
+
 
 class WhatsappConsumer(AsyncWebsocketConsumer):
     # ----------------------------------------------------------------
@@ -35,7 +37,7 @@ class WhatsappConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
-
+        
     # ----------------------------------------------------------------
     # Functionality: Sending Messages to WebSocket Group
     # ----------------------------------------------------------------
@@ -71,12 +73,71 @@ class GeneralWhatsappConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        print("data is coming:",data)
+        action = data.get('action')
+        contact = await self.get_contact(data['wa_id'])
+
+        if action == 'update_seen_status':
+            await self.update_seen_status(data, contact)
+
     # ----------------------------------------------------------------
+    # Functionality: Update Seen Status
+    # ----------------------------------------------------------------
+    async def update_seen_status(self, data, contact):
+        message_ids = data['message_ids']
+
+        # Update seen status of messages asynchronously
+        for message_id in message_ids:
+            await self.mark_message_as_seen(contact, message_id)
+
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'update_status',
+                "message": {
+                    "message_ids": message_ids,
+                    "success": "true"
+                },
+            }
+        )
+
+    # ----------------------------------------------------------------
+    # Helper: Fetch contact synchronously in an async context
+    # ----------------------------------------------------------------
+    @database_sync_to_async
+    def get_contact(self, wa_id):
+        return Contact.objects.get(wa_id=wa_id)
+
+    # ----------------------------------------------------------------
+    # Helper: Mark message as seen synchronously in an async context
+    # ----------------------------------------------------------------
+    @database_sync_to_async
+    def mark_message_as_seen(self, contact, message_id):
+        message = ReceivedMessage.objects.get(contact=contact, message_id=message_id)
+        message.seen = True
+        message.save()
+
+      # ----------------------------------------------------------------
     # Functionality: Sending Messages to WebSocket Group
     # ----------------------------------------------------------------
     async def chat_message(self, event):
         contact = event['contact']
         await self.send(text_data=json.dumps({
+            'operation': 'chat_message',
             'contact': contact
         }))
+
+    # ----------------------------------------------------------------
+    # Functionality: Update Seen Status
+    # ----------------------------------------------------------------
+    async def update_status(self, event):
+        message = event['message']
+        await self.send(text_data=json.dumps({
+            'operation': 'update_status',
+            'message': message
+        }))
+
 
