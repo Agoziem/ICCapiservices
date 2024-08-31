@@ -37,7 +37,7 @@ class ReceivedMessage(models.Model):
     mime_type = models.CharField(max_length=100, blank=True, null=True) # For media messages
     timestamp = models.DateTimeField(auto_now_add=True)
     message_mode = models.CharField(max_length=20, choices=MESSAGE_MODES, default='received message')
-    # seen = models.BooleanField(default=False)
+    seen = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.contact}: {self.message_type}"
