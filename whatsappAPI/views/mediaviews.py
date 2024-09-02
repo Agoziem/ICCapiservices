@@ -1,25 +1,34 @@
 import requests
 from django.conf import settings
-from django.http import HttpResponse
 from django.core.files.storage import default_storage
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.http import HttpResponse
 
+
+
+
+
+@api_view(['GET'])
 def get_media(request, media_id):
-    # Try to serve from local storage first
-    media_path = f"media/{media_id}"
-    if default_storage.exists(media_path):
-        with default_storage.open(media_path, 'rb') as f:
-            return HttpResponse(f.read(), content_type='application/octet-stream')
-
-    # Fetch from WhatsApp API if not found locally
+    # Step 1: Fetch media metadata from WhatsApp API
     url = f"https://graph.facebook.com/v17.0/{media_id}"
     headers = {'Authorization': f'Bearer {settings.WHATSAPP_ACCESS_TOKEN}'}
     response = requests.get(url, headers=headers)
     
     if response.status_code == 200:
-        content_type = response.headers.get('Content-Type', 'application/octet-stream')
-        # Save the file locally
-        with default_storage.open(media_path, 'wb') as f:
-            f.write(response.content)
+        media = response.json()
+        media_url = media.get('url')
+        mime_type = media.get('mime_type')
         
-        return HttpResponse(response.content, content_type=content_type)
-    return HttpResponse(status=404)
+        return Response({
+            'url': media_url,
+            'mime_type': mime_type,
+        }, status=status.HTTP_200_OK)
+        
+    
+    # Handle error if the media cannot be fetched
+    return Response({
+        'error': 'Failed to fetch media metadata from WhatsApp API',
+    }, status=status.HTTP_400_BAD_REQUEST)
