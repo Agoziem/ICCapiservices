@@ -135,6 +135,7 @@ class GeneralWhatsappConsumer(AsyncWebsocketConsumer):
     # ----------------------------------------------------------------
     async def update_status(self, event):
         message = event['message']
+        print("sending back the upodate message",message)
         await self.send(text_data=json.dumps({
             'operation': 'update_status',
             'message': message
