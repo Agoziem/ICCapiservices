@@ -76,7 +76,6 @@ class GeneralWhatsappConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        print("data is coming:",data)
         action = data.get('action')
         contact = await self.get_contact(data['wa_id'])
 
@@ -99,6 +98,7 @@ class GeneralWhatsappConsumer(AsyncWebsocketConsumer):
                 'type': 'update_status',
                 "message": {
                     "message_ids": message_ids,
+                    'contact_id': contact.id,
                     "success": "true"
                 },
             }

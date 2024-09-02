@@ -50,7 +50,7 @@ class ReceivedMessage(models.Model):
         if DEBUG_MODE:
             # Fetch all received messages for this contact
             all_received_messages = list(self.contact.recieved_messages.values(
-                'id', 'message_id', 'message_type', 'body', 'media_id', 'mime_type', 'timestamp', 'message_mode'
+                'id', 'message_id', 'message_type', 'body', 'media_id', 'mime_type', 'timestamp', 'message_mode','seen'
             ))
             # Convert the 'timestamp' field from datetime to string
             for message in all_received_messages:
