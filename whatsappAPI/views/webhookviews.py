@@ -34,15 +34,17 @@ def whatsapp_webhook(request):
             # Handle messages
             for message_data in value.get('messages', []):
                 try:
-                    sent_message = ReceivedMessage.objects.create(
+                    recieved_message = ReceivedMessage.objects.create(
                         message_id=message_data['id'],
                         contact=contact,
                         message_type=message_data['type'],
                         body=message_data.get('text', {}).get('body', ''),
                         media_id=message_data.get(message_data['type'], {}).get('id', ''),
                         mime_type=message_data.get(message_data['type'], {}).get('mime_type', ''),
+                        caption=message_data.get(message_data['type'], {}).get('caption', ''),
+                        filename=message_data.get(message_data['type'], {}).get('filename', ''),
                     )
-                    serialized_message = RecievedMessageSerializer(sent_message).data
+                    serialized_message = RecievedMessageSerializer(recieved_message).data
 
                     # Send the message to the appropriate WebSocket room
                     room_name = f'whatsappapi_{contact.wa_id}'

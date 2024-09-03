@@ -35,6 +35,9 @@ class ReceivedMessage(models.Model):
     body = models.TextField(blank=True, null=True)  # For text messages
     media_id = models.CharField(max_length=100, blank=True, null=True) # For media messages
     mime_type = models.CharField(max_length=100, blank=True, null=True) # For media messages
+    filename = models.CharField(max_length=100, blank=True, null=True) # For videos, documents
+    animated = models.BooleanField(default=False) # For stickers
+    caption = models.TextField(blank=True, null=True) # For videos, images, documents
     timestamp = models.DateTimeField(auto_now_add=True)
     message_mode = models.CharField(max_length=20, choices=MESSAGE_MODES, default='received message')
     seen = models.BooleanField(default=False)
