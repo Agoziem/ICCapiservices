@@ -7,3 +7,10 @@ class EmailAdmin(admin.ModelAdmin):
     search_fields = ('name', 'email', 'subject')
     list_filter = ('created_at',)
     sortable_by = ('name', 'email', 'subject', 'created_at')
+
+@admin.register(EmailResponse)
+class EmailResponseAdmin(admin.ModelAdmin):
+    list_display = ('recipient_email', 'response_subject', 'created_at')
+    search_fields = ('email', 'subject')
+    list_filter = ('created_at',)
+    sortable_by = ('recipient_email', 'response_subject', 'created_at')

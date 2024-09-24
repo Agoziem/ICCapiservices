@@ -6,6 +6,8 @@ from .serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 # get all email addresses
@@ -54,6 +56,16 @@ def add_email(request, organization_id):
         organization = Organization.objects.get(id=organization_id)
         email = Email.objects.create(organization=organization, name=name, email=email, subject=subject, message=message)
         serializer = EmailSerializer(email, many=False)
+        general_room_name = 'emailapi'
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            general_room_name,
+            {
+                'type': 'chat_message',
+                'operation':'create',
+                'contact': serializer.data
+            }
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except Exception as e:
         print(str(e))
@@ -88,3 +100,30 @@ def delete_email(request, email_id):
         return Response(status=status.HTTP_204_NO_CONTENT)
     except Email.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    
+@api_view(['GET'])
+def get_responses(request,message_id):
+    try:
+        email = Email.objects.get(id=message_id)
+        responses = EmailResponse.objects.filter(message=email)
+        serializer = EmailResponseSerializer(responses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except EmailResponse.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+def create_responses(request):
+    try:
+        print(request.data)
+        serializer = EmailResponseSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()  # Save the response
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except Email.DoesNotExist:
+        return Response({"error": "Email message not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

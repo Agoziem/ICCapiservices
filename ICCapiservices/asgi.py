@@ -20,6 +20,7 @@ django_asgi_app = get_asgi_application()
 from whatsappAPI import routing as whatsappAPI_routing
 from chatroom import routing as chat_routing
 from notifications import routing as notifications_routing
+from emails import routing as email_routing
 
 application = ProtocolTypeRouter({
   "http": django_asgi_app,
@@ -28,6 +29,7 @@ application = ProtocolTypeRouter({
             URLRouter(
                 whatsappAPI_routing.websocket_urlpatterns +
                 chat_routing.websocket_urlpatterns +
+                email_routing.websocket_urlpatterns +
                 notifications_routing.websocket_urlpatterns
             )
         )
