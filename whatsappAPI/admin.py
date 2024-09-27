@@ -8,18 +8,11 @@ class ContactAdmin(admin.ModelAdmin):
     list_filter = ('wa_id', 'profile_name')
     search_fields = ('wa_id', 'profile_name')
 
-@admin.register(ReceivedMessage)
-class ReceivedMessageAdmin(admin.ModelAdmin):
+@admin.register(WAMessage)
+class WAMessage(admin.ModelAdmin):
     list_display = ('contact', 'message_type','message_mode', 'timestamp')
     list_filter = ('contact', 'message_type','message_mode', 'timestamp')
     search_fields = ('contact', 'message_type','message_mode', 'timestamp')
-
-@admin.register(SentMessage)
-class SentMessageAdmin(admin.ModelAdmin):
-    list_display = ('contact', 'message_type','message_mode', 'timestamp', 'status')
-    list_filter = ('contact', 'message_type','message_mode', 'timestamp', 'status')
-    search_fields = ('contact', 'message_type','message_mode', 'timestamp', 'status')
-
 
 @admin.register(Status)
 class StatusAdmin(admin.ModelAdmin):

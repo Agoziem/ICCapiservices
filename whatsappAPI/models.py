@@ -3,6 +3,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.utils.dateformat import DateFormat
 from django.conf import settings
+
 DEBUG_MODE = settings.DEBUG_ENV
 
 class Contact(models.Model):
@@ -23,84 +24,111 @@ MESSAGE_TYPES = [
     ]
 
 MESSAGE_MODES = [
-    ('sent message', 'Sent message'),
-    ('received message', 'Received message'),
+    ('received', 'received'),
+    ('sent', 'sent'),
 ]
 
-
-class ReceivedMessage(models.Model):
+class WAMessage(models.Model):
     message_id = models.CharField(max_length=100, unique=True)
-    contact = models.ForeignKey(Contact, related_name='recieved_messages', on_delete=models.CASCADE)
-    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES)
-    body = models.TextField(blank=True, null=True)  # For text messages
-    media_id = models.CharField(max_length=100, blank=True, null=True) # For media messages
-    mime_type = models.CharField(max_length=100, blank=True, null=True) # For media messages
-    filename = models.CharField(max_length=100, blank=True, null=True) # For videos, documents
-    animated = models.BooleanField(default=False) # For stickers
-    caption = models.TextField(blank=True, null=True) # For videos, images, documents
+    contact = models.ForeignKey('Contact', related_name='messages', on_delete=models.CASCADE)
+    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES,default='text')
+    body = models.TextField(blank=True,default='')  # For text messages
+    media_id = models.CharField(max_length=100, blank=True,default='')  # For media messages
+    mime_type = models.CharField(max_length=100, blank=True,default='')  # For media messages
+    filename = models.CharField(max_length=100, blank=True,default='')  # For videos, documents
+    animated = models.BooleanField(default=False)  # For stickers
+    caption = models.TextField(blank=True,default='')  # For videos, images, documents
+    link = models.URLField(blank=True, default='https://www.example.com')  # For sent media messages
+    message_mode = models.CharField(max_length=20, choices=MESSAGE_MODES, default='received')
+    seen = models.BooleanField(default=False)  # For received messages
+    status = models.CharField(max_length=20, choices=[("pending", "Pending"), ("sent", "Sent")], blank=True, default='pending')  # Only for sent messages
     timestamp = models.DateTimeField(auto_now_add=True)
-    message_mode = models.CharField(max_length=20, choices=MESSAGE_MODES, default='received message')
-    seen = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.contact}: {self.message_type}"
+        return f"{self.contact}: {self.message_type} ({self.message_mode})"
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        
 
-        # simulate the sending of the received message to the general chat room
-        if DEBUG_MODE:
-            # Fetch all received messages for this contact
-            all_received_messages = list(self.contact.recieved_messages.values(
-                'id', 'message_id', 'message_type', 'body', 'media_id', 'mime_type', 'timestamp', 'message_mode','seen'
-            ))
-            # Convert the 'timestamp' field from datetime to string
-            for message in all_received_messages:
-                if 'timestamp' in message:
-                    message['timestamp'] = DateFormat(message['timestamp']).format('Y-m-d H:i:s')
-            # Fetch all sent messages for this contact
-            all_sent_messages = list(self.contact.sent_messages.values(
-                'id', 'message_id', 'message_type', 'body', 'link', 'timestamp', 'message_mode', 'status'
-            ))
-            # Convert the 'timestamp' field from datetime to string
-            for message in all_sent_messages:
-                if 'timestamp' in message:
-                    message['timestamp'] = DateFormat(message['timestamp']).format('Y-m-d H:i:s')
-            # Prepare the message data
-            received_message_contact = {
-                'id': self.contact.id,
-                'wa_id': self.contact.wa_id,
-                'profile_name': self.contact.profile_name,
-                'recieved_messages': all_received_messages,
-                'sent_messages': all_sent_messages
-            }
-            
-            # Determine the room name
-            room_name = "whatsappapi_general"
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                room_name,
-                {
-                    'type': 'chat_message',
-                    'contact': received_message_contact
+        if DEBUG_MODE and self.message_mode == 'received':
+            # Get the last message (which is this current one being saved)
+            last_message = WAMessage.objects.filter(contact=self.contact, message_mode='received').order_by('-timestamp').first()
+
+            if last_message:
+                # Manually serialize the last message
+                serialized_message = {
+                    'id': last_message.id,
+                    'message_id': last_message.message_id,
+                    'contact': last_message.contact.id,
+                    'message_type': last_message.message_type,
+                    'body': last_message.body,
+                    'media_id': last_message.media_id,
+                    'mime_type': last_message.mime_type,
+                    'filename': last_message.filename,
+                    'animated': last_message.animated,
+                    'caption': last_message.caption,
+                    'link': last_message.link,
+                    'message_mode': last_message.message_mode,
+                    'seen': last_message.seen,
+                    'status': last_message.status,
+                    'timestamp': DateFormat(last_message.timestamp).format('Y-m-d H:i:s'),
                 }
-            )
 
 
-class SentMessage(models.Model):
-    message_id = models.CharField(max_length=100, unique=True)
-    contact = models.ForeignKey(Contact, related_name='sent_messages', on_delete=models.CASCADE)
-    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES)
-    body = models.TextField(blank=True, null=True)  # For text messages
-    link = models.URLField(blank=True, null=True)  # For media messages
-    timestamp = models.DateTimeField(auto_now_add=True)
-    message_mode = models.CharField(max_length=20, choices=MESSAGE_MODES, default='sent message')
-    status = models.CharField(max_length=20, choices=[("pending","pending"),("sent","sent")], default='pending')  # 'sent', 'delivered', 'read', etc.
+                # Manually serialize the contact
+                serialized_contact = {
+                    'id': self.contact.id,
+                    'wa_id': self.contact.wa_id,
+                    'profile_name': self.contact.profile_name,
+                    'last_message': self.get_last_message(last_message),  # Use the last message directly
+                    'unread_message_count': self.get_unread_message_count(self.contact)
+                }
+
+                print("am working now",serialized_contact)
+
+                # Send the message to the appropriate WebSocket room
+                room_name = 'whatsappapi_messages'
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    room_name,
+                    {
+                        'type': 'chat_message',
+                        'operation': "create",
+                        'contact': serialized_contact,
+                        'message': serialized_message
+                    }
+                )
+
+                # Send an update to the general contacts room
+                general_room_name = 'whatsappapi_contacts'
+                async_to_sync(channel_layer.group_send)(
+                    general_room_name,
+                    {
+                        'type': 'chat_message',
+                        'operation': "create",
+                        'contact': serialized_contact
+                    }
+                )
+
+
+    # Utility functions for manually serializing the contact
+    def get_last_message(self, last_message):
+        if last_message:
+            return {
+                'id': last_message.id,
+                'message_id': last_message.message_id,
+                'message_type': last_message.message_type,
+                'body': last_message.body,
+                'timestamp': DateFormat(last_message.timestamp).format('Y-m-d H:i:s')
+            }
+        return None
+
+    def get_unread_message_count(self, contact):
+        return WAMessage.objects.filter(contact=contact, message_mode='received',  seen=False).count()
 
 
 class Status(models.Model):
-    message = models.ForeignKey(ReceivedMessage, related_name='statuses', on_delete=models.CASCADE)
+    message = models.ForeignKey(WAMessage, related_name='statuses', on_delete=models.CASCADE)
     status = models.CharField(max_length=20)  # 'delivered', 'read', etc.
     timestamp = models.DateTimeField(auto_now_add=True)
 

@@ -9,6 +9,7 @@ from django.conf import settings
 import requests
 from rest_framework import status
 from ..serializers import *
+from datetime import datetime
 
 
 
@@ -34,7 +35,7 @@ def whatsapp_webhook(request):
             # Handle messages
             for message_data in value.get('messages', []):
                 try:
-                    recieved_message = ReceivedMessage.objects.create(
+                    recieved_message = WAMessage.objects.create(
                         message_id=message_data['id'],
                         contact=contact,
                         message_type=message_data['type'],
@@ -44,15 +45,17 @@ def whatsapp_webhook(request):
                         caption=message_data.get(message_data['type'], {}).get('caption', ''),
                         filename=message_data.get(message_data['type'], {}).get('filename', ''),
                     )
-                    serialized_message = RecievedMessageSerializer(recieved_message).data
+                    serialized_message = WAMessageSerializer(recieved_message).data
 
                     # Send the message to the appropriate WebSocket room
-                    room_name = f'whatsappapi_{contact.wa_id}'
+                    room_name = f'whatsappapi_messages'
                     channel_layer = get_channel_layer()
                     async_to_sync(channel_layer.group_send)(
                         room_name,
                         {
                             'type': 'chat_message',
+                            'operation':"create",
+                            'contact': contact,
                             'message': serialized_message
                         }
                     )
@@ -63,12 +66,13 @@ def whatsapp_webhook(request):
 
             # Serialize the contact
             serialized_contact = ContactSerializer(contact).data
-            general_room_name = 'whatsappapi_general'
+            general_room_name = 'whatsappapi_contacts'
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
                 general_room_name,
                 {
                     'type': 'chat_message',
+                    'operation':"create",
                     'contact': serialized_contact
                 }
             )
@@ -76,12 +80,12 @@ def whatsapp_webhook(request):
         # Handle statuses
         for status_data in value.get('statuses', []):
             try:
-                message = ReceivedMessage.objects.get(message_id=status_data['id'])
+                message = WAMessage.objects.get(message_id=status_data['id'])
                 Status.objects.create(
                     message=message,
                     status=status_data['status']
                 )
-            except ReceivedMessage.DoesNotExist:
+            except WAMessage.DoesNotExist:
                 print(f"Message with ID {status_data['id']} not found.")
             except Exception as e:
                 print(f"Error processing status: {e}")
@@ -95,59 +99,73 @@ def whatsapp_webhook(request):
 def send_to_whatsapp_api(request,contact_id):
     url = f"https://graph.facebook.com/{settings.WHATSAPP_VERSION}/{settings.WHATSAPP_FROM_PHONE_NUMBER_ID}/messages"
     headers = {
-        'Authorization': f'Bearer {settings.WHATSAPP_ACCESS_TOKEN}',
+        'Authorization': f'Bearer EAAXwzTlI8UEBOzqTcgpkP0etPhY863NJZAKbiynZCTyjK7I1ooucRM3EzqRBdCU7KBYX7tB9j9iYpYkzYazut0OKZCHh3ZC0YiLfJ464uA3EVGmDMGn6LrwijdtQrBRsvZCbupsf89yBxgnSCcZAZAx7K0mDAOpcNceSYf5psnAvG89LX9kGNhAXPENoTaSujiXfzkOUSq4NB2AcKtLlCZAnfhRukI2ncs0Dp4vpNxykWLYZD',
         'Content-Type': 'application/json'
     }
 
     # Extracting the message data from the request
     message = request.data
     message['to'] = Contact.objects.get(id=contact_id).wa_id
+    print(message)
 
     # Constructing the payload based on the message type
     data = {
         "messaging_product": "whatsapp",
         "to": message.get('to'),
-        "type": message.get('type', 'text'),
+        "type": message.get('message_type', 'text'),
     }
 
-    if message.get('type') == 'text':
+    if message.get('message_type') == 'text':
         data["text"] = {
             "body": message.get('body', '')
         }
-    elif message.get('type') == 'image':
+    elif message.get('message_type') == 'image':
         data["image"] = {
             "link": message.get('link'),
             "caption": message.get('caption', '')
         }
-    elif message.get('type') == 'document':
+    elif message.get('message_type') == 'document':
         data["document"] = {
             "link": message.get('link'),
             "caption": message.get('caption', '') 
         }
+    print(data)
 
     # Sending the POST request to WhatsApp API
     try:
         response = requests.post(url, headers=headers, json=data)
-
         # Return the response from WhatsApp API to the client
         if response.status_code == 200 or response.status_code == 201:
-            message_id = response.json().get('messages', [{}])[0].get('id')
-            contact_id = Contact.objects.get(id=contact_id)
-            sentmessage = SentMessage.objects.create(
-                message_id=message_id,
-                contact=contact_id,
-                message_type=message.get('type'),
-                body=message.get('body', ''),
-                link=message.get('link', ''),
-                status='sent'
-            )
-            serialized_message = SentMessageSerializer(sentmessage).data
-            print(serialized_message)
-            return Response(serialized_message, status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            try:
+                message_id = response.json().get('messages', [{}])[0].get('id')
+                contact_id = Contact.objects.get(id=contact_id)
+                # Convert the ISO string to a datetime object
+                timestamp_str = message.get('timestamp')
+                if timestamp_str:
+                    timestamp_str = timestamp_str.replace('Z', '+00:00')
+                    timestamp = datetime.fromisoformat(timestamp_str)
+                else:
+                    timestamp = None
+                sentmessage = WAMessage.objects.create(
+                    message_id=message_id,
+                    contact=contact_id,
+                    message_type=message.get('message_type'),
+                    body=message.get('body', ''),
+                    link=message.get('link', ''),
+                    status='sent',
+                    message_mode=message.get('message_mode'),
+                    timestamp=timestamp
+                )
+                serialized_message = WAMessageSerializer(sentmessage).data
+                return Response(serialized_message, status=status.HTTP_200_OK)
+            except Exception as e:
+                print(str(e))
+                return Response(status=status.HTTP_400_BAD_REQUEST)
 
     except requests.exceptions.RequestException as e:
+        print(str(e))
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as e:
         print(str(e))
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
