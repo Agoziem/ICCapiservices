@@ -99,7 +99,7 @@ def whatsapp_webhook(request):
 def send_to_whatsapp_api(request,contact_id):
     url = f"https://graph.facebook.com/{settings.WHATSAPP_VERSION}/{settings.WHATSAPP_FROM_PHONE_NUMBER_ID}/messages"
     headers = {
-        'Authorization': f'Bearer EAAXwzTlI8UEBO521TpPoatZBQrEbn4af9YR58nlfV34IZAaNw6mYlXvQa6FYQTyFVfyaMcheB9JiOO2hMdJ0ZCuF1b8ReXce0juAhBZAVtrz5MZACcZBKLWvQuBMej1gbq9GgbZC37OacveOL7R0YvmD0fqSW3HAS6T5I5oXKIDsZBvLtTJe3u9BJJjEj5Px9AEZAoijkWWjbFvZBQnjnSfYH2RvKNRK31PlCm6ukHftPdjikZD',
+        'Authorization': f'Bearer {settings.WHATSAPP_ACCESS_TOKEN}',
         'Content-Type': 'application/json'
     }
 
