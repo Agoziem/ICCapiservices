@@ -7,6 +7,12 @@ class EmailSerializer(serializers.ModelSerializer):
         model = Email
         fields = '__all__'
 
+class EmailMessageSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)  # Custom date-time format
+    class Meta:
+        model = EmailMessage
+        fields = '__all__'
+
 class EmailResponseSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)  # Custom date-time format
     class Meta:

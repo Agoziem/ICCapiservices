@@ -10,5 +10,8 @@ urlpatterns = [
     path('delete_email/<int:email_id>/', views.delete_email, name='delete_email'),
 
     path('emails/<int:message_id>/responses/',views.get_responses,name="get_responses"),
-    path('emails/createresponse/',views.create_responses,name="create_responses")
+    path('emails/createresponse/',views.create_responses,name="create_responses"),
+
+    path('emails/getsentemails/', views.getsentemails,name="get_sent_emails"),
+    path('emails/createsendemails/', views.createEmailMessage,name="get_sent_emails")
 ]

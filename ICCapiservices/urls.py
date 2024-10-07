@@ -34,6 +34,7 @@ urlpatterns = [
     path('vidoesapi/', include('vidoes.urls')),
     path('whatsappAPI/', include('whatsappAPI.urls')),
     path('chatroomapi/', include('chatroom.urls')),
+    path('notificationsapi/', include('notifications.urls')),
 ]
 
 if settings.DEBUG_ENV:

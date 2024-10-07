@@ -9,4 +9,3 @@ class NotificationAdmin(admin.ModelAdmin):
     list_filter = ['viewed', 'created_at', 'updated_at']
     list_display_links = ['title']
     list_editable = ['viewed']
-    date_hierarchy = 'created_at'

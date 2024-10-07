@@ -21,3 +21,14 @@ class EmailResponse(models.Model):
     response_message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+Email_status = [("sending","sending"),("sent","sent"),("failed","failed")]
+class EmailMessage(models.Model):
+    subject = models.CharField(max_length=355)  # You can adjust the max_length as needed
+    body = models.TextField()  # Assuming the body can be longer text
+    template = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)  # Automatically set the creation timestamp
+    status = models.CharField(max_length=255, blank=True, choices=Email_status , default="sending")
+
+    def __str__(self):
+        return self.subject
+

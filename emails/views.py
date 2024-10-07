@@ -1,3 +1,4 @@
+from re import template
 from django.shortcuts import render
 from .models import *
 from ICCapp.models import Subscription
@@ -127,3 +128,32 @@ def create_responses(request):
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def getsentemails(request):
+    try:
+        emails = EmailMessage.objects.all()
+        serializer = EmailMessageSerializer(emails, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(str(e))
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+def createEmailMessage(request):
+    data = request.data
+    try:
+        sentEmail = EmailMessage.objects.create(
+            subject = data.get("subject"),
+            body = data.get("body"),
+            template = data.get("template",None)
+        )
+        serializer = EmailMessageSerializer(sentEmail, many=False)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    
+
