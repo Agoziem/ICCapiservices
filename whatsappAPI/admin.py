@@ -25,3 +25,20 @@ class WebhookEventAdmin(admin.ModelAdmin):
     list_display = ('event_id', 'received_at')
     list_filter = ('event_id', 'received_at')
     search_fields = ('event_id', 'received_at')
+
+@admin.register(WATemplateSchema)
+class WATemplateSchemaAdmin(admin.ModelAdmin):
+    list_display = ('template', 'title', 'created_at')
+    list_filter = ('template', 'created_at')
+    search_fields = ('template', 'text','created_at')
+
+    readonly_fields = ('created_at',)
+
+    fieldsets = (
+        ('Template Information', {
+            'fields': ('template', 'text', 'link',"status")
+        }),
+        ('Timestamps', {
+            'fields': ('created_at',)
+        }),
+    )

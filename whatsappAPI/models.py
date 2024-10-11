@@ -145,3 +145,35 @@ class WebhookEvent(models.Model):
 
     def __str__(self):
         return self.event_id
+    
+
+# Tuple representing the message types (TEMPLATE_NAMES)
+TEMPLATE_NAMES = [
+    ("textonly", "Text Only"),
+    ("textwithimage", "Text with Image"),
+    ("textwithvideo", "Text with Video"),
+    ("textwithaudio", "Text with Audio"),
+    ("textwithdocument", "Text with Document"),
+    ("textwithCTA", "Text with Call to Action (CTA)")
+]
+
+MESSAGE_status = [("pending","pending"),("sent","sent"),("failed","failed")]
+
+
+# Model representing the template schema
+class WATemplateSchema(models.Model):
+    title = models.CharField(max_length=300, default="No Title", verbose_name="Message Title")
+    template = models.CharField(max_length=50,choices=TEMPLATE_NAMES,default="textonly",verbose_name="Template Type")
+    text = models.TextField(blank=True,null=True,verbose_name="Message Text")
+    link = models.URLField(blank=True,null=True,verbose_name="Optional Link")
+    status = models.CharField(max_length=255, blank=True, choices=MESSAGE_status , default="pending")
+    created_at = models.DateTimeField(auto_now_add=True,verbose_name="Created At")
+
+    def __str__(self):
+        return f"{self.template} Template"
+
+    class Meta:
+        verbose_name = "WhatsApp Template"
+        verbose_name_plural = "WhatsApp Templates"
+
+

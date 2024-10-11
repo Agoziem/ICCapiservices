@@ -147,7 +147,8 @@ def createEmailMessage(request):
         sentEmail = EmailMessage.objects.create(
             subject = data.get("subject"),
             body = data.get("body"),
-            template = data.get("template",None)
+            template = data.get("template",None),
+            status = "sent"
         )
         serializer = EmailMessageSerializer(sentEmail, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

@@ -19,4 +19,20 @@ def contact_list(request):
     serializer = ContactSerializer(contacts, many=True) 
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+# View to get all templates and create a new one
+@api_view(['GET', 'POST'])
+def template_list_create(request):
+    # GET request: Retrieve all templates
+    if request.method == 'GET':
+        templates = WATemplateSchema.objects.all()
+        serializer = WATemplateSchemaSerializer(templates, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    # POST request: Create a new template
+    elif request.method == 'POST':
+        serializer = WATemplateSchemaSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()  # Save the new template to the database
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

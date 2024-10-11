@@ -45,3 +45,14 @@ class WebhookEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebhookEvent
         fields = ['id', 'event_id', 'payload']
+
+class WATemplateSchemaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WATemplateSchema
+        fields = ['id', 'template', 'text', 'link', 'created_at', 'title', 'status']
+        read_only_fields = ['id', 'created_at']
+
+    def create(self, validated_data):
+        validated_data['status'] = 'sent' 
+        return super().create(validated_data)
+

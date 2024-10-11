@@ -4,6 +4,7 @@ from .views.mediaviews import *
 from .views.views import *
 
 urlpatterns = [
+    path('templates/', template_list_create, name='template-list-create'),
     path('send-template-message/', send_whatsapp_message, name='send_message'),
     path('whatsapp-webhook/', whatsapp_webhook, name='whatsapp_webhook'),
     path('messages/<int:contact_id>/', message_list, name='message_list'),
