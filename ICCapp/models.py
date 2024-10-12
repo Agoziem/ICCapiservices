@@ -91,20 +91,3 @@ class Department(models.Model):
     def __str__(self):
         return self.name
     
-user_group=(
-	('admin', 'admin'),
-	('dashboard', 'dashboard'),
-	('All', 'All'),
-)
-
-class Notifications(models.Model):
-    Notification_group = models.CharField(max_length=100, choices=user_group, blank=True)
-    headline=models.CharField(max_length=100, blank=True)
-    Notification= models.TextField(blank=True)
-    Notificationdate=models.DateField(auto_now_add=True, blank=True, null=True)
-    last_updated_date = models.DateTimeField(auto_now=True)
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
-    users_seen=models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
-
-    def __str__(self):
-        return f"{self.Notificationdate} {self.organization.name}"

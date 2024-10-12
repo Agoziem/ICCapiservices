@@ -43,9 +43,3 @@ class DepartmentAdmin(admin.ModelAdmin):
     search_fields = ('organization__name', 'name', 'staff_in_charge__first_name', 'staff_in_charge__last_name')
     ordering = ('organization', 'created_at', 'last_updated_date')
 
-@admin.register(Notifications)
-class NNotificationsAdmin(admin.ModelAdmin):
-    list_display = ('headline','organization','Notificationdate')
-    search_fields = ('organization__name','notification','Notificationdate')
-    list_filter = ('organization__name','Notificationdate')
-    sortable_by = ('organization__name','Notificationdate')

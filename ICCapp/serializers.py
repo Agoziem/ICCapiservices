@@ -36,15 +36,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = '__all__'
-
-class NotificationSerializer(serializers.ModelSerializer):
-    organization = serializers.SerializerMethodField()
-    class Meta:
-        model = Notifications
-        fields = '__all__'
-
-    def get_organization(self, obj):
-        return {'id': obj.organization.id, 'name': obj.organization.name}
     
 class DepartmentServiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -78,8 +69,6 @@ class DepartmentSerializer(serializers.ModelSerializer):
     def get_img_name(self, obj):
         return get_image_name(obj.img)
     
-
-    
 class OrganizationSerializer(serializers.ModelSerializer):
     logo = serializers.ImageField(allow_null=True, required=False)
     Organizationlogoname = serializers.SerializerMethodField()
@@ -110,10 +99,6 @@ class OrganizationSerializer(serializers.ModelSerializer):
     def get_subscriptions(self, obj):
         subscriptions = obj.subscription_set.all()
         return SubscriptionSerializer(subscriptions, many=True).data
-    
-    def get_messages(self, obj):
-        messages = obj.emails.all()
-        return NotificationSerializer(messages, many=True).data
     
     def get_departments(self, obj):
         departments = obj.department_set.all()
