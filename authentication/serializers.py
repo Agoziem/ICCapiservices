@@ -28,4 +28,4 @@ class UserminiSerializer(serializers.ModelSerializer):
 
     def get_img(self, obj):
         """Generate the full avatar URL or return an empty string if not available."""
-        return get_full_image_url(obj.avatar) if obj.avatar else ""
+        return get_full_image_url(obj.avatar) if obj.avatar else None
