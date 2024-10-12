@@ -17,7 +17,7 @@ class CommentPagination(PageNumberPagination):
 @api_view(['GET'])
 def get_comments(request, blog_id):
     try:
-        comments = Comment.objects.filter(blog=blog_id).order_by('-created_at')
+        comments = Comment.objects.filter(blog=blog_id).order_by('-updated_at')
         paginator = CommentPagination()
         result_page = paginator.paginate_queryset(comments, request)
         serializer = CommentSerializer(result_page, many=True)

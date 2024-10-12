@@ -16,4 +16,16 @@ class UserSerializer(serializers.ModelSerializer):
     
     def get_avatar_name(self, obj):
         useravatar = obj.avatar
-        return get_image_name(useravatar) 
+        return get_image_name(useravatar)
+
+
+class UserminiSerializer(serializers.ModelSerializer):
+    img = serializers.SerializerMethodField()  # Handle avatar as URL
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'img']
+
+    def get_img(self, obj):
+        """Generate the full avatar URL or return an empty string if not available."""
+        return get_full_image_url(obj.avatar) if obj.avatar else ""

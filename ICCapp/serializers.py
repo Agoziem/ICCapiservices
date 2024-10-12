@@ -76,8 +76,8 @@ class OrganizationSerializer(serializers.ModelSerializer):
     staffs = serializers.SerializerMethodField()
     testimonials = serializers.SerializerMethodField()
     subscriptions = serializers.SerializerMethodField()
-    messages = serializers.SerializerMethodField()
     departments = serializers.SerializerMethodField()
+    
     class Meta:
         model = Organization
         fields = '__all__'

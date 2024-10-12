@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import get_user_model
 from utils import normalize_img_field
+
 User = get_user_model()
 
 class BlogPagination(PageNumberPagination):
@@ -19,7 +20,7 @@ class BlogPagination(PageNumberPagination):
 def get_org_blogs(request,organization_id):
     try:
         category = request.GET.get('category', None)
-        if category:
+        if category and category != "All":
             blog_category = Category.objects.get(category=category)
             blogs = Blog.objects.filter(organization=organization_id, category=blog_category).order_by('-updated_at')
         else:
@@ -156,14 +157,13 @@ def delete_blog(request, blog_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 # increase the blog views
-@api_view(['POST'])
+@api_view(['get'])
 def add_views(request, blog_id):
     try:
         blog = Blog.objects.get(id=blog_id)
         blog.views += 1
         blog.save()
-        serializer = BlogSerializer(blog, many=False)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)
     except Blog.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

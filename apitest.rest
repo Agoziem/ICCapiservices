@@ -46,3 +46,8 @@ GET http://127.0.0.1:8000/servicesapi/services/1/
 # get all vidoes
 ###
 GET http://127.0.0.1:8000/vidoesapi/videos/1/
+
+
+# get batch of Articles
+###
+GET http://127.0.0.1:8000/blogsapi/orgblogs/1/?page=1&page_size=10
