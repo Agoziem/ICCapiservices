@@ -11,6 +11,7 @@ class Tag(models.Model):
   
 class Category(models.Model):
     category = models.CharField(max_length=100, blank=True, null=True)
+    description = models.TextField(default="None")
 
     def __str__(self):
         return self.category

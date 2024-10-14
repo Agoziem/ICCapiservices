@@ -21,7 +21,7 @@ class ProductPagination(PageNumberPagination):
 def get_products(request, organization_id):
     try:
         category = request.GET.get('category', None)
-        if category:
+        if category and category != "All":
             product_category = Category.objects.get(category=category)
             products = Product.objects.filter(organization=organization_id, category=product_category).order_by('-last_updated_date')
         else:

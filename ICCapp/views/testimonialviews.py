@@ -6,16 +6,27 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from utils import normalize_img_field
+from rest_framework.pagination import PageNumberPagination
 
-# get all testimonials
+# --------------------------------------------------------------------------
+# get all videos
+# --------------------------------------------------------------------------
+class TestimonialPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
 @api_view(['GET'])
 def get_testimonials(request, organization_id):
     try:
-        testimonials = Testimonial.objects.filter(organization=organization_id)
-        serializer = TestimonialSerializer(testimonials, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        testimonials = Testimonial.objects.filter(organization=organization_id).order_by('-created_at')
+        paginator = TestimonialPagination()
+        result_page = paginator.paginate_queryset(testimonials, request)
+        serializer = TestimonialSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     except Testimonial.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+
     
 # get a single testimonial
 @api_view(['GET'])

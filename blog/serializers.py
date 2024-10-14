@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import *
 from utils import *
 from authentication.serializers import UserminiSerializer
-   
+
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
@@ -32,10 +32,10 @@ class BlogSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
     def get_img_url(self, obj):
-        return get_full_image_url(obj.img)
+        return get_full_image_url(obj.img) if obj.img else None
     
     def get_img_name(self, obj):
-        return get_image_name(obj.img)
+        return get_image_name(obj.img) if obj.img else None
     
 
 

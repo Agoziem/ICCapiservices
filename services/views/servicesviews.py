@@ -20,7 +20,7 @@ class BlogPagination(PageNumberPagination):
 def get_services(request, organization_id):
     try:
         category = request.GET.get('category', None)
-        if category:
+        if category and category != "All":
             service_category = Category.objects.get(category=category)
             services = Service.objects.filter(organization=organization_id, category=service_category).order_by('-updated_at')
         else:

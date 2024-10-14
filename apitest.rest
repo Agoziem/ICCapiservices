@@ -51,3 +51,7 @@ GET http://127.0.0.1:8000/vidoesapi/videos/1/
 # get batch of Articles
 ###
 GET http://127.0.0.1:8000/blogsapi/orgblogs/1/?page=1&page_size=10
+
+# call apis 
+###
+GET http://127.0.0.1:8000/api/organization/1/

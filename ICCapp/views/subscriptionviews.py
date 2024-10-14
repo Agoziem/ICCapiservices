@@ -4,16 +4,25 @@ from ..serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 
 # get all subscriptions
+class SubscriptionPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
 @api_view(['GET'])
 def get_subscriptions(request, organization_id):
     try:
-        subscriptions = Subscription.objects.filter(organization=organization_id)
-        serializer = SubscriptionSerializer(subscriptions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        subscriptions = Subscription.objects.filter(organization=organization_id).order_by('-date_added')
+        paginator = SubscriptionPagination()
+        result_page = paginator.paginate_queryset(subscriptions, request)
+        serializer = SubscriptionSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     except Subscription.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+
     
 # get a single subscription
 @api_view(['GET'])

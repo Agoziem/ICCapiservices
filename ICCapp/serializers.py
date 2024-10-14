@@ -57,11 +57,11 @@ class DepartmentSerializer(serializers.ModelSerializer):
         return {'id': obj.organization.id, 'name': obj.organization.name}
     
     def get_staff_in_charge(self, obj):
-        return {'id': obj.staff_in_charge.id, 'name': obj.staff_in_charge.first_name + ' ' + obj.staff_in_charge.last_name, "img_url": get_full_image_url(obj.staff_in_charge.img)}
+        return {'id': obj.staff_in_charge.id, 'name': obj.staff_in_charge.first_name + ' ' + obj.staff_in_charge.last_name, "img_url": get_full_image_url(obj.staff_in_charge.img) if obj.staff_in_charge.img else None}
     
     def get_services(self, obj):
         services = obj.services.all()
-        return DepartmentServiceSerializer(services, many=True).data
+        return [{'id': service.id, 'name': service.name} for service in services]
     
     def get_img_url(self, obj):
         return get_full_image_url(obj.img)
@@ -73,11 +73,11 @@ class OrganizationSerializer(serializers.ModelSerializer):
     logo = serializers.ImageField(allow_null=True, required=False)
     Organizationlogoname = serializers.SerializerMethodField()
     Organizationlogo = serializers.SerializerMethodField()
-    staffs = serializers.SerializerMethodField()
-    testimonials = serializers.SerializerMethodField()
-    subscriptions = serializers.SerializerMethodField()
-    departments = serializers.SerializerMethodField()
-    
+    # staffs = serializers.SerializerMethodField()
+    # testimonials = serializers.SerializerMethodField()
+    # subscriptions = serializers.SerializerMethodField()
+    # departments = serializers.SerializerMethodField()
+
     class Meta:
         model = Organization
         fields = '__all__'
@@ -88,20 +88,20 @@ class OrganizationSerializer(serializers.ModelSerializer):
     def get_Organizationlogoname(self, obj):
         return get_image_name(obj.logo)
     
-    def get_staffs(self, obj):
-        staffs = obj.staff_set.all()
-        return StaffSerializer(staffs, many=True).data
+    # def get_staffs(self, obj):
+    #     staffs = obj.staff_set.all()
+    #     return StaffSerializer(staffs, many=True).data
     
-    def get_testimonials(self, obj):
-        testimonials = obj.testimonial_set.all()
-        return TestimonialSerializer(testimonials, many=True).data
+    # def get_testimonials(self, obj):
+    #     testimonials = obj.testimonial_set.all()
+    #     return TestimonialSerializer(testimonials, many=True).data
     
-    def get_subscriptions(self, obj):
-        subscriptions = obj.subscription_set.all()
-        return SubscriptionSerializer(subscriptions, many=True).data
+    # def get_subscriptions(self, obj):
+    #     subscriptions = obj.subscription_set.all()
+    #     return SubscriptionSerializer(subscriptions, many=True).data
     
-    def get_departments(self, obj):
-        departments = obj.department_set.all()
-        return DepartmentSerializer(departments, many=True).data
+    # def get_departments(self, obj):
+    #     departments = obj.department_set.all()
+    #     return DepartmentSerializer(departments, many=True).data
     
     

@@ -6,16 +6,28 @@ from ..models import *
 from ..serializers import *
 from utils import normalize_img_field
 import json
+from rest_framework.pagination import PageNumberPagination
+
+class DepartmentPagination(PageNumberPagination):
+    page_size = 10  # Default page size
+    page_size_query_param = 'page_size'  # Allow page size to be set via URL query parameter
+    max_page_size = 1000  # Max allowed page size
 
 # get all depts by an Organization
 @api_view(['GET'])
-def get_org_depts(request,organization_id):
+def get_org_depts(request, organization_id):
     try:
-        departments = Department.objects.filter(organization=organization_id)
-        serializer = DepartmentSerializer(departments, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        departments = Department.objects.filter(organization=organization_id).order_by('id')  # Add ordering if necessary
+        paginator = DepartmentPagination()
+        # Paginate the queryset
+        result_page = paginator.paginate_queryset(departments, request)
+        # Serialize the paginated result
+        serializer = DepartmentSerializer(result_page, many=True)
+        # Return the paginated response
+        return paginator.get_paginated_response(serializer.data)
     except Department.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+
     
 # add a dept
 @api_view(['POST'])
