@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from utils import normalize_img_field
 import json
+from django.db.models import Count
 
 # --------------------------------------------------------------------------
 # get all videos
@@ -31,6 +32,69 @@ def get_videos(request, organization_id):
         return paginator.get_paginated_response(serializer.data)
     except Video.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+def get_trendingvideos(request, organization_id):
+    try:
+        category = request.GET.get('category', None)
+
+        if category and category != "All":
+            video_category = Category.objects.get(category=category)
+            videos = Video.objects.filter(
+                organization=organization_id, category=video_category
+            ).annotate(
+                watchers_count=Count('userIDs_that_bought_this_video')
+            ).filter(
+                watchers_count__gt=0  # Exclude videos with no watchers
+            ).order_by('-watchers_count', '-updated_at')
+        else:
+            videos = Video.objects.filter(
+                organization=organization_id
+            ).annotate(
+                watchers_count=Count('userIDs_that_bought_this_video')
+            ).filter(
+                watchers_count__gt=0  # Exclude videos with no watchers
+            ).order_by('-watchers_count', '-updated_at')
+
+        paginator = VideoPagination()
+        result_page = paginator.paginate_queryset(videos, request)
+        serializer = VideoSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+    except Video.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+
+    
+@api_view(['GET'])
+def get_user_videos(request, organization_id, user_id):
+    try:
+        category = request.GET.get('category', None)
+
+        # Filter videos where the user exists in userIDs_that_bought_this_video (ManyToManyField)
+        if category and category != "All":
+            video_category = Category.objects.get(category=category)
+            videos = Video.objects.filter(
+                organization=organization_id,
+                category=video_category,
+                userIDs_that_bought_this_video__id=user_id
+            ).order_by('-updated_at')
+        else:
+            videos = Video.objects.filter(
+                organization=organization_id,
+                userIDs_that_bought_this_video__id=user_id
+            ).order_by('-updated_at')
+
+        paginator = VideoPagination()
+        result_page = paginator.paginate_queryset(videos, request)
+        serializer = VideoSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    except Video.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
     
 # --------------------------------------------------------------------------
 # get a single video

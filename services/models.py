@@ -24,6 +24,7 @@ class SubCategory(models.Model):
     class Meta:
         verbose_name_plural = 'SubCategories'
 
+
 # Services Model
 class Service(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
@@ -37,6 +38,7 @@ class Service(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
     subcategory = models.ForeignKey(SubCategory, on_delete=models.CASCADE, null=True, blank=True)
     userIDs_that_bought_this_service = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='userIDs_that_bought_this_service')
+    userIDs_whose_services_is_in_progress = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='userIDs_whose_services_is_in_progress')
     userIDs_whose_services_have_been_completed = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='userIDs_whose_services_have_been_completed')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -47,12 +49,14 @@ class Service(models.Model):
     class Meta:
         ordering = ['-updated_at']
 
-    # Save the video
+    # Save the Service
     def save(self, *args, **kwargs):
         if not self.service_token:
             self.service_token = self.generate_token()
         return super().save(*args, **kwargs)
     
-    # Generate a token for the video
+    # Generate a token for the Service
     def generate_token(self):
         return uuid.uuid4().hex
+
+# Prebuilt Categories Form 

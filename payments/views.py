@@ -28,9 +28,8 @@ def get_payments(request, organization_id):
 def get_payments_by_user(request, user_id):
     try:
         orders = Orders.objects.filter(customer=user_id)
-        total = orders.count()
         serializer = PaymentSerializer(orders, many=True)
-        return Response({"orders":serializer.data,"total":total}, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     except Orders.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
@@ -77,39 +76,43 @@ def add_payment(request, organization_id):
 # verify a payment
 @api_view(['POST'])
 def verify_payment(request):
-    ref = request.data.get('ref')
-    customer_id = request.data.get('customer_id')
-    if not ref:
-        return Response({'error': 'Reference is required'}, status=status.HTTP_400_BAD_REQUEST)
-    paystack = Paystack()
-    Paymentstatus, data = paystack.verify_payment(ref)
-    if Paymentstatus:
-        order = Orders.objects.get(reference=ref)
-        order.status = 'Completed'
-        if order.services:
-            for service in order.services.all():
-                service.number_of_times_bought += 1
-                service.userIDs_that_bought_this_service.add(customer_id)
-                service.save()
-        if order.products:
-            for product in order.products.all():
-                product.number_of_times_bought += 1
-                product.userIDs_that_bought_this_product.add(customer_id)
-                product.save()
-        if order.videos:
-            for video in order.videos.all():
-                video.number_of_times_bought += 1
-                video.userIDs_that_bought_this_video.add(customer_id)
-                video.save()
-        order.save()
-        order_serializer = PaymentSerializer(order)      
-        return Response(order_serializer.data, status=status.HTTP_200_OK)
-    else:
-        order = Orders.objects.get(reference=ref)
-        order.status = 'Failed'
-        order.save()
-        order_serializer = PaymentSerializer(order)
-        return Response(order_serializer.data, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        ref = request.data.get('reference')
+        customer_id = request.data.get('customer_id')
+        if not ref:
+            return Response({'error': 'Reference is required'}, status=status.HTTP_400_BAD_REQUEST)
+        paystack = Paystack()
+        Paymentstatus, data = paystack.verify_payment(ref)
+        if Paymentstatus:
+            order = Orders.objects.get(reference=ref)
+            order.status = 'Completed'
+            if order.services:
+                for service in order.services.all():
+                    service.number_of_times_bought += 1
+                    service.userIDs_that_bought_this_service.add(customer_id)
+                    service.save()
+            if order.products:
+                for product in order.products.all():
+                    product.number_of_times_bought += 1
+                    product.userIDs_that_bought_this_product.add(customer_id)
+                    product.save()
+            if order.videos:
+                for video in order.videos.all():
+                    video.number_of_times_bought += 1
+                    video.userIDs_that_bought_this_video.add(customer_id)
+                    video.save()
+            order.save()
+            order_serializer = PaymentSerializer(order)      
+            return Response(order_serializer.data, status=status.HTTP_200_OK)
+        else:
+            order = Orders.objects.get(reference=ref)
+            order.status = 'Failed'
+            order.save()
+            order_serializer = PaymentSerializer(order)
+            return Response(order_serializer.data, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(e)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # update a payment view
 @api_view(['PUT'])

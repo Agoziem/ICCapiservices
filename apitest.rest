@@ -7,6 +7,8 @@ Content-Type: application/json
     "password": "Sirnduu1@"
   }
 
+###
+GET http://127.0.0.1:8000/authapi/getUsers/
 
 ###
 # get send a whatsapp message
@@ -54,4 +56,4 @@ GET http://127.0.0.1:8000/blogsapi/orgblogs/1/?page=1&page_size=10
 
 # call apis 
 ###
-GET http://127.0.0.1:8000/api/organization/1/
+GET http://127.0.0.1:8000/paymentsapi/getcustomerscount/1/

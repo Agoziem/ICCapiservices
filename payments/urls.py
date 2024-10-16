@@ -10,5 +10,5 @@ urlpatterns = [
     path('updatepayment/<int:payment_id>/', update_payment),
     path('deletepayment/<int:payment_id>/', delete_payment),
 
-    path('getcustomerscount/<int:organization_id>/', get_payment_count),
+    path('getorderreport/<int:organization_id>/', get_payment_count),
 ]

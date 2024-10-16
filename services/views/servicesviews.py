@@ -7,11 +7,12 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from utils import normalize_img_field
 import json
+from django.db.models import Count
 
 # --------------------------------------------------------------------------
 # get all services
 # --------------------------------------------------------------------------
-class BlogPagination(PageNumberPagination):
+class ServicePagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 1000
@@ -25,13 +26,128 @@ def get_services(request, organization_id):
             services = Service.objects.filter(organization=organization_id, category=service_category).order_by('-updated_at')
         else:
             services = Service.objects.filter(organization=organization_id).order_by('-updated_at')
-        paginator = BlogPagination()
+        paginator = ServicePagination()
         result_page = paginator.paginate_queryset(services, request)
         serializer = ServiceSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
     except Service.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    
 
+@api_view(['GET'])
+def get_trendingservices(request, organization_id):
+    try:
+        category = request.GET.get('category', None)
+
+        if category and category != "All":
+            service_category = Category.objects.get(category=category)
+            services = Service.objects.filter(
+                organization=organization_id, category=service_category
+            ).annotate(
+                buyers_count=Count('userIDs_that_bought_this_service')
+            ).filter(
+                buyers_count__gt=0  # Exclude services with no buyers
+            ).order_by('-buyers_count', '-updated_at')
+        else:
+            services = Service.objects.filter(
+                organization=organization_id
+            ).annotate(
+                buyers_count=Count('userIDs_that_bought_this_service')
+            ).filter(
+                buyers_count__gt=0  # Exclude services with no buyers
+            ).order_by('-buyers_count', '-updated_at')
+
+        paginator = ServicePagination()
+        result_page = paginator.paginate_queryset(services, request)
+        serializer = ServiceSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+    except Service.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+def get_user_services(request, organization_id, user_id):
+    try:
+        category = request.GET.get('category', None)
+        # Query services where the user exists in userIDs_that_bought_this_service (ManyToManyField)
+        if category and category != "All":
+            service_category = Category.objects.get(category=category)
+            services = Service.objects.filter(
+                organization=organization_id,
+                category=service_category,
+                userIDs_that_bought_this_service__id=user_id
+            ).order_by('-updated_at')
+        else:
+            services = Service.objects.filter(
+                organization=organization_id,
+                userIDs_that_bought_this_service__id=user_id
+            ).order_by('-updated_at')
+
+        paginator = ServicePagination()
+        result_page = paginator.paginate_queryset(services, request)
+        serializer = ServiceSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    except Service.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+def add_user_to_in_progress(request, service_id, user_id):
+    """
+    Add the given user_id to the 'userIDs_whose_services_is_in_progress' field.
+    """
+    try:
+        service = Service.objects.get(id=service_id)
+
+        if user_id not in service.userIDs_whose_services_is_in_progress:
+            service.userIDs_whose_services_is_in_progress.append(user_id)
+            service.save()
+            return Response(
+                {"message": f"User {user_id} added to in-progress services."},
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"message": f"User {user_id} already in in-progress services."},
+                status=status.HTTP_200_OK
+            )
+
+    except Service.DoesNotExist:
+        return Response(
+            {"error": "Service not found."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+@api_view(['POST'])
+def add_user_to_completed(request, service_id, user_id):
+    """
+    Add the given user_id to the 'userIDs_whose_services_have_been_completed' field.
+    """
+    try:
+        service = Service.objects.get(id=service_id)
+
+        if user_id not in service.userIDs_whose_services_have_been_completed:
+            service.userIDs_whose_services_have_been_completed.append(user_id)
+            service.save()
+            return Response(
+                {"message": f"User {user_id} added to completed services."},
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"message": f"User {user_id} already in completed services."},
+                status=status.HTTP_200_OK
+            )
+
+    except Service.DoesNotExist:
+        return Response(
+            {"error": "Service not found."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
 # --------------------------------------------------------------------------
 # get a single service
 # --------------------------------------------------------------------------

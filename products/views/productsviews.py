@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from utils import normalize_img_field
 import json
+from django.db.models import Count
 
 # --------------------------------------------------------------------------
 # get all products view
@@ -32,6 +33,67 @@ def get_products(request, organization_id):
         return paginator.get_paginated_response(serializer.data)
     except Product.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+def get_trendingproducts(request, organization_id):
+    try:
+        category = request.GET.get('category', None)
+
+        if category and category != "All":
+            product_category = Category.objects.get(category=category)
+            products = Product.objects.filter(
+                organization=organization_id, category=product_category
+            ).annotate(
+                buyers_count=Count('userIDs_that_bought_this_product')
+            ).filter(
+                buyers_count__gt=0  # Exclude products with no buyers
+            ).order_by('-buyers_count', '-last_updated_date')
+        else:
+            products = Product.objects.filter(
+                organization=organization_id
+            ).annotate(
+                buyers_count=Count('userIDs_that_bought_this_product')
+            ).filter(
+                buyers_count__gt=0  # Exclude products with no buyers
+            ).order_by('-buyers_count', '-last_updated_date')
+
+        paginator = ProductPagination()
+        result_page = paginator.paginate_queryset(products, request)
+        serializer = ProductSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+    except Product.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+def get_user_products(request, organization_id, user_id):
+    try:
+        category = request.GET.get('category', None)
+
+        # Filter products based on category and user purchase (ManyToManyField)
+        if category and category != "All":
+            product_category = Category.objects.get(category=category)
+            products = Product.objects.filter(
+                organization=organization_id,
+                category=product_category,
+                userIDs_that_bought_this_product__id=user_id
+            ).order_by('-last_updated_date')
+        else:
+            products = Product.objects.filter(
+                organization=organization_id,
+                userIDs_that_bought_this_product__id=user_id
+            ).order_by('-last_updated_date')
+
+        paginator = ProductPagination()
+        result_page = paginator.paginate_queryset(products, request)
+        serializer = ProductSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    except Product.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
 
 # --------------------------------------------------------------------------   
 # get a single product view

@@ -55,3 +55,6 @@ class Video(models.Model):
     # Generate a token for the video
     def generate_token(self):
         return uuid.uuid4().hex
+    
+
+

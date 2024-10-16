@@ -6,6 +6,8 @@ from .views.subcategoriesviews import *
 
 urlpatterns = [
     path('products/<int:organization_id>/', get_products, name='get_products'),
+    path('trendingproducts/<int:organization_id>/', get_trendingproducts, name='get_trendingproducts'),
+    path('userboughtproducts/<int:organization_id>/<int:user_id>/', get_user_products, name='get_user_products'),
     path('product/<int:product_id>/', get_product, name='get_product'),
     path('add-product/<int:organization_id>/', add_product, name='add_product'),
     path('update-product/<int:product_id>/', update_product, name='update_product'),

@@ -5,11 +5,15 @@ from .views.subcategoriesviews import *
 
 urlpatterns = [
     path('services/<int:organization_id>/', servicesviews.get_services, name='get_services'),
+    path('trendingservices/<int:organization_id>/', servicesviews.get_trendingservices, name='get_trendingservices'),
+    path('userboughtservices/<int:organization_id>/<int:user_id>/', servicesviews.get_user_services, name='get_user_services'),
     path('service/<int:service_id>/', servicesviews.get_service, name='get_service'),
     path('service_by_token/<str:servicetoken>/', servicesviews.get_service_token, name='get_service_token'),
     path('add_service/<int:organization_id>/', servicesviews.add_service, name='add_service'),
     path('update_service/<int:service_id>/', servicesviews.update_service, name='update_service'),
     path('delete_service/<int:service_id>/', servicesviews.delete_service, name='delete_service'),
+    path('services/<int:service_id>/<int:user_id>/in-progress/', servicesviews.add_user_to_in_progress, name='add_user_to_in_progress'),
+    path('services/<int:service_id>/<int:user_id>/completed/', servicesviews.add_user_to_completed, name='add_user_to_completed'),
 
     path('categories/', categoriesviews.get_categories, name='get_categories'),
     path('add_category/', categoriesviews.add_category, name='add_category'),

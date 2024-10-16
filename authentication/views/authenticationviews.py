@@ -1,3 +1,4 @@
+from tkinter.tix import Tree
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -113,6 +114,18 @@ def get_user(request, user_id):
     try:
         user = User.objects.get(id=user_id)
         user_serializer = UserSerializer(instance=user)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(e)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_users(request):
+    try:
+        user = User.objects.all()
+        user_serializer = UserSerializer(user,many=True)
         return Response(user_serializer.data, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
