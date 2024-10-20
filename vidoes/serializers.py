@@ -22,8 +22,8 @@ class VideoSerializer(serializers.ModelSerializer):
     video_name = serializers.SerializerMethodField()
     img_url = serializers.SerializerMethodField()
     img_name = serializers.SerializerMethodField()
-    category = CategorySerializer()
-    subcategory = SubCategorySerializer()
+    category = CategorySerializer(read_only=True)
+    subcategory = SubCategorySerializer(read_only=True)
     
     class Meta:
         model = Video

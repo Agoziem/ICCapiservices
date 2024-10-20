@@ -1,12 +1,14 @@
+import json
 from django.shortcuts import render
 from ..models import *
 from ..serializers import *
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,parser_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import get_user_model
-from utils import normalize_img_field
+from utils import normalize_img_field,parse_json_fields
+from rest_framework.parsers import MultiPartParser, FormParser
 
 User = get_user_model()
 
@@ -64,86 +66,80 @@ def get_blog_by_slug(request, slug):
     except Blog.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+
+
 @api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
 def add_blog(request, organization_id, user_id):
-    data = request.data.copy()
     try:
-        user = User.objects.get(id=user_id)
-        organization = Organization.objects.get(id=organization_id)
-        data = normalize_img_field(data, "img")
-        title = data.get('title', None)
-        subtitle = data.get('subtitle', None)
-        body = data.get('body', None)
-        readTime = data.get('readTime', 0)
-        tags = data.get('tags', [])
-        tags_list = tags.split(',')
-        slug = data.get('slug', None)
-        category = data.get('category', None)
-        category, created = Category.objects.get_or_create(category=category)
+        # Parse and normalize image field
+        data = request.data.copy()
+        normalized_data = normalize_img_field(data,"img")
+        parsed_json = parse_json_fields(normalized_data)
+        serializer = BlogSerializer(data=parsed_json)
 
-        blog = Blog.objects.create(
-            author=user,
-            organization=organization,
-            title=title,
-            subtitle=subtitle,
-            body=body,
-            slug=slug,
-            category=category,
-            readTime=readTime
-        )
-        
-        for tag in tags_list:
-            tag, created = Tag.objects.get_or_create(tag=tag)
-            blog.tags.add(tag)
-        
-        if data.get("img"):
-            img = data.get("img")
-            blog.img = img
-        blog.save()
+        if serializer.is_valid():
+            # Save the blog instance without relational fields
+            blog = serializer.save()
 
-        serializer = BlogSerializer(blog, many=False)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    except User.DoesNotExist or Organization.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+            # Set relational fields manually
+            blog.author = User.objects.get(id=parsed_json.get("author"))
+            blog.category = Category.objects.get(id=parsed_json.get("category"))
+
+            # Handle tags: create missing tags and set them
+            tag_objects = [Tag.objects.get_or_create(tag=name.strip())[0] for name in parsed_json.get("tags",[])]
+            blog.tags.set(tag_objects)
+
+            # Save the blog with the relational fields
+            blog.save()
+
+            return Response(BlogSerializer(blog).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    except (User.DoesNotExist, Category.DoesNotExist) as e:
+        return Response({"detail": f"Related object not found: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(e)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        print(str(e))
+        return Response({"detail": f"Related object not found: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @api_view(['PUT'])
+@parser_classes([MultiPartParser, FormParser])
 def update_blog(request, blog_id):
-    data = request.data.copy()
     try:
-        blog = Blog.objects.get(id=blog_id)
-        data = normalize_img_field(data, "img")
-        blog.title = data.get('title', blog.title)
-        blog.subtitle = data.get('subtitle', blog.subtitle)
-        blog.body = data.get('body', blog.body)
-        blog.readTime = data.get('readTime', blog.readTime)
-        tags = data.get('tags', [])
-        tags_list = tags.split(',')
-        blog.slug = data.get('slug', blog.slug)
-        category = data.get('category', blog.category)
-        category, created = Category.objects.get_or_create(category=category)
-        blog.category = category
-        blog.tags.clear()
-        
-        for tag in tags_list:
-            tag, created = Tag.objects.get_or_create(tag=tag)
-            blog.tags.add(tag)
-        
-        if data.get("img"):
-            img = data.get("img")
-            blog.img = img
-        blog.save()
+        # Parse and normalize the image field
+        data = normalize_img_field(request.data.copy(), "img")
+        parsed_json = parse_json_fields(data)
 
-        serializer = BlogSerializer(blog, many=False)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    except Blog.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        # Fetch the existing blog instance
+        blog = Blog.objects.get(id=blog_id)
+        serializer = BlogSerializer(blog, data=parsed_json)
+
+        if serializer.is_valid():
+            # Save the blog instance without relational fields
+            blog = serializer.save()
+
+            # Set relational fields manually
+            blog.author = User.objects.get(id=parsed_json.get("author"))
+            blog.category = Category.objects.get(id=parsed_json.get("category"))
+
+            # Handle tags: Create missing tags and set them
+            tag_names = parsed_json.get("tags", [])
+            tag_objects = [Tag.objects.get_or_create(tag=name.strip())[0] for name in tag_names]
+            blog.tags.set(tag_objects)
+            blog.save()
+
+            return Response(BlogSerializer(blog).data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except (User.DoesNotExist, Category.DoesNotExist) as e:
+        return Response({"detail": f"Related object not found: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(e)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        print(str(e))
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
     
 # delete a Blog view

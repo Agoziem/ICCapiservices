@@ -5,9 +5,10 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
-from utils import normalize_img_field
+from utils import normalize_img_field,parse_json_fields
 import json
 from django.db.models import Count
+from django.http import QueryDict
 
 # --------------------------------------------------------------------------
 # get all services
@@ -178,116 +179,95 @@ def get_service_token(request, servicetoken):
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_service(request, organization_id):
-    data = request.data.copy()
+    # Use a mutable version of request.data (without deepcopy)
+    if isinstance(request.data, QueryDict):
+        data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+    else:
+        data = request.data
     try:
-        organization = Organization.objects.get(id=organization_id)
-
+        # Normalize the file fields
         image_fields = ['preview']
-        # Normalize image fields
         for field in image_fields:
             data = normalize_img_field(data, field)
 
         # Extract and parse JSON fields from the QueryDict
-        parsed_json_fields = {}
-        for field in data:
-            if field not in image_fields:
-                try:
-                    parsed_json_fields[field] = json.loads(data[field])
-                except (json.JSONDecodeError, TypeError):
-                    # If field is not JSON, keep it as is
-                    parsed_json_fields[field] = data[field]
+        parsed_json_fields = parse_json_fields(data)
 
-        # Retrieve the category object
-        category = Category.objects.get(id=parsed_json_fields['category'].get('id'))
+        # serialize the field
+        serializer = ServiceSerializer(data=parsed_json_fields)
+        if serializer.is_valid():
+            service = serializer.save()
 
-        # Create the service
-        service = Service.objects.create(
-            organization=organization,
-            name=parsed_json_fields.get('name', ''),
-            description=parsed_json_fields.get('description', ''),
-            category=category,
-            price=parsed_json_fields.get('price', 0.0),
-            service_flow=parsed_json_fields.get('service_flow', ''),
-        )
+            # Retrieve the Organization as well
+            service.organization = Organization.objects.get(id=parsed_json_fields['organization'])
+            # Retrieve the category object
+            service.category = Category.objects.get(id=parsed_json_fields['category'].get('id'))
 
-        # Handle subcategory field if it exist and its not empty (optional fields)
-        if 'subcategory' in parsed_json_fields and parsed_json_fields['subcategory']:
-            subcategory = SubCategory.objects.get(id=parsed_json_fields['subcategory'].get('id'))
-            service.subcategory = subcategory
+            # Handle subcategory field if it exist and its not empty (optional fields)
+            if 'subcategory' in parsed_json_fields and parsed_json_fields['subcategory']:
+                subcategory = SubCategory.objects.get(id=parsed_json_fields['subcategory'].get('id'))
+                service.subcategory = subcategory
 
-        # Handle image fields
-        for field in image_fields:
-            if data.get(field):
-                setattr(service, field, data.get(field))
-
-        service.save()
-        serializer = ServiceSerializer(service, many=False)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    except Category.DoesNotExist:
-        return Response({"detail": "Category not found."}, status=status.HTTP_400_BAD_REQUEST)
+            service.save()
+            return Response(ServiceSerializer(service).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Category.DoesNotExist or Organization.DoesNotExist:
+        return Response({"detail": "Category or Organization not found."}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print(e)
         return Response(status=status.HTTP_400_BAD_REQUEST)
-    except Organization.DoesNotExist:
-        return Response({"detail": "Organization not found."}, status=status.HTTP_404_NOT_FOUND)
 
 # --------------------------------------------------------------------------
-# Update a service view
+# Update a service view 
 # --------------------------------------------------------------------------
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_service(request, service_id):
-    data = request.data.copy()
+    
+    if isinstance(request.data, QueryDict):
+        data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+    else:
+        data = request.data
     try:
         service = Service.objects.get(id=service_id)
 
-        # Normalize image fields
+        # Normalize the file fields
         image_fields = ['preview']
         for field in image_fields:
             data = normalize_img_field(data, field)
 
-        # Parse JSON fields
-        for field in data:
-            if field not in image_fields:
+        # Extract and parse JSON fields from the QueryDict
+        parsed_json_fields = parse_json_fields(data)
+
+         # serialize the field
+        serializer = ServiceSerializer(service,data=parsed_json_fields)
+        if serializer.is_valid():
+            service = serializer.save()
+
+            # Retrieve the Organization as well
+            service.organization = Organization.objects.get(id=parsed_json_fields['organization'])
+            # Update category field
+            if 'category' in parsed_json_fields:
                 try:
-                    data[field] = json.loads(data[field])
-                except (json.JSONDecodeError, TypeError):
-                    # If field is not JSON, keep it as is
-                    pass
+                    category_id = parsed_json_fields['category'].get('id')
+                    if category_id:
+                        category = Category.objects.get(id=category_id)
+                        service.category = category
+                except Category.DoesNotExist:
+                    return Response({"detail": "Category not found."}, status=status.HTTP_400_BAD_REQUEST)
+                
+            # Update subcategory field (optional fields)
+            if 'subcategory' in parsed_json_fields and parsed_json_fields['subcategory']:
+                    subcategory_id = parsed_json_fields['subcategory'].get('id')
+                    if subcategory_id:
+                        subcategory = SubCategory.objects.get(id=subcategory_id)
+                        service.subcategory = subcategory
+            else:
+                service.subcategory = None
 
-        # Update service fields
-        service.name = data.get('name', service.name)
-        service.description = data.get('description', service.description)
-        service.price = data.get('price', service.price)
-        service.service_flow = data.get('service_flow', service.service_flow)
-
-        # Update category field
-        if 'category' in data:
-            try:
-                category_id = data['category'].get('id')
-                if category_id:
-                    category = Category.objects.get(id=category_id)
-                    service.category = category
-            except Category.DoesNotExist:
-                return Response({"detail": "Category not found."}, status=status.HTTP_400_BAD_REQUEST)
-            
-        # Update subcategory field (optional fields)
-        if 'subcategory' in data and data['subcategory']:
-                subcategory_id = data['subcategory'].get('id')
-                if subcategory_id:
-                    subcategory = SubCategory.objects.get(id=subcategory_id)
-                    service.subcategory = subcategory
-        else:
-            service.subcategory = None
-
-        # Handle image fields
-        for field in image_fields:
-            if field in data:
-                setattr(service, field, data.get(field))
-
-        service.save()
-        serializer = ServiceSerializer(service, many=False)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            service.save()
+            return Response(ServiceSerializer(service).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Service.DoesNotExist:
         return Response({"detail": "Service not found."}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

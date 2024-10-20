@@ -19,8 +19,9 @@ class ServiceSerializer(serializers.ModelSerializer):
     preview = serializers.ImageField(allow_null=True, required=False)
     img_url = serializers.SerializerMethodField()
     img_name = serializers.SerializerMethodField()
-    category = CategorySerializer()
-    subcategory = SubCategorySerializer()
+    category = CategorySerializer(read_only=True)
+    subcategory = SubCategorySerializer(read_only=True)
+    
     class Meta:
         model = Service
         fields = '__all__'

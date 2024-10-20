@@ -30,7 +30,7 @@ class Video(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     video = models.FileField(upload_to='videos/', null=True, blank=True)
     thumbnail = models.ImageField(upload_to='videothumbnails/', null=True, blank=True)
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
     subcategory = models.ForeignKey(SubCategory, on_delete=models.CASCADE, null=True)
     video_token = models.CharField(max_length=200, blank=True)
