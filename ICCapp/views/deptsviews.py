@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,parser_classes
 from rest_framework.response import Response
 from rest_framework import status
 from ..models import *
@@ -7,6 +7,8 @@ from ..serializers import *
 from utils import normalize_img_field
 import json
 from rest_framework.pagination import PageNumberPagination
+from django.http import QueryDict
+from rest_framework.parsers import MultiPartParser, FormParser
 
 class DepartmentPagination(PageNumberPagination):
     page_size = 10  # Default page size
@@ -28,41 +30,33 @@ def get_org_depts(request, organization_id):
     except Department.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    
 # add a dept
 @api_view(['POST'])
-def add_dept(request,organization_id):
-    data = request.data.copy()
-    
+@parser_classes([MultiPartParser, FormParser])
+def add_dept(request,organization_id):    
     try:
+        if isinstance(request.data, QueryDict):
+            data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        else:
+            data = request.data
         data = normalize_img_field(data,"img")
+        parsed_data = parse_json_fields(data)
         organization = Organization.objects.get(id=organization_id)
-        department = Department.objects.create(
-            organization=organization,
-            name=data.get('name',''),
-            description=data.get('description','')
-        )
-
-        if data.get('staff_in_charge'):
-            staff_in_charge = Staff.objects.get(id=data.get('staff_in_charge'))
-            department.staff_in_charge = staff_in_charge
-
-        if data.get("img"):
-            img = data.get("img")
-            department.img = img
-        
-        # Parse the services JSON string into a list of dictionaries
-        services_json = data.get('services', '[]')
-        services_list = json.loads(services_json)
-
-        for service_dict in services_list:
-            service_name = service_dict.get('name')
-            if service_name:
-                service, created = DepartmentService.objects.get_or_create(name=service_name)
-                department.services.add(service)
-        department.save()
-        dept_serializer = DepartmentSerializer(instance=department)
-        return Response(dept_serializer.data, status=status.HTTP_201_CREATED)
+        serializer = DepartmentSerializer(data=parsed_data)
+        if serializer.is_valid():
+            department = serializer.save(organization=organization)
+            if parsed_data.get('staff_in_charge'):
+                staff_in_charge = Staff.objects.get(id=parsed_data.get('staff_in_charge'))
+                department.staff_in_charge = staff_in_charge
+            # Parse the services JSON string into a list of dictionaries
+            services_list = parsed_data.get('services', [])
+            for service_name in services_list:
+                if service_name:
+                    service, created = DepartmentService.objects.get_or_create(name=service_name)
+                    department.services.add(service)
+            department.save()
+            return Response(DepartmentSerializer(department).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print(e)
         return Response({'error': 'Error in adding dept'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -70,37 +64,34 @@ def add_dept(request,organization_id):
 
 # update a dept
 @api_view(['PUT'])
+@parser_classes([MultiPartParser, FormParser])
 def update_dept(request, department_id):
-    data = request.data.copy()
     try:
+        if isinstance(request.data, QueryDict):
+            data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        else:
+            data = request.data
         department = Department.objects.get(id=department_id)
         data = normalize_img_field(data, "img")
-        department.name = data.get('name', department.name)
-        department.description = data.get('description', department.description)
+        parsed_data = parse_json_fields(data)
+        serializer = DepartmentSerializer(department,data=parsed_data)
+        if serializer.is_valid():
+            department = serializer.save()
 
-        # Parse the services JSON string into a list of dictionaries
-        services_json = data.get('services', '[]')
-        services_list = json.loads(services_json)
+            if data.get('staff_in_charge'):
+                staff_in_charge = Staff.objects.get(id=parsed_data.get('staff_in_charge'))
+                department.staff_in_charge = staff_in_charge
 
-        if data.get("img"):
-            img = data.get("img")
-            department.img = img
-
-        if data.get('staff_in_charge'):
-            staff_in_charge = Staff.objects.get(id=data.get('staff_in_charge'))
-            department.staff_in_charge = staff_in_charge
-
-        department.services.clear()
-        for service_dict in services_list:
-            service_name = service_dict.get('name')
-            if service_name:
-                service, created = DepartmentService.objects.get_or_create(name=service_name)
-                department.services.add(service)
-
-        department.save()
-        dept_serializer = DepartmentSerializer(instance=department)
-        return Response(dept_serializer.data, status=status.HTTP_200_OK)
-
+            # Parse the services JSON string into a list of dictionaries
+            services_list = parsed_data.get('services', [])
+            department.services.clear()
+            for service_name in services_list:
+                if service_name:
+                    service, created = DepartmentService.objects.get_or_create(name=service_name)
+                    department.services.add(service)
+            department.save()
+            return Response(DepartmentSerializer(department).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Department.DoesNotExist:
         return Response({'error': 'Department does not exist'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

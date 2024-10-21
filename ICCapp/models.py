@@ -39,7 +39,7 @@ class Staff(models.Model):
     img = models.ImageField(upload_to='staff/images',blank=True, null=True)
     role = models.CharField(max_length=100, blank=True, null=True)
     facebooklink = models.CharField(max_length=100, blank=True, null=True)
-    instagramlink = models.CharField(max_length=20, blank=True, null=True)
+    instagramlink = models.CharField(max_length=100, blank=True, null=True)
     twitterlink = models.CharField(max_length=100, blank=True, null=True)
     linkedinlink = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

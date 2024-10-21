@@ -1,4 +1,3 @@
-from re import template
 from django.shortcuts import render,redirect
 from .models import *
 from ICCapp.models import Subscription
@@ -9,7 +8,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from rest_framework.pagination import PageNumberPagination
 
+class EmailPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 # get all email addresses
 @api_view(['GET'])
@@ -26,9 +30,11 @@ def get_subscriptions(request,organization_id):
 @api_view(['GET'])
 def get_emails(request, organization_id):
     try:
-        emails = Email.objects.filter(organization=organization_id)
-        serializer = EmailSerializer(emails, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        emails = Email.objects.filter(organization=organization_id).order_by("-created_at")
+        paginator = EmailPagination()
+        result_page = paginator.paginate_queryset(emails, request)
+        serializer = EmailSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     except Email.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     

@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from utils import normalize_img_field
+from django.http import QueryDict
 
 # get all organizations
 @api_view(['GET'])
@@ -32,7 +33,10 @@ def get_organization(request, organization_id):
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_organization(request):
-    data = request.data.copy()
+    if isinstance(request.data, QueryDict):
+        data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+    else:
+        data = request.data
     try:
         data = normalize_img_field(data,"logo")
         serializer = OrganizationSerializer(data=data)
@@ -47,7 +51,10 @@ def add_organization(request):
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_organization(request, organization_id):
-    data = request.data.copy()
+    if isinstance(request.data, QueryDict):
+        data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+    else:
+        data = request.data
     try:
         organization = Organization.objects.get(id=organization_id)
         data = normalize_img_field(data,"logo")

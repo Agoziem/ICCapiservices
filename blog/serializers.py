@@ -40,7 +40,7 @@ class BlogSerializer(serializers.ModelSerializer):
             'id', 'title', 'subtitle', 'body', 'slug' , 'category' , 'tags'
             , 'author', 'organization', 
             'img', 'img_url', 'img_name', 'readTime', 
-            'views', 'date', 'updated_at'
+            'views', 'date', 'updated_at','likes'
         ]
     
     def get_img_url(self, obj):

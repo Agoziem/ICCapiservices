@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from utils import normalize_img_field
 from rest_framework.pagination import PageNumberPagination
+from django.http import QueryDict
 
 # --------------------------------------------------------------------------
 # get all videos
@@ -43,9 +44,13 @@ def get_testimonial(request, testimonial_id):
 @parser_classes([MultiPartParser, FormParser])
 def add_testimonial(request, organization_id):
     try:
+        if isinstance(request.data, QueryDict):
+            data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        else:
+            data = request.data
         organization = Organization.objects.get(id=organization_id)
-        data = request.data.copy()
         data = normalize_img_field(data,"img")
+        
         serializer = TestimonialSerializer(data=data)
         if serializer.is_valid():
             serializer.save(organization=organization)
@@ -53,6 +58,9 @@ def add_testimonial(request, organization_id):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Organization.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(str(e))
+        return Response(status=status.HTTP_400_BAD_REQUEST)
     
 # update a testimonial view
 @api_view(['PUT'])
@@ -60,7 +68,10 @@ def add_testimonial(request, organization_id):
 def update_testimonial(request, testimonial_id):
     try:
         testimonial = Testimonial.objects.get(id=testimonial_id)
-        data = request.data.copy()
+        if isinstance(request.data, QueryDict):
+            data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        else:
+            data = request.data
         data = normalize_img_field(data,"img")
         serializer = TestimonialSerializer(instance=testimonial, data=data)
         if serializer.is_valid():
@@ -69,6 +80,9 @@ def update_testimonial(request, testimonial_id):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Testimonial.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(str(e))
+        return Response(status=status.HTTP_400_BAD_REQUEST)
     
 # delete a testimonial view
 @api_view(['DELETE'])

@@ -49,6 +49,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
     staff_in_charge = serializers.SerializerMethodField()
     organization = serializers.SerializerMethodField()
     services = serializers.SerializerMethodField()
+    
     class Meta:
         model = Department
         fields = '__all__'

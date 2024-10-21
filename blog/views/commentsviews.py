@@ -35,9 +35,7 @@ def add_comment(request, blog_id, user_id):
         comment = Comment.objects.create(blog=blog, user=user, comment=request.data['comment'])
         serializer = CommentSerializer(comment, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    except Blog.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-    except User.DoesNotExist:
+    except (Blog.DoesNotExist or User.DoesNotExist):
         return Response(status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         print(e)

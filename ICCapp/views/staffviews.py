@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from utils import normalize_img_field
 from rest_framework.pagination import PageNumberPagination
-
+from django.http import QueryDict
 
 class StaffPagination(PageNumberPagination):
     page_size = 10
@@ -46,12 +46,16 @@ def get_staff(request, staff_id):
 def add_staff(request, organization_id):
     try:
         organization = Organization.objects.get(id=organization_id)
-        data = request.data.copy()
+        if isinstance(request.data, QueryDict):
+            data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        else:
+            data = request.data
         data = normalize_img_field(data,"img")
         serializer = StaffSerializer(data=data)
         if serializer.is_valid():
             serializer.save(organization=organization)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Organization.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
@@ -62,7 +66,10 @@ def add_staff(request, organization_id):
 def update_staff(request, staff_id):
     try:
         staff = Staff.objects.get(id=staff_id)
-        data = request.data.copy()
+        if isinstance(request.data, QueryDict):
+            data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        else:
+            data = request.data
         data = normalize_img_field(data,"img")
         serializer = StaffSerializer(instance=staff, data=data)
         if serializer.is_valid():
