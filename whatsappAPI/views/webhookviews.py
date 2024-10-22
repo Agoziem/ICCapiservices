@@ -175,6 +175,7 @@ def send_to_whatsapp_api(request,contact_id):
 @api_view(['POST'])
 def send_whatsapp_message(request):
     details = request.data
+    print(details)
     to = details.get('to_phone_number', '') # The phone number you want to send the message to
     template_name = details.get('template_name', '') # The template you want to use
     template_name = template_name.replace(' ', '_').lower()
