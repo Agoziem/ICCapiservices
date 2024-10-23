@@ -40,6 +40,7 @@ class Service(models.Model):
     userIDs_that_bought_this_service = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='userIDs_that_bought_this_service')
     userIDs_whose_services_is_in_progress = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='userIDs_whose_services_is_in_progress')
     userIDs_whose_services_have_been_completed = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='userIDs_whose_services_have_been_completed')
+    details_form_link = models.URLField(max_length=500,blank=True,null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
