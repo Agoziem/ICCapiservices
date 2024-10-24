@@ -5,10 +5,12 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
-from utils import normalize_img_field,parse_json_fields
+from utils import normalize_img_field,parse_json_fields,get_full_image_url
 import json
 from django.db.models import Count
 from django.http import QueryDict
+from collections import Counter
+
 
 # --------------------------------------------------------------------------
 # get all services
@@ -94,6 +96,51 @@ def get_user_services(request, organization_id, user_id):
     except Service.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+@api_view(['GET'])
+def get_service_users(request, service_id):
+    try:
+        # Get the service instance
+        service = Service.objects.get(id=service_id)
+
+        # Determine which field to query based on the request
+        category = request.query_params.get('category', 'userIDs_that_bought_this_service')
+
+        # Validate the field name to avoid invalid access
+        valid_category = [
+            'userIDs_that_bought_this_service',
+            'userIDs_whose_services_is_in_progress',
+            'userIDs_whose_services_have_been_completed'
+        ]
+        if category not in valid_category:
+            return Response({"detail": "Invalid field specified."}, status=400)
+
+        # Fetch users based on the field
+        users = getattr(service, category).all()
+        user_counter = Counter(users)
+
+        # Prepare the user data
+        user_data = [
+            {
+                "id": user.id,
+                "username": user.username,
+                "avatar_url": get_full_image_url(user.avatar) ,
+                "user_count": count,
+                "date_joined": user.date_joined
+            }
+            for user, count in user_counter.items()
+        ]
+
+        # Paginate the results
+        paginator = ServicePagination()
+        paginated_data = paginator.paginate_queryset(user_data, request)
+
+        # Return paginated response
+        return paginator.get_paginated_response(paginated_data)
+
+    except Service.DoesNotExist:
+        return Response({"detail": "Service not found."}, status=404)
+
+
 
 @api_view(['POST'])
 def add_user_to_in_progress(request, service_id, user_id):
@@ -102,9 +149,8 @@ def add_user_to_in_progress(request, service_id, user_id):
     """
     try:
         service = Service.objects.get(id=service_id)
-
-        if user_id not in service.userIDs_whose_services_is_in_progress:
-            service.userIDs_whose_services_is_in_progress.append(user_id)
+        if user_id not in service.userIDs_whose_services_is_in_progress.all():
+            service.userIDs_whose_services_is_in_progress.add(user_id)
             service.save()
             return Response(
                 {"message": f"User {user_id} added to in-progress services."},
@@ -130,24 +176,27 @@ def add_user_to_completed(request, service_id, user_id):
     try:
         service = Service.objects.get(id=service_id)
 
-        if user_id not in service.userIDs_whose_services_have_been_completed:
-            service.userIDs_whose_services_have_been_completed.append(user_id)
-            service.save()
-            return Response(
-                {"message": f"User {user_id} added to completed services."},
-                status=status.HTTP_200_OK
-            )
-        else:
-            return Response(
-                {"message": f"User {user_id} already in completed services."},
-                status=status.HTTP_200_OK
-            )
+        # Remove the user from 'in-progress' if present
+        if service.userIDs_whose_services_is_in_progress.filter(id=user_id).exists():
+            service.userIDs_whose_services_is_in_progress.remove(user_id)
+
+        # Add the user to 'completed' if not already present
+        if not service.userIDs_whose_services_have_been_completed.filter(id=user_id).exists():
+            service.userIDs_whose_services_have_been_completed.add(user_id)
+
+        service.save()  # Ensure the changes are persisted
+
+        return Response(
+            {"message": f"User {user_id} moved to completed services."},
+            status=status.HTTP_200_OK
+        )
 
     except Service.DoesNotExist:
         return Response(
             {"error": "Service not found."},
             status=status.HTTP_404_NOT_FOUND
         )
+
     
 # --------------------------------------------------------------------------
 # get a single service

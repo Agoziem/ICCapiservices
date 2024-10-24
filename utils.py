@@ -15,7 +15,10 @@ def get_full_image_url(image_field, base_url=settings.DJANGO_IMAGE_URL):
     image_url = re.sub(pattern_percent_3A, ':', image_url)
 
     # Check if the URL is relative and needs to be prefixed with base URL
-    if not image_url.startswith(('http://', 'https://')):
+    if re.match(r'^/?media/(http|https):', image_url):
+        image_url = re.sub(r'^/?media/', '', image_url)
+
+    if not image_url.startswith(('http://', 'https://', 'https:', 'http:')):
         image_url = f"{base_url}{image_url}"
 
     return image_url

@@ -90,6 +90,8 @@ def verify_payment(request):
                 for service in order.services.all():
                     service.number_of_times_bought += 1
                     service.userIDs_that_bought_this_service.add(customer_id)
+                    if service.userIDs_whose_services_have_been_completed.filter(id=customer_id).exists():
+                        service.userIDs_whose_services_have_been_completed.remove(customer_id)
                     service.save()
             if order.products:
                 for product in order.products.all():

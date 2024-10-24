@@ -7,6 +7,7 @@ urlpatterns = [
     path('services/<int:organization_id>/', servicesviews.get_services, name='get_services'),
     path('trendingservices/<int:organization_id>/', servicesviews.get_trendingservices, name='get_trendingservices'),
     path('userboughtservices/<int:organization_id>/<int:user_id>/', servicesviews.get_user_services, name='get_user_services'),
+    path('servicesusers/<int:service_id>/', servicesviews.get_service_users, name='get_user_services'),
     path('service/<int:service_id>/', servicesviews.get_service, name='get_service'),
     path('service_by_token/<str:servicetoken>/', servicesviews.get_service_token, name='get_service_token'),
     path('add_service/<int:organization_id>/', servicesviews.add_service, name='add_service'),
