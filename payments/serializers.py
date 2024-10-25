@@ -18,7 +18,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         return {'id': obj.organization.id, 'name': obj.organization.name}
     
     def get_customer(self, obj):
-        return {'id': obj.customer.id, 'name': obj.customer.username}
+        return {'id': obj.customer.id, 'name': obj.customer.username, 'email': obj.customer.email}
     
 
 

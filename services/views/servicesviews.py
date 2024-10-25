@@ -123,6 +123,7 @@ def get_service_users(request, service_id):
             {
                 "id": user.id,
                 "username": user.username,
+                "email": user.email,
                 "avatar_url": get_full_image_url(user.avatar) ,
                 "user_count": count,
                 "date_joined": user.date_joined
