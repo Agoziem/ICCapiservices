@@ -28,7 +28,8 @@ def register_user(request):
             email=request.data['email'],
             first_name=request.data['firstname'],
             last_name=request.data['lastname'],
-            password=request.data['password']
+            password=request.data['password'],
+            date_joined=timezone.now()
         )
         
         # Create an auth token
@@ -73,11 +74,21 @@ def register_user_with_oauth(request,provider):
         user.emailIsVerified = emailverified
         user.first_name = first_name
         user.last_name = last_name
+        user.date_joined=timezone.now()
         user.save()
         user_serializer = UserSerializer(instance=user)
         return Response(user_serializer.data, status=status.HTTP_200_OK)
     except User.DoesNotExist:
-        new_user = User.objects.create_user(username=username, email=email, first_name = first_name, last_name = last_name, emailIsVerified = emailverified, isOauth=True, Oauthprovider=provider)
+        new_user = User.objects.create_user(
+            username=username, 
+            email=email, 
+            first_name = first_name, 
+            last_name = last_name, 
+            emailIsVerified = emailverified, 
+            isOauth=True, 
+            Oauthprovider=provider,
+            date_joined=timezone.now()
+            )
         new_user.save()
         token = Token.objects.create(user=new_user)
         user_serializer = UserSerializer(instance=new_user)
