@@ -9,6 +9,5 @@ urlpatterns = [
     path('verifypayment/', verify_payment),
     path('updatepayment/<int:payment_id>/', update_payment),
     path('deletepayment/<int:payment_id>/', delete_payment),
-
     path('getorderreport/<int:organization_id>/', get_payment_count),
 ]

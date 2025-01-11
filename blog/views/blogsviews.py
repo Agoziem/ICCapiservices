@@ -131,7 +131,7 @@ def update_blog(request, blog_id):
             blog.save()
 
             return Response(BlogSerializer(blog).data, status=status.HTTP_200_OK)
-
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except (User.DoesNotExist, Category.DoesNotExist) as e:

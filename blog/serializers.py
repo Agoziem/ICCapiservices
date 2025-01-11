@@ -42,6 +42,7 @@ class BlogSerializer(serializers.ModelSerializer):
             'img', 'img_url', 'img_name', 'readTime', 
             'views', 'date', 'updated_at','likes'
         ]
+        read_only_fields = ['id', 'date', 'updated_at', 'views', 'likes']
     
     def get_img_url(self, obj):
         return get_full_image_url(obj.img) if obj.img else None
