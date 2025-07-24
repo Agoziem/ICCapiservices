@@ -1,12 +1,15 @@
 from django.shortcuts import render
 from ..models import *
-from ..serializers import SubjectSerializer, QuestionSerializer
+from ..serializers import SubjectSerializer, QuestionSerializer, CreateSubjectSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 
 # view to get all the subjects
+@swagger_auto_schema(method="get", responses={200: SubjectSerializer(many=True), 404: 'Test Not Found'})
 @api_view(['GET'])
 def get_subjects(request,test_id):
     try:
@@ -19,6 +22,7 @@ def get_subjects(request,test_id):
     
 
 # view to get a single subject
+@swagger_auto_schema(method="get", responses={200: SubjectSerializer, 404: 'Subject Not Found'})
 @api_view(['GET'])
 def get_subject(request, subject_id):
     try:
@@ -68,6 +72,7 @@ def get_subject(request, subject_id):
 # //     "testorganization": 1
 # // }
 
+@swagger_auto_schema(method="post", request_body=CreateSubjectSerializer, responses={201: SubjectSerializer, 404: 'Test Not Found'})
 @api_view(['POST'])
 def add_subject(request, test_id):
     data = request.data
@@ -91,6 +96,7 @@ def add_subject(request, test_id):
 
     
 # view to update a subject
+@swagger_auto_schema(method="put", request_body=CreateSubjectSerializer, responses={200: SubjectSerializer, 404: 'Subject Not Found'})
 @api_view(['PUT'])
 def update_subject(request, subject_id):
     data = request.data
@@ -114,6 +120,7 @@ def update_subject(request, subject_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 # view to delete a subject
+@swagger_auto_schema(method="delete", responses={204: 'Subject deleted successfully', 404: 'Subject Not Found'})
 @api_view(['DELETE'])
 def delete_subject(request,subject_id):
     try: 

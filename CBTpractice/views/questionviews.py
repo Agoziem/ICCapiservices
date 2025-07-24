@@ -2,9 +2,12 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from ..models import Question, Answer, Subject
-from ..serializers import QuestionSerializer, AnswerSerializer
+from ..serializers import CreateQuestionSerializer, QuestionSerializer, AnswerSerializer
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 
+@swagger_auto_schema(method="post", request_body=CreateQuestionSerializer, responses={201: QuestionSerializer, 400: 'Bad Request', 404: 'Subject Not Found'})
 @api_view(['POST'])
 def create_question(request, subject_id):
     data = request.data
@@ -23,13 +26,8 @@ def create_question(request, subject_id):
             for answer_data in data.get('answers', []):
                 answertext = answer_data.get('answertext', None)
                 isCorrect = answer_data.get('isCorrect', False)
-                answer, _ = Answer.objects.get_or_create(answertext=answertext)
+                answer, _ = Answer.objects.get_or_create(answertext=answertext, isCorrect=isCorrect)
                 question.answers.add(answer)
-                if isCorrect:
-                    correct_answer = answer
-
-            if correct_answer:
-                question.correctAnswer = correct_answer
             question.save()
             subject.questions.add(question)
             question_serializer = QuestionSerializer(question)
@@ -41,6 +39,9 @@ def create_question(request, subject_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 # Update Question View
+
+
+@swagger_auto_schema(method="put", request_body=CreateQuestionSerializer, responses={200: QuestionSerializer, 404: 'Question Not Found'})
 @api_view(['PUT'])
 def update_question(request, question_id):
     try:
@@ -49,7 +50,8 @@ def update_question(request, question_id):
         correctanswer = ""
         questiontext = data.get('questiontext', question.questiontext)
         questionMark = data.get('questionMark', question.questionMark)
-        correctAnswerdescription = data.get('correctAnswerdescription', question.correctAnswerdescription)
+        correctAnswerdescription = data.get(
+            'correctAnswerdescription', question.correctAnswerdescription)
         question.questiontext = questiontext
         question.questionMark = questionMark
         question.correctAnswerdescription = correctAnswerdescription
@@ -58,11 +60,9 @@ def update_question(request, question_id):
         for answer in data.get('answers', question.answers.all()):
             answertext = answer.get('answertext', None)
             isCorrect = answer.get('isCorrect', False)
-            answer,created = Answer.objects.get_or_create(answertext=answertext)
+            answer, created = Answer.objects.get_or_create(
+                answertext=answertext, isCorrect=isCorrect)
             question.answers.add(answer)
-            if isCorrect:
-                correctanswer = answer
-        question.correctAnswer = correctanswer
         question.save()
         question_serializer = QuestionSerializer(question)
         return Response(question_serializer.data, status=status.HTTP_200_OK)
@@ -71,6 +71,8 @@ def update_question(request, question_id):
     except Answer.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+
+@swagger_auto_schema(method="delete", responses={204: 'Question deleted successfully', 404: 'Question Not Found'})
 @api_view(['DELETE'])
 def delete_question(request, question_id):
     try:
@@ -80,35 +82,3 @@ def delete_question(request, question_id):
     except Question.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-# Create Question View
-# //   {
-# //     "id": 8,
-# //     "answers": [
-# //         {
-# //             "id": 14,
-# //             "answertext": "True"
-# //         },
-# //         {
-# //             "id": 15,
-# //             "answertext": "False"
-# //         }
-# //     ],
-# //     "correctAnswer": null,
-# //     "questiontext": "The Lord is Good",
-# //     "questionMark": 2,
-# //     "required": true,
-# //     "correctAnswerdescription": "The Lord is indeed Good"
-# // } from the database
-
-# // {
-# //   id: "",
-# //   questiontext: "",
-# //   questionMark: "",
-# //   answers: [
-# //     {
-# //       answertext: "",
-# //       isCorrect: false,
-# //     },
-# //   ],
-# //   correctAnswerdescription: "",
-# // } for the form

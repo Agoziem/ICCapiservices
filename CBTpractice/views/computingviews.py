@@ -4,9 +4,12 @@ from ..serializers import TestSerializer,TestResultSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 
 # view to get all the Tests
+@swagger_auto_schema(method="get", responses={200: TestSerializer(many=True), 404: 'Not Found'})
 @api_view(['GET'])
 def get_tests(request,organization_id):
     try:
@@ -17,6 +20,7 @@ def get_tests(request,organization_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # view to get a single Test
+@swagger_auto_schema(method="get", responses={200: TestSerializer, 404: 'Not Found'})
 @api_view(['GET'])
 def get_test(request, test_id):
     try:
@@ -25,6 +29,8 @@ def get_test(request, test_id):
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Test.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+
+
     
 @api_view(['POST'])
 def add_test(request,organization_id):
@@ -45,7 +51,7 @@ def add_test(request,organization_id):
             for subject in testsubject:
                 subject = Subject.objects.create(subjectname=subject)
                 subject.save()
-                subjectsID.append(subject.id)
+                subjectsID.append(subject.pk)
             test = Test.objects.create(testorganization=organization,testYear=year,texttype=testType)
             test.testSubject.add(*subjectsID)
             test.save()
@@ -57,16 +63,19 @@ def add_test(request,organization_id):
     
 
 # view to update a Test
+@swagger_auto_schema(method="put", responses={200: 'Test updated successfully', 404: 'Test Not Found'})
 @api_view(['PUT'])
 def update_test(request, test_id):
     try:
         test = Test.objects.get(id=test_id)
-        Subject_id = request.data.get('subjectid', test.testSubject.id)
-        TestTypeid = request.data.get('testtypeid', test.texttype.id)
-        Year_id = request.data.get('yearid', test.testYear.id)
-        testtype = TestType.objects.get(id=TestTypeid)
-        subject = Subject.objects.get(id=Subject_id)
-        year = Year.objects.get(id=Year_id)
+        if not test or not test.testSubject or not test.texttype or not test.testYear:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        Subject_id = request.data.get('subjectid', test.testSubject.pk)
+        TestTypeid = request.data.get('testtypeid', test.texttype.pk)
+        Year_id = request.data.get('yearid', test.testYear.pk)
+        testtype = TestType.objects.get(pk=TestTypeid)
+        subject = Subject.objects.get(pk=Subject_id)
+        year = Year.objects.get(pk=Year_id)
         test.testSubject = subject
         test.texttype = testtype
         test.testYear = year
@@ -84,6 +93,7 @@ def update_test(request, test_id):
     return Response(status=status.HTTP_200_OK)
 
 # view to delete a Test
+@swagger_auto_schema(method="delete", responses={204: 'Test deleted successfully', 404: 'Test Not Found'})
 @api_view(['DELETE'])
 def delete_test(request, test_id):
     try:
@@ -95,6 +105,7 @@ def delete_test(request, test_id):
     
 
 # view to get all testResults
+@swagger_auto_schema(method="get", responses={200: TestResultSerializer(many=True), 404: 'TestResults Not Found'})
 @api_view(['GET'])
 def get_test_results(request,organization_id):
     try:

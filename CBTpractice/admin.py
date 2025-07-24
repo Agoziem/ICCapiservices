@@ -26,7 +26,7 @@ class AnswerAdmin(admin.ModelAdmin):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('truncated_questiontext','questionMark','required','correctAnswer')
+    list_display = ('truncated_questiontext','questionMark','required')
     search_fields = ('questiontext',)
     list_filter = ('required',)
 

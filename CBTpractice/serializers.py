@@ -18,7 +18,7 @@ class AnswerSerializer(serializers.ModelSerializer):
 
 class QuestionSerializer(serializers.ModelSerializer):
     answers = AnswerSerializer(many=True, required=False)
-    correctAnswer = AnswerSerializer(required=False)
+    correctAnswerdescription = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Question
@@ -46,3 +46,72 @@ class TestResultSerializer(serializers.ModelSerializer):
         model = TestResult
         fields = '__all__'
 
+
+# --------------------------------------------
+# Serializers for creating objects
+# --------------------------------------------
+class AnswerCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Answer
+        fields = ['answertext', 'isCorrect']  # or all fields you expect during creation
+
+class CreateQuestionSerializer(serializers.ModelSerializer):
+    answers = AnswerCreateSerializer(many=True)
+    correctAnswerdescription = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = Question
+        fields = ['questiontext', 'questionMark', 'correctAnswerdescription', 'answers']
+
+    def create(self, validated_data):
+        answers_data = validated_data.pop('answers', [])
+        question = Question.objects.create(**validated_data)
+
+        for ans_data in answers_data:
+            Answer.objects.create(question=question, **ans_data)
+
+        return question
+
+
+class CreateSubjectSerializer(serializers.ModelSerializer):
+    questions = serializers.ListField(
+        child=serializers.DictField(), required=False, allow_empty=True
+    )
+    
+    class Meta:
+        model = Subject
+        fields = ['subjectname', 'subjectduration', 'questions']
+
+
+class StudentTestRequestSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    test_id = serializers.IntegerField()
+    examSubjects = serializers.ListField(
+        child=serializers.DictField(child=serializers.IntegerField()),
+        allow_empty=True
+    )
+
+
+class QuestionAnswerSerializer(serializers.Serializer):
+    question_id = serializers.IntegerField()
+
+
+class TestSubmissionSerializer(serializers.Serializer):
+    student_test_id = serializers.IntegerField()
+    questions = QuestionAnswerSerializer(many=True)
+
+class SubmitStudentTestSerializer(serializers.ListSerializer):
+    child = TestSubmissionSerializer()
+
+
+class TestScoreResponseSerializer(serializers.Serializer):
+    Total = serializers.IntegerField()
+    
+    def to_representation(self, instance):
+        # Dynamic fields for subject scores
+        data = super().to_representation(instance)
+        # Add any additional subject score fields dynamically
+        for key, value in instance.items():
+            if key not in data:
+                data[key] = value
+        return data

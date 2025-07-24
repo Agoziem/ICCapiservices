@@ -4,8 +4,11 @@ from ..serializers import YearsSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 # view to get all the years
+@swagger_auto_schema(method="get", responses={200: YearsSerializer(many=True), 404: 'Years Not Found'})
 @api_view(['GET'])
 def get_years(request):
     try:
@@ -16,6 +19,7 @@ def get_years(request):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 # view to get a single year
+@swagger_auto_schema(method="get", responses={200: YearsSerializer, 404: 'Year Not Found'})
 @api_view(['GET'])
 def get_year(request, year_id):
     try:
@@ -27,6 +31,7 @@ def get_year(request, year_id):
     
     
 # view to create a year
+@swagger_auto_schema(method="post", request_body=YearsSerializer, responses={201: YearsSerializer, 400: 'Bad Request'})
 @api_view(['POST'])
 def add_year(request):
     try:
@@ -39,6 +44,7 @@ def add_year(request):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # view to update a year
+@swagger_auto_schema(method="put", request_body=YearsSerializer, responses={200: YearsSerializer, 400: 'Bad Request', 404: 'Year Not Found'})
 @api_view(['PUT'])
 def update_year(request, year_id):
     try:
@@ -52,6 +58,7 @@ def update_year(request, year_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 # view to delete a year
+@swagger_auto_schema(method="delete", responses={204: 'Year deleted successfully', 404: 'Year Not Found'})
 @api_view(['DELETE'])
 def delete_year(request, year_id):
     try:

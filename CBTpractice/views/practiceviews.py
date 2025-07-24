@@ -5,9 +5,20 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
+from drf_yasg.utils import swagger_auto_schema
 
 User = get_user_model()
 
+@swagger_auto_schema(
+    method="post",
+    request_body=StudentTestRequestSerializer,
+    responses={
+        200: TestSerializer,
+        400: 'Bad Request',
+        404: 'User or Test Not Found',
+        500: 'Internal Server Error'
+    }
+)
 @api_view(['POST'])
 def get_student_tests(request):
     try:
@@ -38,6 +49,14 @@ def get_student_tests(request):
 
     
 # view to Submit Student Test
+@swagger_auto_schema(
+    method="post",
+    request_body=SubmitStudentTestSerializer,
+    responses={
+        200: TestScoreResponseSerializer,
+        400: 'Bad Request'
+    }
+)
 @api_view(['POST'])
 def submit_student_test(request,organization_id):
     try:

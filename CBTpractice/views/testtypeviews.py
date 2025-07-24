@@ -4,9 +4,12 @@ from ..serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 
 # view to get all Testtype
+@swagger_auto_schema(method="get", responses={200: TestTypeSerializer(many=True), 404: 'TestTypes Not Found'})
 @api_view(['GET'])
 def get_testtypes(request):
     try:
@@ -17,6 +20,7 @@ def get_testtypes(request):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # view to get a single Testtype
+@swagger_auto_schema(method="get", responses={200: TestTypeSerializer, 404: 'TestType Not Found'})
 @api_view(['GET'])
 def get_testtype(request, testtype_id):
     try:
@@ -27,6 +31,7 @@ def get_testtype(request, testtype_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # view to create a Testtype
+@swagger_auto_schema(method="post", request_body=TestTypeSerializer, responses={201: TestTypeSerializer, 400: 'Bad Request'})
 @api_view(['POST'])
 def add_testtype(request):
     try:
@@ -39,6 +44,7 @@ def add_testtype(request):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # view to update a Testtype
+@swagger_auto_schema(method="put", request_body=TestTypeSerializer, responses={200: TestTypeSerializer, 400: 'Bad Request', 404: 'TestType Not Found'})
 @api_view(['PUT'])
 def update_testtype(request, testtype_id):
     try:
@@ -53,6 +59,7 @@ def update_testtype(request, testtype_id):
     
 
 # view to delete a Testtype
+@swagger_auto_schema(method="delete", responses={204: 'TestType deleted successfully', 404: 'TestType Not Found'})
 @api_view(['DELETE'])
 def delete_testtype(request, testtype_id):
     try:
