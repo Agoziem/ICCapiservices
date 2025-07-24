@@ -35,7 +35,6 @@ urlpatterns = [
     path('productsapi/', include('products.urls')),
     path('vidoesapi/', include('vidoes.urls')),
     path('whatsappAPI/', include('whatsappAPI.urls')),
-    path('chatroomapi/', include('chatroom.urls')),
     path('notificationsapi/', include('notifications.urls')),
 
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

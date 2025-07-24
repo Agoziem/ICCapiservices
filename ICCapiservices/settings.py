@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'ICCapp',
     'authentication',
     'whatsappAPI',
-    'chatroom',
     'notifications',
     'customers',
     'blog',
