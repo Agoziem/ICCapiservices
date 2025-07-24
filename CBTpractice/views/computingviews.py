@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from ..models import *
-from ..serializers import TestSerializer,TestResultSerializer
+from ..serializers import CreateTestSerializer, TestSerializer,TestResultSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -31,35 +31,22 @@ def get_test(request, test_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 
-    
+
+
+@swagger_auto_schema(method="post", request_body=CreateTestSerializer, responses={201: TestSerializer, 400: 'Bad Request'})
 @api_view(['POST'])
 def add_test(request,organization_id):
     try:
         organization = Organization.objects.get(id=organization_id)
-        testyear = request.data.get('testYear', None)
-        testtype = request.data.get('texttype', None).upper()
-        testsubject = request.data.get('testSubject', [])
-        # check if the test already exists
-        test = Test.objects.filter(testorganization=organization,testYear__year=testyear,texttype__testtype=testtype)
-        if test.exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        else:
-            # create year, testtype and subject
-            year = Year.objects.create(year=testyear)
-            testType = TestType.objects.create(testtype=testtype)
-            subjectsID = []
-            for subject in testsubject:
-                subject = Subject.objects.create(subjectname=subject)
-                subject.save()
-                subjectsID.append(subject.pk)
-            test = Test.objects.create(testorganization=organization,testYear=year,texttype=testType)
-            test.testSubject.add(*subjectsID)
-            test.save()
-            test_serializer = TestSerializer(test, many=False)
-            return Response(test_serializer.data, status=status.HTTP_201_CREATED)
+        serializer = CreateTestSerializer(data=request.data)
+        if serializer.is_valid():
+            test = serializer.save(testorganization=organization)
+            return Response(TestSerializer(test).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print(e)
         return Response(status=status.HTTP_404_NOT_FOUND)
+
     
 
 # view to update a Test

@@ -84,6 +84,9 @@ class CreateSubjectSerializer(serializers.ModelSerializer):
 
 
 class StudentTestRequestSerializer(serializers.Serializer):
+    """ 
+    Serializer for student test request
+    """
     user_id = serializers.IntegerField()
     test_id = serializers.IntegerField()
     examSubjects = serializers.ListField(
@@ -93,7 +96,25 @@ class StudentTestRequestSerializer(serializers.Serializer):
 
 
 class QuestionAnswerSerializer(serializers.Serializer):
+    """ 
+    Serializer for question answers in student test submission
+    """
     question_id = serializers.IntegerField()
+
+class CreateTestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Test
+        fields = ['testYear', 'texttype', 'testSubject']
+
+        extra_kwargs = {
+            'testYear': {'required': True},
+            'texttype': {'required': True},
+            'testSubject': {'required': True}
+        }
+
+        def create(self, validated_data):
+            test = Test.objects.create(**validated_data)
+            return test
 
 
 class TestSubmissionSerializer(serializers.Serializer):
