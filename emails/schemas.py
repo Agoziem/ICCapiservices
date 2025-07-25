@@ -8,19 +8,19 @@ from .models import Email, EmailResponse, EmailMessage
 class EmailSchema(ModelSchema):
     class Meta:
         model = Email
-        fields = '__all__'
+        fields = "__all__"
 
 
 class EmailResponseSchema(ModelSchema):
     class Meta:
         model = EmailResponse
-        fields = '__all__'
+        fields = "__all__"
 
 
 class EmailMessageSchema(ModelSchema):
     class Meta:
         model = EmailMessage
-        fields = '__all__'
+        fields = "__all__"
 
 
 # Input Schemas for Creating/Updating

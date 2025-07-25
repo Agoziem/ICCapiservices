@@ -3,32 +3,32 @@ import re
 from django.conf import settings
 import json
 
+
 def get_full_image_url(image_field, base_url=settings.DJANGO_IMAGE_URL):
     if not image_field:
         return None
 
     # Get the image URL
     image_url = image_field.url
-    
+
     # Fix percent-encoded colons first
-    pattern_percent_3A = r'%3A'
-    image_url = re.sub(pattern_percent_3A, ':', image_url)
+    pattern_percent_3A = r"%3A"
+    image_url = re.sub(pattern_percent_3A, ":", image_url)
 
     # Check if the URL is relative and needs to be prefixed with base URL
-    if re.match(r'^/?media/(http|https):', image_url):
-        image_url = re.sub(r'^/?media/', '', image_url)
+    if re.match(r"^/?media/(http|https):", image_url):
+        image_url = re.sub(r"^/?media/", "", image_url)
 
-    if not image_url.startswith(('http://', 'https://', 'https:', 'http:')):
+    if not image_url.startswith(("http://", "https://", "https:", "http:")):
         image_url = f"{base_url}{image_url}"
 
     return image_url
 
 
-
 def get_image_name(image_field):
     if not image_field:
-        return None 
-    return image_field.name.split('/')[-1]
+        return None
+    return image_field.name.split("/")[-1]
 
 
 def normalize_img_field(data, key):
@@ -43,7 +43,7 @@ def normalize_img_field(data, key):
         data[key] = None  # Set the value to None
 
     # Keep the field if it's None or a valid file
-    elif value is None or hasattr(value, 'file'):
+    elif value is None or hasattr(value, "file"):
         return data  # Leave as is
 
     # Remove the field if it's an invalid string (anything else)
@@ -53,13 +53,9 @@ def normalize_img_field(data, key):
     return data
 
 
-
-
-
-
 def parse_json_fields(data, exclude_fields=None):
     """
-    Parse JSON-like fields from a QueryDict and return a dictionary with 
+    Parse JSON-like fields from a QueryDict and return a dictionary with
     parsed values. Exclude specific fields like image fields.
     """
     exclude_fields = exclude_fields or []
@@ -75,5 +71,3 @@ def parse_json_fields(data, exclude_fields=None):
                 parsed_data[field] = value  # Keep as-is if not JSON
 
     return parsed_data
-
-

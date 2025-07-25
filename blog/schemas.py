@@ -17,21 +17,21 @@ class UserMiniSchemaTemp(Schema):
 class TagSchema(ModelSchema):
     class Meta:
         model = Tag
-        fields = '__all__'
+        fields = "__all__"
 
 
 class CategorySchema(ModelSchema):
     class Meta:
         model = Category
-        fields = '__all__'
+        fields = "__all__"
 
 
 class CommentSchema(ModelSchema):
     user: UserMiniSchemaTemp
-    
+
     class Meta:
         model = Comment
-        fields = '__all__'
+        fields = "__all__"
 
 
 class BlogSchema(ModelSchema):
@@ -41,23 +41,35 @@ class BlogSchema(ModelSchema):
     category: Optional[CategorySchema] = None
     tags: List[TagSchema] = []
     likes_count: int = 0
-    
+
     class Meta:
         model = Blog
         fields = [
-            'id', 'title', 'subtitle', 'body', 'slug', 'category', 'tags',
-            'author', 'organization', 'img', 'readTime', 'views', 'date', 
-            'updated_at', 'likes'
+            "id",
+            "title",
+            "subtitle",
+            "body",
+            "slug",
+            "category",
+            "tags",
+            "author",
+            "organization",
+            "img",
+            "readTime",
+            "views",
+            "date",
+            "updated_at",
+            "likes",
         ]
-    
+
     @staticmethod
     def resolve_img_url(obj):
         return get_full_image_url(obj.img) if obj.img else None
-    
+
     @staticmethod
     def resolve_img_name(obj):
         return get_image_name(obj.img) if obj.img else None
-    
+
     @staticmethod
     def resolve_likes_count(obj):
         return obj.likes.count()
@@ -154,7 +166,7 @@ class BlogStatsSchema(Schema):
 class BlogWithCommentsSchema(BlogSchema):
     comments: List[CommentSchema] = []
     comments_count: int = 0
-    
+
     @staticmethod
     def resolve_comments_count(obj):
         return obj.comment_set.count()
@@ -173,11 +185,11 @@ class BlogSummarySchema(Schema):
     likes_count: int = 0
     date: datetime
     readTime: int = 0
-    
+
     @staticmethod
     def resolve_img_url(obj):
         return get_full_image_url(obj.img) if obj.img else None
-    
+
     @staticmethod
     def resolve_likes_count(obj):
         return obj.likes.count()

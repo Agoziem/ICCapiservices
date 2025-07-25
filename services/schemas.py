@@ -79,11 +79,11 @@ class ServiceSchema(BaseModel):
     details_form_link: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    
+
     # Computed fields
     img_url: Optional[str] = None
     img_name: Optional[str] = None
-    
+
     # Relationships
     organization: Optional[OrganizationSchema] = None
     category: Optional[CategorySchema] = None
@@ -95,7 +95,7 @@ class ServiceSchema(BaseModel):
     @classmethod
     def from_django_model(cls, service):
         from utils import get_full_image_url, get_image_name
-        
+
         return cls(
             id=service.id,
             name=service.name,
@@ -109,12 +109,23 @@ class ServiceSchema(BaseModel):
             updated_at=service.updated_at,
             img_url=get_full_image_url(service.preview),
             img_name=get_image_name(service.preview),
-            organization=OrganizationSchema(
-                id=service.organization.id,
-                name=service.organization.name
-            ) if service.organization else None,
-            category=CategorySchema.model_validate(service.category) if service.category else None,
-            subcategory=SubCategorySchema.model_validate(service.subcategory) if service.subcategory else None
+            organization=(
+                OrganizationSchema(
+                    id=service.organization.id, name=service.organization.name
+                )
+                if service.organization
+                else None
+            ),
+            category=(
+                CategorySchema.model_validate(service.category)
+                if service.category
+                else None
+            ),
+            subcategory=(
+                SubCategorySchema.model_validate(service.subcategory)
+                if service.subcategory
+                else None
+            ),
         )
 
 

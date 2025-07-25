@@ -8,7 +8,7 @@ from .models import Notification
 class NotificationSchema(ModelSchema):
     class Meta:
         model = Notification
-        fields = '__all__'
+        fields = "__all__"
 
 
 # Input Schemas for Creating/Updating

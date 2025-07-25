@@ -10,16 +10,16 @@ from .models import Product, Category, SubCategory
 class CategorySchema(ModelSchema):
     class Meta:
         model = Category
-        fields = '__all__'
+        fields = "__all__"
 
 
 class SubCategorySchema(ModelSchema):
     category_details: Optional[CategorySchema] = None
-    
+
     class Meta:
         model = SubCategory
-        fields = '__all__'
-    
+        fields = "__all__"
+
     @staticmethod
     def resolve_category_details(obj):
         if obj.category:
@@ -36,48 +36,45 @@ class ProductSchema(ModelSchema):
     category_details: Optional[CategorySchema] = None
     subcategory_details: Optional[SubCategorySchema] = None
     buyers_count: Optional[int] = None
-    
+
     class Meta:
         model = Product
-        fields = '__all__'
-    
+        fields = "__all__"
+
     @staticmethod
     def resolve_organization_details(obj):
         if obj.organization:
-            return {
-                'id': obj.organization.id,
-                'name': obj.organization.name
-            }
+            return {"id": obj.organization.id, "name": obj.organization.name}
         return None
-    
+
     @staticmethod
     def resolve_img_url(obj):
         return obj.preview.url if obj.preview else None
-    
+
     @staticmethod
     def resolve_img_name(obj):
         return obj.preview.name if obj.preview else None
-    
+
     @staticmethod
     def resolve_product_url(obj):
         return obj.product.url if obj.product else None
-    
+
     @staticmethod
     def resolve_product_name(obj):
         return obj.product.name if obj.product else None
-    
+
     @staticmethod
     def resolve_category_details(obj):
         if obj.category:
             return obj.category
         return None
-    
+
     @staticmethod
     def resolve_subcategory_details(obj):
         if obj.subcategory:
             return obj.subcategory
         return None
-    
+
     @staticmethod
     def resolve_buyers_count(obj):
         return obj.userIDs_that_bought_this_product.count()

@@ -10,15 +10,15 @@ User = get_user_model()
 class UserSchema(ModelSchema):
     avatar_url: Optional[str] = None
     avatar_name: Optional[str] = None
-    
+
     class Meta:
         model = User
-        exclude = ['password', 'groups', 'user_permissions']
-    
+        exclude = ["password", "groups", "user_permissions"]
+
     @staticmethod
     def resolve_avatar_url(obj):
         return get_full_image_url(obj.avatar) if obj.avatar else None
-    
+
     @staticmethod
     def resolve_avatar_name(obj):
         return get_image_name(obj.avatar) if obj.avatar else None
@@ -26,11 +26,11 @@ class UserSchema(ModelSchema):
 
 class UserMiniSchema(ModelSchema):
     img: Optional[str] = None
-    
+
     class Meta:
         model = User
-        fields = ['id', 'username']
-    
+        fields = ["id", "username"]
+
     @staticmethod
     def resolve_img(obj):
         return get_full_image_url(obj.avatar) if obj.avatar else None
@@ -57,6 +57,7 @@ class VerifyUserSchema(Schema):
     email: str
     password: str
 
+
 class LogoutSchema(Schema):
     refresh: str
 
@@ -68,7 +69,9 @@ class UpdateUserSchema(Schema):
     phone: Optional[str] = None
     Sex: Optional[str] = None
     address: Optional[str] = None
-    avatar: Optional[str] = None  # For file uploads, you might need to handle this differently
+    avatar: Optional[str] = (
+        None  # For file uploads, you might need to handle this differently
+    )
 
 
 # Token and Verification Schemas

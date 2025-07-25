@@ -12,60 +12,45 @@ class OrderSchema(ModelSchema):
     services_details: list[dict] = []
     products_details: list[dict] = []
     videos_details: list[dict] = []
-    
+
     class Meta:
         model = Orders
-        fields = '__all__'
-    
+        fields = "__all__"
+
     @staticmethod
     def resolve_organization_details(obj):
         if obj.organization:
-            return {
-                'id': obj.organization.id,
-                'name': obj.organization.name
-            }
+            return {"id": obj.organization.id, "name": obj.organization.name}
         return None
-    
+
     @staticmethod
     def resolve_customer_details(obj):
         if obj.customer:
             return {
-                'id': obj.customer.id,
-                'username': obj.customer.username,
-                'email': obj.customer.email
+                "id": obj.customer.id,
+                "username": obj.customer.username,
+                "email": obj.customer.email,
             }
         return None
-    
+
     @staticmethod
     def resolve_services_details(obj):
         return [
-            {
-                'id': service.id,
-                'name': service.name,
-                'price': str(service.price)
-            }
+            {"id": service.id, "name": service.name, "price": str(service.price)}
             for service in obj.services.all()
         ]
-    
+
     @staticmethod
     def resolve_products_details(obj):
         return [
-            {
-                'id': product.id,
-                'name': product.name,
-                'price': str(product.price)
-            }
+            {"id": product.id, "name": product.name, "price": str(product.price)}
             for product in obj.products.all()
         ]
-    
+
     @staticmethod
     def resolve_videos_details(obj):
         return [
-            {
-                'id': video.id,
-                'title': video.title,
-                'price': str(video.price)
-            }
+            {"id": video.id, "title": video.title, "price": str(video.price)}
             for video in obj.videos.all()
         ]
 

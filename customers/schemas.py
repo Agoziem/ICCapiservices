@@ -8,7 +8,7 @@ from .models import Customer
 class CustomerSchema(ModelSchema):
     class Meta:
         model = Customer
-        fields = '__all__'
+        fields = "__all__"
 
 
 # Input Schemas for Creating/Updating

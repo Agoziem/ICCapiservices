@@ -8,53 +8,53 @@ from .models import Year, TestType, Answer, Question, Subject, Test, TestResult
 class YearSchema(ModelSchema):
     class Meta:
         model = Year
-        fields = '__all__'
+        fields = "__all__"
 
 
 class TestTypeSchema(ModelSchema):
     class Meta:
         model = TestType
-        fields = '__all__'
+        fields = "__all__"
 
 
 class AnswerSchema(ModelSchema):
     class Meta:
         model = Answer
-        fields = '__all__'
+        fields = "__all__"
 
 
 class QuestionSchema(ModelSchema):
     answers: List[AnswerSchema] = []
-    
+
     class Meta:
         model = Question
-        fields = '__all__'
+        fields = "__all__"
 
 
 class SubjectSchema(ModelSchema):
     questions: List[QuestionSchema] = []
-    
+
     class Meta:
         model = Subject
-        fields = '__all__'
+        fields = "__all__"
 
 
 class TestSchema(ModelSchema):
     testYear: Optional[YearSchema] = None
     texttype: Optional[TestTypeSchema] = None
     testSubject: List[SubjectSchema] = []
-    
+
     class Meta:
         model = Test
-        fields = '__all__'
+        fields = "__all__"
 
 
 class TestResultSchema(ModelSchema):
     tests: List[TestSchema] = []
-    
+
     class Meta:
         model = TestResult
-        fields = '__all__'
+        fields = "__all__"
 
 
 # Input Schemas for Creating/Updating
@@ -186,7 +186,7 @@ class SubjectSummarySchema(Schema):
     subjectname: str
     subjectduration: int
     questions_count: int = 0
-    
+
     @staticmethod
     def resolve_questions_count(obj):
         return obj.questions.count()
@@ -197,7 +197,7 @@ class TestSummarySchema(Schema):
     testYear: Optional[YearSchema] = None
     texttype: Optional[TestTypeSchema] = None
     subjects_count: int = 0
-    
+
     @staticmethod
     def resolve_subjects_count(obj):
         return obj.testSubject.count()
@@ -209,7 +209,7 @@ class QuestionSummarySchema(Schema):
     questionMark: int
     required: bool
     answers_count: int = 0
-    
+
     @staticmethod
     def resolve_answers_count(obj):
         return obj.answers.count()

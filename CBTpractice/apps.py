@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class CbtpracticeConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'CBTpractice'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "CBTpractice"

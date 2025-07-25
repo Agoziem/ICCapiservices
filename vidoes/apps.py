@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class VidoesConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'vidoes'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "vidoes"

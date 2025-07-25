@@ -6,13 +6,12 @@ from ICCapiservices.api import ninja_api
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', ninja_api.urls),
-
+    path("admin/", admin.site.urls),
+    path("api/", ninja_api.urls),
 ]
 
 if settings.DEBUG_ENV:
-  urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-admin.site.site_header='ICC Backend'
-admin.site.index_title='Site Administration'
+admin.site.site_header = "ICC Backend"
+admin.site.index_title = "Site Administration"

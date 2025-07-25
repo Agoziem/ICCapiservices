@@ -1,22 +1,29 @@
 from typing import Optional
 from ninja import ModelSchema, Schema
 from datetime import datetime
-from .models import Organization, Staff, Testimonial, Subscription, Department, DepartmentService
+from .models import (
+    Organization,
+    Staff,
+    Testimonial,
+    Subscription,
+    Department,
+    DepartmentService,
+)
 
 
 # Base Model Schemas
 class OrganizationSchema(ModelSchema):
     Organizationlogo: Optional[str] = None
     Organizationlogoname: Optional[str] = None
-    
+
     class Meta:
         model = Organization
-        fields = '__all__'
-    
+        fields = "__all__"
+
     @staticmethod
     def resolve_Organizationlogo(obj):
         return obj.logo.url if obj.logo else None
-    
+
     @staticmethod
     def resolve_Organizationlogoname(obj):
         return obj.logo.name if obj.logo else None
@@ -25,15 +32,15 @@ class OrganizationSchema(ModelSchema):
 class StaffSchema(ModelSchema):
     img_url: Optional[str] = None
     img_name: Optional[str] = None
-    
+
     class Meta:
         model = Staff
-        fields = '__all__'
-    
+        fields = "__all__"
+
     @staticmethod
     def resolve_img_url(obj):
         return obj.img.url if obj.img else None
-    
+
     @staticmethod
     def resolve_img_name(obj):
         return obj.img.name if obj.img else None
@@ -42,15 +49,15 @@ class StaffSchema(ModelSchema):
 class TestimonialSchema(ModelSchema):
     img_url: Optional[str] = None
     img_name: Optional[str] = None
-    
+
     class Meta:
         model = Testimonial
-        fields = '__all__'
-    
+        fields = "__all__"
+
     @staticmethod
     def resolve_img_url(obj):
         return obj.img.url if obj.img else None
-    
+
     @staticmethod
     def resolve_img_name(obj):
         return obj.img.name if obj.img else None
@@ -59,13 +66,13 @@ class TestimonialSchema(ModelSchema):
 class SubscriptionSchema(ModelSchema):
     class Meta:
         model = Subscription
-        fields = '__all__'
+        fields = "__all__"
 
 
 class DepartmentServiceSchema(ModelSchema):
     class Meta:
         model = DepartmentService
-        fields = '__all__'
+        fields = "__all__"
 
 
 class DepartmentSchema(ModelSchema):
@@ -74,43 +81,41 @@ class DepartmentSchema(ModelSchema):
     staff_in_charge_details: Optional[dict] = None
     organization_details: Optional[dict] = None
     services_details: list[dict] = []
-    
+
     class Meta:
         model = Department
-        fields = '__all__'
-    
+        fields = "__all__"
+
     @staticmethod
     def resolve_img_url(obj):
         return obj.img.url if obj.img else None
-    
+
     @staticmethod
     def resolve_img_name(obj):
         return obj.img.name if obj.img else None
-    
+
     @staticmethod
     def resolve_staff_in_charge_details(obj):
         if obj.staff_in_charge:
             return {
-                'id': obj.staff_in_charge.id,
-                'name': f"{obj.staff_in_charge.first_name} {obj.staff_in_charge.last_name}",
-                'img_url': obj.staff_in_charge.img.url if obj.staff_in_charge.img else None
+                "id": obj.staff_in_charge.id,
+                "name": f"{obj.staff_in_charge.first_name} {obj.staff_in_charge.last_name}",
+                "img_url": (
+                    obj.staff_in_charge.img.url if obj.staff_in_charge.img else None
+                ),
             }
         return None
-    
+
     @staticmethod
     def resolve_organization_details(obj):
         if obj.organization:
-            return {
-                'id': obj.organization.id,
-                'name': obj.organization.name
-            }
+            return {"id": obj.organization.id, "name": obj.organization.name}
         return None
-    
+
     @staticmethod
     def resolve_services_details(obj):
         return [
-            {'id': service.id, 'name': service.name}
-            for service in obj.services.all()
+            {"id": service.id, "name": service.name} for service in obj.services.all()
         ]
 
 

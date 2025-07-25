@@ -4,8 +4,8 @@ from .commentsroutes import CommentsController
 from .likesroutes import LikesController
 
 __all__ = [
-    'BlogsController',
-    'CategoriesController', 
-    'CommentsController',
-    'LikesController'
+    "BlogsController",
+    "CategoriesController",
+    "CommentsController",
+    "LikesController",
 ]

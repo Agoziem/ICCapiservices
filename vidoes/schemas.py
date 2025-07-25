@@ -78,13 +78,13 @@ class VideoSchema(BaseModel):
     created_at: datetime
     updated_at: datetime
     free: bool = False
-    
+
     # Computed fields
     video_url: Optional[str] = None
     video_name: Optional[str] = None
     img_url: Optional[str] = None
     img_name: Optional[str] = None
-    
+
     # Relationships
     organization: Optional[OrganizationSchema] = None
     category: Optional[CategorySchema] = None
@@ -96,7 +96,7 @@ class VideoSchema(BaseModel):
     @classmethod
     def from_django_model(cls, video):
         from utils import get_full_image_url, get_image_name
-        
+
         return cls(
             id=video.id,
             title=video.title,
@@ -111,19 +111,30 @@ class VideoSchema(BaseModel):
             video_name=get_image_name(video.video),
             img_url=get_full_image_url(video.thumbnail),
             img_name=get_image_name(video.thumbnail),
-            organization=OrganizationSchema(
-                id=video.organization.id,
-                name=video.organization.name
-            ) if video.organization else None,
-            category=CategorySchema.model_validate(video.category) if video.category else None,
-            subcategory=SubCategorySchema.model_validate(video.subcategory) if video.subcategory else None
+            organization=(
+                OrganizationSchema(
+                    id=video.organization.id, name=video.organization.name
+                )
+                if video.organization
+                else None
+            ),
+            category=(
+                CategorySchema.model_validate(video.category)
+                if video.category
+                else None
+            ),
+            subcategory=(
+                SubCategorySchema.model_validate(video.subcategory)
+                if video.subcategory
+                else None
+            ),
         )
 
 
 class CreateVideoSchema(BaseModel):
     title: str
     description: str
-    price: Decimal = Field(default=Decimal('0.00'))
+    price: Decimal = Field(default=Decimal("0.00"))
     free: bool = False
     category: Optional[int] = None  # Category ID
     subcategory: Optional[int] = None  # SubCategory ID

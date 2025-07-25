@@ -49,28 +49,32 @@ class ContactSchema(BaseModel):
     @classmethod
     def from_django_model(cls, contact):
         from django.utils.dateformat import DateFormat
-        
+
         # Get last message
         last_message = None
-        last_wa_message = contact.messages.order_by('-timestamp').first()
+        last_wa_message = contact.messages.order_by("-timestamp").first()
         if last_wa_message:
             last_message = {
-                'id': last_wa_message.id,
-                'message_id': last_wa_message.message_id,
-                'message_type': last_wa_message.message_type,
-                'body': last_wa_message.body,
-                'timestamp': DateFormat(last_wa_message.timestamp).format('Y-m-d H:i:s')
+                "id": last_wa_message.id,
+                "message_id": last_wa_message.message_id,
+                "message_type": last_wa_message.message_type,
+                "body": last_wa_message.body,
+                "timestamp": DateFormat(last_wa_message.timestamp).format(
+                    "Y-m-d H:i:s"
+                ),
             }
-        
+
         # Get unread message count
-        unread_count = contact.messages.filter(message_mode='received', seen=False).count()
-        
+        unread_count = contact.messages.filter(
+            message_mode="received", seen=False
+        ).count()
+
         return cls(
             id=contact.id,
             wa_id=contact.wa_id,
             profile_name=contact.profile_name,
             last_message=last_message,
-            unread_message_count=unread_count
+            unread_message_count=unread_count,
         )
 
 
@@ -206,12 +210,16 @@ class WebhookPayloadSchema(BaseModel):
 class SendMessageSchema(BaseModel):
     message_type: MessageType = MessageType.text
     body: Optional[str] = Field(None, description="Message text body")
-    media_id: Optional[str] = Field(None, description="ID of media for non-text messages")
+    media_id: Optional[str] = Field(
+        None, description="ID of media for non-text messages"
+    )
     link: Optional[str] = Field(None, description="URL for media messages")
 
 
 class TemplateMessageSchema(BaseModel):
-    to_phone_number: str = Field(..., description="Recipient's phone number with country code")
+    to_phone_number: str = Field(
+        ..., description="Recipient's phone number with country code"
+    )
     template_name: str = Field(..., description="Name of the template to use")
     language_code: str = Field("en_US", description="Language code for the template")
 
