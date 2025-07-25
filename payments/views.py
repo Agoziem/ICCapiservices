@@ -4,16 +4,24 @@ from products.models import Product
 from services.models import Service
 from vidoes.models import Video
 from ICCapp.models import Organization
-from .serializers import *
+from .serializers import PaymentSerializer, VerifyPaymentSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from .Paystack import Paystack
 from django.db.models import Count,Sum,Avg
+from drf_yasg.utils import swagger_auto_schema
 
 Customer = get_user_model()
 # get all payments
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: PaymentSerializer(many=True),
+        404: 'Payments Not Found'
+    }
+)
 @api_view(['GET'])
 def get_payments(request, organization_id):
     try:
@@ -24,6 +32,13 @@ def get_payments(request, organization_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 # get all payments by a user
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: PaymentSerializer(many=True),
+        404: 'Payments Not Found'
+    }
+)
 @api_view(['GET'])
 def get_payments_by_user(request, user_id):
     try:
@@ -34,6 +49,13 @@ def get_payments_by_user(request, user_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # get a single payment by id
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: PaymentSerializer(),
+        404: 'Payment Not Found'
+    }
+)
 @api_view(['GET'])
 def get_payment(request, payment_id):
     try:
@@ -44,6 +66,15 @@ def get_payment(request, payment_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # Add a payment to the Organization
+@swagger_auto_schema(
+    method="post",
+    request_body=PaymentSerializer,
+    responses={
+        201: PaymentSerializer(),
+        400: 'Bad Request',
+        404: 'Not Found'
+    }
+)
 @api_view(['POST'])
 def add_payment(request, organization_id):
     try:
@@ -74,6 +105,15 @@ def add_payment(request, organization_id):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 # verify a payment
+@swagger_auto_schema(
+    method="post",
+    request_body=VerifyPaymentSerializer,
+    responses={
+        200: PaymentSerializer(),
+        400: 'Bad Request',
+        500: 'Internal Server Error'
+    }
+)
 @api_view(['POST'])
 def verify_payment(request):
     try:
@@ -117,6 +157,15 @@ def verify_payment(request):
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # update a payment view
+@swagger_auto_schema(
+    method="put",
+    request_body=PaymentSerializer,
+    responses={
+        200: PaymentSerializer(),
+        400: 'Bad Request',
+        404: 'Payment Not Found'
+    }
+)
 @api_view(['PUT'])
 def update_payment(request, payment_id):
     try:
@@ -147,6 +196,13 @@ def update_payment(request, payment_id):
     
 
 # delete a payment view
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        204: 'No Content',
+        404: 'Payment Not Found'
+    }
+)
 @api_view(['DELETE'])
 def delete_payment(request, payment_id):
     try:
@@ -158,6 +214,13 @@ def delete_payment(request, payment_id):
     
 
 # get the total number of payments and customers
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: 'Payment Count Statistics',
+        404: 'Payments Not Found'
+    }
+)
 @api_view(['GET'])
 def get_payment_count(request, organization_id):
     try:

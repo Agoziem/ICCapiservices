@@ -9,6 +9,7 @@ from rest_framework import status
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from rest_framework.pagination import PageNumberPagination
+from drf_yasg.utils import swagger_auto_schema
 
 class EmailPagination(PageNumberPagination):
     page_size = 10
@@ -16,6 +17,13 @@ class EmailPagination(PageNumberPagination):
     max_page_size = 1000
 
 # get all email addresses
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: SubscriptionSerializer(many=True),
+        404: 'Subscriptions Not Found'
+    }
+)
 @api_view(['GET'])
 def get_subscriptions(request,organization_id):
     try:
@@ -27,6 +35,13 @@ def get_subscriptions(request,organization_id):
     
 
 # get all emails
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: EmailSerializer(many=True),
+        404: 'Emails Not Found'
+    }
+)
 @api_view(['GET'])
 def get_emails(request, organization_id):
     try:
@@ -39,6 +54,13 @@ def get_emails(request, organization_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # get a single email
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: EmailSerializer,
+        404: 'Email Not Found'
+    }
+)
 @api_view(['GET'])
 def get_email(request, email_id):
     try:
@@ -50,6 +72,14 @@ def get_email(request, email_id):
     
 
 # Add an email view
+@swagger_auto_schema(
+    method="post",
+    request_body=CreateEmailSerializer,
+    responses={
+        201: EmailSerializer,
+        400: 'Bad Request'
+    }
+)
 @api_view(['POST'])
 def add_email(request, organization_id):
     try:
@@ -79,6 +109,15 @@ def add_email(request, organization_id):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
 # Update an email view
+@swagger_auto_schema(
+    method="put",
+    request_body=UpdateEmailSerializer,
+    responses={
+        200: EmailSerializer,
+        400: 'Bad Request',
+        404: 'Email Not Found'
+    }
+)
 @api_view(['PUT'])
 def update_email(request, email_id):
     try:
@@ -99,6 +138,13 @@ def update_email(request, email_id):
     
 
 # Delete an email view
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        204: 'No Content',
+        404: 'Email Not Found'
+    }
+)
 @api_view(['DELETE'])
 def delete_email(request, email_id):
     try:
@@ -108,6 +154,13 @@ def delete_email(request, email_id):
     except Email.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: EmailResponseSerializer(many=True),
+        404: 'Email Responses Not Found'
+    }
+)
 @api_view(['GET'])
 def get_responses(request,message_id):
     try:
@@ -118,6 +171,16 @@ def get_responses(request,message_id):
     except EmailResponse.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+@swagger_auto_schema(
+    method="post",
+    request_body=CreateEmailResponseSerializer,
+    responses={
+        201: EmailResponseSerializer,
+        400: 'Bad Request',
+        404: 'Email Not Found',
+        500: 'Internal Server Error'
+    }
+)
 @api_view(['POST'])
 def create_responses(request):
     try:
@@ -136,6 +199,13 @@ def create_responses(request):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: EmailMessageSerializer(many=True),
+        404: 'No Emails Found'
+    }
+)
 @api_view(['GET'])
 def getsentemails(request):
     try:
@@ -146,6 +216,14 @@ def getsentemails(request):
         print(str(e))
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+@swagger_auto_schema(
+    method="post",
+    request_body=CreateEmailMessageSerializer,
+    responses={
+        201: EmailMessageSerializer,
+        500: 'Internal Server Error'
+    }
+)
 @api_view(['POST'])
 def createEmailMessage(request):
     data = request.data

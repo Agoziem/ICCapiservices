@@ -3,9 +3,17 @@ from ..serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from drf_yasg.utils import swagger_auto_schema
 
 
 # get all subcategories
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: SubCategorySerializer(many=True),
+        404: 'Subcategories Not Found'
+    }
+)
 @api_view(['GET'])
 def get_subcategories(request,category_id):
     try:
@@ -18,6 +26,13 @@ def get_subcategories(request,category_id):
     
 
 # get subcategory by id
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: SubCategorySerializer(),
+        404: 'Subcategory Not Found'
+    }
+)
 @api_view(['GET'])
 def get_subcategory(request,subcategory_id):
     try:
@@ -28,6 +43,14 @@ def get_subcategory(request,subcategory_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 # create a new subcategory
+@swagger_auto_schema(
+    method="post",
+    request_body=CreateSubCategorySerializer,
+    responses={
+        201: SubCategorySerializer(),
+        404: 'Category Not Found'
+    }
+)
 @api_view(['POST'])
 def create_subcategory(request):
     data = request.data
@@ -40,6 +63,14 @@ def create_subcategory(request):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # update a subcategory
+@swagger_auto_schema(
+    method="put",
+    request_body=CreateSubCategorySerializer,
+    responses={
+        200: SubCategorySerializer(),
+        404: 'Subcategory or Category Not Found'
+    }
+)
 @api_view(['PUT'])
 def update_subcategory(request,subcategory_id):
     data = request.data
@@ -56,6 +87,13 @@ def update_subcategory(request,subcategory_id):
 
 
 # delete a subcategory
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        204: 'No Content',
+        404: 'Subcategory Not Found'
+    }
+)
 @api_view(['DELETE'])
 def delete_subcategory(request,subcategory_id):
     try:

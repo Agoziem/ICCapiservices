@@ -4,6 +4,8 @@ from django.http import StreamingHttpResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 def fetch_media_from_whatsapp_api(media_url):
@@ -15,6 +17,15 @@ def fetch_media_from_whatsapp_api(media_url):
     return None
 
 
+@swagger_auto_schema(
+    method='get',
+    operation_description="Fetch and stream media content from WhatsApp API using media ID",
+    responses={
+        200: openapi.Response(description="Media content streamed successfully"),
+        404: openapi.Response(description="Media URL not found or invalid"),
+        400: openapi.Response(description="Failed to fetch media metadata from WhatsApp API")
+    }
+)
 @api_view(['GET'])
 def get_media(request, media_id):
     # Step 1: Fetch media metadata from WhatsApp API

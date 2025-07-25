@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from django.contrib.auth import get_user_model
+from drf_yasg.utils import swagger_auto_schema
 User = get_user_model()
 
 class CommentPagination(PageNumberPagination):
@@ -14,6 +15,7 @@ class CommentPagination(PageNumberPagination):
     max_page_size = 100
 
 # get all comments for a blog and paginate them
+@swagger_auto_schema(method="get", responses={200: CommentSerializer(many=True), 404: 'Comments Not Found'})
 @api_view(['GET'])
 def get_comments(request, blog_id):
     try:
@@ -27,6 +29,7 @@ def get_comments(request, blog_id):
     
 
 # add a comment view
+@swagger_auto_schema(method="post", request_body=CreateCommentSerializer, responses={201: CommentSerializer, 404: 'Blog or User Not Found', 400: 'Bad Request'})
 @api_view(['POST'])
 def add_comment(request, blog_id, user_id):
     try:
@@ -42,6 +45,7 @@ def add_comment(request, blog_id, user_id):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
 # update a comment view
+@swagger_auto_schema(method="put", request_body=UpdateCommentSerializer, responses={200: CommentSerializer, 404: 'Comment Not Found'})
 @api_view(['PUT'])
 def update_comment(request, comment_id):
     try:
@@ -54,6 +58,7 @@ def update_comment(request, comment_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
       
 # delete a comment view
+@swagger_auto_schema(method="delete", responses={204: 'No Content', 404: 'Comment Not Found'})
 @api_view(['DELETE'])
 def delete_comment(request, comment_id):
     try:

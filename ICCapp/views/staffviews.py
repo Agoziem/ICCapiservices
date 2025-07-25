@@ -5,9 +5,10 @@ from ..serializers import *
 from rest_framework.decorators import api_view,parser_classes
 from rest_framework.response import Response
 from rest_framework import status
-from utils import normalize_img_field
+from utils import normalize_img_field, parse_json_fields
 from rest_framework.pagination import PageNumberPagination
 from django.http import QueryDict
+from drf_yasg.utils import swagger_auto_schema
 
 class StaffPagination(PageNumberPagination):
     page_size = 10
@@ -15,6 +16,13 @@ class StaffPagination(PageNumberPagination):
     max_page_size = 1000 
 
 # get all staff
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: StaffSerializer(many=True),
+        404: 'Staff Not Found'
+    }
+)
 @api_view(['GET'])
 def get_staffs(request, organization_id):
     try:

@@ -9,6 +9,7 @@ from utils import normalize_img_field,parse_json_fields
 import json
 from django.db.models import Count
 from django.http import QueryDict
+from drf_yasg.utils import swagger_auto_schema
 
 # --------------------------------------------------------------------------
 # get all products view
@@ -19,6 +20,13 @@ class ProductPagination(PageNumberPagination):
     max_page_size = 1000
 
 
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: ProductSerializer(many=True),
+        404: 'Product Not Found'
+    }
+)
 @api_view(['GET'])
 def get_products(request, organization_id):
     try:
@@ -35,6 +43,13 @@ def get_products(request, organization_id):
     except Product.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: ProductSerializer(many=True),
+        404: 'Product Not Found'
+    }
+)
 @api_view(['GET'])
 def get_trendingproducts(request, organization_id):
     try:
@@ -68,6 +83,13 @@ def get_trendingproducts(request, organization_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: ProductSerializer(many=True),
+        404: 'Product Not Found'
+    }
+)
 @api_view(['GET'])
 def get_user_products(request, organization_id, user_id):
     try:
@@ -99,6 +121,13 @@ def get_user_products(request, organization_id, user_id):
 # --------------------------------------------------------------------------   
 # get a single product view
 # --------------------------------------------------------------------------
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: ProductSerializer,
+        404: 'Product Not Found'
+    }
+)
 @api_view(['GET'])
 def get_product(request, product_id):
     try:
@@ -111,6 +140,15 @@ def get_product(request, product_id):
 # --------------------------------------------------------------------------   
 # Add a Product view
 # --------------------------------------------------------------------------
+@swagger_auto_schema(
+    method="post",
+    request_body=CreateProductSerializer,
+    responses={
+        201: ProductSerializer,
+        400: 'Bad Request',
+        404: 'Category Not Found'
+    }
+)
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_product(request, organization_id):
@@ -159,6 +197,15 @@ def add_product(request, organization_id):
 # --------------------------------------------------------------------------
 # update a Product view
 # --------------------------------------------------------------------------
+@swagger_auto_schema(
+    method="put",
+    request_body=UpdateProductSerializer,
+    responses={
+        200: ProductSerializer,
+        400: 'Bad Request',
+        404: 'Product or Category Not Found'
+    }
+)
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_product(request, product_id):
@@ -218,6 +265,13 @@ def update_product(request, product_id):
 # --------------------------------------------------------------------------
 # delete a Product view
 # --------------------------------------------------------------------------
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        204: 'No Content',
+        404: 'Product Not Found'
+    }
+)
 @api_view(['DELETE'])
 def delete_product(request, product_id):
     try:

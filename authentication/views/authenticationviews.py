@@ -1,3 +1,4 @@
+from typing import Any
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -10,43 +11,54 @@ from rest_framework.authtoken.models import Token
 from ICCapp.models import Organization
 import uuid
 from django.utils import timezone
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 User = get_user_model()
 
 # -----------------------------------------------
 # register user without Oauth
 # -----------------------------------------------
+@swagger_auto_schema(
+    method='post',
+    operation_description="Register a new user without OAuth",
+    request_body=RegisterUserSerializer,
+    responses={
+        201: RegisterUserResponseSerializer,
+        400: ErrorResponseSerializer,
+        500: ErrorResponseSerializer
+    }
+)
 @api_view(['POST'])
 def register_user(request):
+    serializer = RegisterUserSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data: dict[str, Any] = serializer.validated_data
     try:
-        user = User.objects.get(email=request.data['email'], isOauth=False)
+        user = User.objects.get(email=data['email'], isOauth=False)
         return Response({'error': 'User already exists'}, status=status.HTTP_400_BAD_REQUEST)
     except User.DoesNotExist:
-        # Create a new user
         new_user = User.objects.create_user(
-            username=request.data['firstname'],
-            email=request.data['email'],
-            first_name=request.data['firstname'],
-            last_name=request.data['lastname'],
-            password=request.data['password'],
+            username=data['firstname'],
+            email=data['email'],
+            first_name=data['firstname'],
+            last_name=data['lastname'],
+            password=data['password'],
             date_joined=timezone.now()
         )
         
-        # Create an auth token
         token = Token.objects.create(user=new_user)
-        
-        # Set verification token and expiry time
-        verification_token = uuid.uuid4().hex
-        new_user.verificationToken = verification_token
+        new_user.verificationToken = uuid.uuid4().hex
         new_user.expiryTime = timezone.now() + timezone.timedelta(hours=2)
         new_user.save()
         
-        # Check if organization ID is passed in the request
-        if 'organization_id' in request.data:
+        if 'organization_id' in data:
             try:
-                organization = Organization.objects.get(id=request.data['organization_id'])
+                organization = Organization.objects.get(id=data['organization_id'])
                 group_name = organization.name
-                group, created = Group.objects.get_or_create(name=group_name)
+                group, _ = Group.objects.get_or_create(name=group_name)
                 new_user.groups.add(group)
             except Organization.DoesNotExist:
                 pass
@@ -60,6 +72,16 @@ def register_user(request):
 # -----------------------------------------------
 # register user with Oauth without password
 # -----------------------------------------------
+@swagger_auto_schema(
+    method='post',
+    operation_description="Register a new user with OAuth provider",
+    request_body=RegisterUserOauthSerializer,
+    responses={
+        200: UserSerializer,
+        201: UserSerializer,
+        500: ErrorResponseSerializer
+    }
+)
 @api_view(['POST'])
 def register_user_with_oauth(request,provider):
     username = request.data['name']
@@ -101,6 +123,16 @@ def register_user_with_oauth(request,provider):
 # verify user with User Credentials
 # -----------------------------------------------
 
+@swagger_auto_schema(
+    method='post',
+    operation_description="Verify user with email and password",
+    request_body=VerifyUserSerializer,
+    responses={
+        200: VerifyUserResponseSerializer,
+        404: ErrorResponseSerializer,
+        500: ErrorResponseSerializer
+    }
+)
 @api_view(['POST'])
 def verify_user(request):
     try:
@@ -119,6 +151,15 @@ def verify_user(request):
 # -----------------------------------------------
 # get a user by ID
 # -----------------------------------------------
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get user by ID",
+    responses={
+        200: UserSerializer,
+        404: "User not found",
+        500: "Internal server error"
+    }
+)
 @api_view(['GET'])
 def get_user(request, user_id):
     try:
@@ -131,6 +172,15 @@ def get_user(request, user_id):
         print(e)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get all users",
+    responses={
+        200: UserSerializer(many=True),
+        404: "Users not found",
+        500: "Internal server error"
+    }
+)
 @api_view(['GET'])
 def get_users(request):
     try:
@@ -148,6 +198,16 @@ def get_users(request):
 # view to update a user
 # -----------------------------------------------
 
+@swagger_auto_schema(
+    method='put',
+    operation_description="Update user information",
+    request_body=UpdateUserSerializer,
+    responses={
+        200: UserSerializer,
+        404: "User not found",
+        500: "Internal server error"
+    }
+)
 @api_view(['PUT'])
 def update_user(request, user_id):
     data = request.data.copy()
@@ -175,6 +235,15 @@ def update_user(request, user_id):
 # -----------------------------------------------
 # remove a user and the token
 # -----------------------------------------------
+@swagger_auto_schema(
+    method='delete',
+    operation_description="Delete a user and their token",
+    responses={
+        204: "User deleted successfully",
+        404: "User not found",
+        500: "Internal server error"
+    }
+)
 @api_view(['DELETE'])
 def delete_user(request, user_id):
     try:

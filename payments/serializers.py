@@ -4,6 +4,10 @@ from services.serializers import ServiceSerializer
 from products.serializers import ProductSerializer
 from vidoes.serializers import VideoSerializer
 
+class VerifyPaymentSerializer(serializers.Serializer):
+    reference = serializers.CharField(required=True, help_text="Payment reference code")
+    customer_id = serializers.IntegerField(required=True, help_text="ID of the customer making the payment")
+    
 class PaymentSerializer(serializers.ModelSerializer):
     organization = serializers.SerializerMethodField()
     customer = serializers.SerializerMethodField()

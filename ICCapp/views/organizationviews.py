@@ -7,8 +7,16 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from utils import normalize_img_field
 from django.http import QueryDict
+from drf_yasg.utils import swagger_auto_schema
 
 # get all organizations
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: OrganizationSerializer(many=True),
+        404: 'Organizations Not Found'
+    }
+)
 @api_view(['GET'])
 def get_organizations(request):
     try:
@@ -19,6 +27,13 @@ def get_organizations(request):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # get a single organization
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: OrganizationSerializer(),
+        404: 'Organization Not Found'
+    }
+)
 @api_view(['GET'])
 def get_organization(request, organization_id):
     try:
@@ -30,6 +45,14 @@ def get_organization(request, organization_id):
     
 
 # Add an organization view
+@swagger_auto_schema(
+    method="post",
+    request_body=OrganizationSerializer,
+    responses={
+        201: OrganizationSerializer(),
+        400: 'Bad Request'
+    }
+)
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_organization(request):
@@ -48,6 +71,15 @@ def add_organization(request):
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 # update an organization view
+@swagger_auto_schema(
+    method="put",
+    request_body=OrganizationSerializer,
+    responses={
+        200: OrganizationSerializer(),
+        400: 'Bad Request',
+        404: 'Organization Not Found'
+    }
+)
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_organization(request, organization_id):
@@ -67,6 +99,13 @@ def update_organization(request, organization_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 # delete an organization view
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        204: 'No Content',
+        404: 'Organization Not Found'
+    }
+)
 @api_view(['DELETE'])
 def delete_organization(request, organization_id):
     try:
@@ -78,6 +117,14 @@ def delete_organization(request, organization_id):
     
 
 # edit the Organization Privacy Policy
+@swagger_auto_schema(
+    method="put",
+    request_body=OrganizationSerializer,
+    responses={
+        200: OrganizationSerializer(),
+        404: 'Organization Not Found'
+    }
+)
 @api_view(['PUT'])
 def edit_privacy_policy(request, organization_id):
     data = request.data.copy()
@@ -91,6 +138,14 @@ def edit_privacy_policy(request, organization_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # edit the Organization Terms of Use
+@swagger_auto_schema(
+    method="put",
+    request_body=OrganizationSerializer,
+    responses={
+        200: OrganizationSerializer(),
+        404: 'Organization Not Found'
+    }
+)
 @api_view(['PUT'])
 def edit_terms_of_use(request, organization_id):
     data = request.data.copy()

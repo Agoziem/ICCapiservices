@@ -1,5 +1,5 @@
 from ..models import *
-from ..serializers import *
+from ..serializers import ServiceSerializer, CategorySerializer, SubCategorySerializer, CreateServiceSerializer, UpdateServiceSerializer
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -11,6 +11,7 @@ from django.db.models import Count
 from django.http import QueryDict
 from collections import Counter
 from django.contrib.auth import get_user_model
+from drf_yasg.utils import swagger_auto_schema
 
 User = get_user_model()
 
@@ -23,6 +24,14 @@ class ServicePagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 1000
 
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get all services for a specific organization, with optional category filtering",
+    responses={
+        200: ServiceSerializer(many=True),
+        404: "Not found"
+    }
+)
 @api_view(['GET'])
 def get_services(request, organization_id):
     try:
@@ -40,6 +49,14 @@ def get_services(request, organization_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get trending services for a specific organization, sorted by number of buyers",
+    responses={
+        200: ServiceSerializer(many=True),
+        404: "Not found"
+    }
+)
 @api_view(['GET'])
 def get_trendingservices(request, organization_id):
     try:
@@ -73,6 +90,14 @@ def get_trendingservices(request, organization_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get services purchased by a specific user in an organization",
+    responses={
+        200: ServiceSerializer(many=True),
+        404: "Not found"
+    }
+)
 @api_view(['GET'])
 def get_user_services(request, organization_id, user_id):
     try:
@@ -104,6 +129,14 @@ def get_user_services(request, organization_id, user_id):
 # --------------------------------------------------------------------------
 # get a single service
 # --------------------------------------------------------------------------
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get details of a specific service by ID",
+    responses={
+        200: ServiceSerializer,
+        404: "Service not found"
+    }
+)
 @api_view(['GET'])
 def get_service(request, service_id):
     try:
@@ -116,6 +149,14 @@ def get_service(request, service_id):
 # --------------------------------------------------------------------------
 # get a service by token
 # --------------------------------------------------------------------------
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get details of a specific service by token",
+    responses={
+        200: ServiceSerializer,
+        404: "Service not found"
+    }
+)
 @api_view(['GET'])
 def get_service_token(request, servicetoken):
     try:
@@ -128,6 +169,16 @@ def get_service_token(request, servicetoken):
 # --------------------------------------------------------------------------
 # Add a service view
 # --------------------------------------------------------------------------  
+@swagger_auto_schema(
+    method='post',
+    operation_description="Add a new service to an organization",
+    request_body=CreateServiceSerializer,
+    responses={
+        201: ServiceSerializer,
+        400: "Bad request"
+    },
+    parser_classes=[MultiPartParser, FormParser]
+)
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_service(request, organization_id):
@@ -172,6 +223,17 @@ def add_service(request, organization_id):
 # --------------------------------------------------------------------------
 # Update a service view 
 # --------------------------------------------------------------------------
+@swagger_auto_schema(
+    method='put',
+    operation_description="Update an existing service",
+    request_body=UpdateServiceSerializer,
+    responses={
+        201: ServiceSerializer,
+        400: "Bad request",
+        404: "Service not found"
+    },
+    parser_classes=[MultiPartParser, FormParser]
+)
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_service(request, service_id):
@@ -230,6 +292,14 @@ def update_service(request, service_id):
 # --------------------------------------------------------------------------  
 # Delete a service view
 # --------------------------------------------------------------------------
+@swagger_auto_schema(
+    method='delete',
+    operation_description="Delete a service",
+    responses={
+        204: "No Content - Service successfully deleted",
+        404: "Service not found"
+    }
+)
 @api_view(['DELETE'])
 def delete_service(request, service_id):
     try:

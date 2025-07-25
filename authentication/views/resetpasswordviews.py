@@ -10,6 +10,8 @@ from rest_framework.authtoken.models import Token
 from ICCapp.models import Organization
 import uuid
 from django.utils import timezone
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 User = get_user_model()
 
@@ -17,6 +19,16 @@ User = get_user_model()
 # -----------------------------------------------
 # get user by token with token
 # -----------------------------------------------
+@swagger_auto_schema(
+    method='post',
+    operation_description="Verify user token for password reset",
+    request_body=VerifyTokenSerializer,
+    responses={
+        200: UserSerializer,
+        400: ErrorResponseSerializer,
+        404: ErrorResponseSerializer
+    }
+)
 @api_view(['POST'])
 def verify_token(request):
     try:
@@ -35,6 +47,17 @@ def verify_token(request):
 # -----------------------------------------------
 # change password and clear token and expiry time
 # -----------------------------------------------
+@swagger_auto_schema(
+    method='post',
+    operation_description="Reset user password using verification token",
+    request_body=ResetPasswordSerializer,
+    responses={
+        200: SuccessResponseSerializer,
+        400: ErrorResponseSerializer,
+        404: ErrorResponseSerializer,
+        500: "Internal server error"
+    }
+)
 @api_view(['POST'])
 def reset_password(request):
     try:
@@ -58,6 +81,16 @@ def reset_password(request):
 # -----------------------------------------------
 # get user with email and send token
 # -----------------------------------------------
+@swagger_auto_schema(
+    method='post',
+    operation_description="Get verification token by email for password reset",
+    request_body=GetVerificationTokenSerializer,
+    responses={
+        200: SuccessResponseSerializer,
+        404: ErrorResponseSerializer,
+        500: "Internal server error"
+    }
+)
 @api_view(['POST'])
 def get_verification_token_by_email(request):
     try:

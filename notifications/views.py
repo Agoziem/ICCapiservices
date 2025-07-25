@@ -6,9 +6,17 @@ from .models import Notification
 from .serializers import NotificationSerializer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from drf_yasg.utils import swagger_auto_schema
 
 
 # Fetch all notifications
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: NotificationSerializer(many=True),
+        404: 'Notifications Not Found'
+    }
+)
 @api_view(['GET'])
 def fetch_notifications(request):
     notifications = Notification.objects.all()
@@ -16,6 +24,13 @@ def fetch_notifications(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 # Fetch a notification by its ID
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: NotificationSerializer(),
+        404: 'Notification Not Found'
+    }
+)
 @api_view(['GET'])
 def fetch_notification_by_id(request, id):
     try:
@@ -27,6 +42,14 @@ def fetch_notification_by_id(request, id):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 # Create a new notification
+@swagger_auto_schema(
+    method="post",
+    request_body=NotificationSerializer,
+    responses={
+        201: NotificationSerializer(),
+        400: 'Bad Request'
+    }
+)
 @api_view(['POST'])
 def create_notification(request):
     serializer = NotificationSerializer(data=request.data)
@@ -47,6 +70,15 @@ def create_notification(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # Update an existing notification
+@swagger_auto_schema(
+    method="put",
+    request_body=NotificationSerializer,
+    responses={
+        200: NotificationSerializer(),
+        400: 'Bad Request',
+        404: 'Notification Not Found'
+    }
+)
 @api_view(['PUT'])
 def update_notification(request, id):
     try:
@@ -70,6 +102,14 @@ def update_notification(request, id):
         return Response(serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# Delete a notification
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        204: 'No Content',
+        404: 'Notification Not Found'
+    }
+)
 @api_view(['DELETE'])
 def delete_notification(request, id):
     try:

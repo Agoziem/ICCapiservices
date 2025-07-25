@@ -7,6 +7,13 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
+        ref_name = "ProductCategory"
+        
+class CreateCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['category']
+        ref_name = "ProductCreateCategory"
 
 class SubCategorySerializer(serializers.ModelSerializer):
     category = CategorySerializer()
@@ -14,6 +21,13 @@ class SubCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SubCategory
         fields = '__all__'
+        ref_name = "ProductSubCategory"
+        
+class CreateSubCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubCategory
+        fields = ['subcategory', 'category']
+        ref_name = "ProductCreateSubCategory"
 
 class ProductSerializer(serializers.ModelSerializer):
     organization = serializers.SerializerMethodField()
@@ -32,6 +46,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'preview': {'allow_null': True, 'required': False},
             'product': {'allow_null': True, 'required': False},
         }
+        ref_name = "ProductSerializer"
 
     def get_organization(self, obj):
         return {'id': obj.organization.id, 'name': obj.organization.name}
@@ -47,4 +62,34 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_product_name(self, obj):
         return get_image_name(obj.product)
+
+
+class CreateProductSerializer(serializers.ModelSerializer):
+    preview = serializers.ImageField(allow_null=True, required=False)
+    product = serializers.FileField(allow_null=True, required=False)
+    category = serializers.IntegerField()
+    subcategory = serializers.IntegerField()
+    
+    class Meta:
+        model = Product
+        fields = [
+            'name', 'description', 'price', 'preview', 'product',
+            'category', 'subcategory', 'organization'
+        ]
+        ref_name = "CreateProductSerializer"
+
+
+class UpdateProductSerializer(serializers.ModelSerializer):
+    preview = serializers.ImageField(allow_null=True, required=False)
+    product = serializers.FileField(allow_null=True, required=False)
+    category = serializers.IntegerField()
+    subcategory = serializers.IntegerField()
+    
+    class Meta:
+        model = Product
+        fields = [
+            'name', 'description', 'price', 'preview', 'product',
+            'category', 'subcategory'
+        ]
+        ref_name = "UpdateProductSerializer"
 

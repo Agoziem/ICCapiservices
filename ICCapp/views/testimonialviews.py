@@ -8,15 +8,23 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from utils import normalize_img_field
 from rest_framework.pagination import PageNumberPagination
 from django.http import QueryDict
+from drf_yasg.utils import swagger_auto_schema
 
 # --------------------------------------------------------------------------
-# get all videos
+# get all testimonials
 # --------------------------------------------------------------------------
 class TestimonialPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 1000
 
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: TestimonialSerializer(many=True),
+        404: 'Testimonials Not Found'
+    }
+)
 @api_view(['GET'])
 def get_testimonials(request, organization_id):
     try:
@@ -30,6 +38,13 @@ def get_testimonials(request, organization_id):
 
     
 # get a single testimonial
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: TestimonialSerializer(),
+        404: 'Testimonial Not Found'
+    }
+)
 @api_view(['GET'])
 def get_testimonial(request, testimonial_id):
     try:
@@ -40,6 +55,15 @@ def get_testimonial(request, testimonial_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # Add a testimonial view
+@swagger_auto_schema(
+    method="post",
+    request_body=TestimonialSerializer,
+    responses={
+        201: TestimonialSerializer(),
+        400: 'Bad Request',
+        404: 'Organization Not Found'
+    }
+)
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_testimonial(request, organization_id):
@@ -63,6 +87,15 @@ def add_testimonial(request, organization_id):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
 # update a testimonial view
+@swagger_auto_schema(
+    method="put",
+    request_body=TestimonialSerializer,
+    responses={
+        200: TestimonialSerializer(),
+        400: 'Bad Request',
+        404: 'Testimonial Not Found'
+    }
+)
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_testimonial(request, testimonial_id):
@@ -85,6 +118,13 @@ def update_testimonial(request, testimonial_id):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
 # delete a testimonial view
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        204: 'No Content',
+        404: 'Testimonial Not Found'
+    }
+)
 @api_view(['DELETE'])
 def delete_testimonial(request, testimonial_id):
     try:

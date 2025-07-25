@@ -11,6 +11,20 @@ class StaffSerializer(serializers.ModelSerializer):
     class Meta:
         model = Staff
         fields = '__all__'
+        
+class CreateStaffSerializer(serializers.ModelSerializer):
+    img = serializers.ImageField(allow_null=True, required=False)
+    
+    class Meta:
+        model = Staff
+        exclude = ['organization']
+        
+class UpdateStaffSerializer(serializers.ModelSerializer):
+    img = serializers.ImageField(allow_null=True, required=False)
+    
+    class Meta:
+        model = Staff
+        exclude = ['organization']
 
     def get_img_url(self, obj):
         return get_full_image_url(obj.img)
@@ -53,6 +67,24 @@ class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
         fields = '__all__'
+        
+class CreateDepartmentSerializer(serializers.ModelSerializer):
+    img = serializers.ImageField(allow_null=True, required=False)
+    staff_in_charge = serializers.IntegerField(required=False, allow_null=True)
+    services = serializers.ListField(child=serializers.CharField(), required=False)
+    
+    class Meta:
+        model = Department
+        exclude = ['organization']
+        
+class UpdateDepartmentSerializer(serializers.ModelSerializer):
+    img = serializers.ImageField(allow_null=True, required=False)
+    staff_in_charge = serializers.IntegerField(required=False, allow_null=True)
+    services = serializers.ListField(child=serializers.CharField(), required=False)
+    
+    class Meta:
+        model = Department
+        exclude = ['organization']
 
     def get_organization(self, obj):
         return {'id': obj.organization.id, 'name': obj.organization.name}

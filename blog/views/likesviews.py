@@ -5,9 +5,11 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
+from drf_yasg.utils import swagger_auto_schema
 User = get_user_model()
     
 # add a like view
+@swagger_auto_schema(method="get", responses={201: 'Created', 404: 'Blog or User Not Found'})
 @api_view(['GET'])
 def add_like(request, blog_id, user_id):
     try:
@@ -21,6 +23,7 @@ def add_like(request, blog_id, user_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # delete a like view
+@swagger_auto_schema(method="delete", responses={204: 'No Content', 404: 'Blog or User Not Found'})
 @api_view(['DELETE'])
 def delete_like(request, blog_id, user_id):
     try:

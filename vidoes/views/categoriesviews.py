@@ -1,10 +1,19 @@
-from ..models import *
-from ..serializers import *
+from ..models import Category
+from ..serializers import CategorySerializer, CreateCategorySerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from drf_yasg.utils import swagger_auto_schema
 
 # get all categories
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get all video categories",
+    responses={
+        200: CategorySerializer(many=True),
+        404: "Not found"
+    }
+)
 @api_view(['GET'])
 def get_categories(request):
     try:
@@ -16,6 +25,15 @@ def get_categories(request):
     
 
 # add a category
+@swagger_auto_schema(
+    method='post',
+    operation_description="Create a new video category",
+    request_body=CreateCategorySerializer,
+    responses={
+        201: CategorySerializer,
+        400: "Bad request"
+    }
+)
 @api_view(['POST'])
 def add_category(request):
     data = request.data.copy()
@@ -31,6 +49,16 @@ def add_category(request):
     
 
 # update a category
+@swagger_auto_schema(
+    method='put',
+    operation_description="Update an existing video category",
+    request_body=CreateCategorySerializer,
+    responses={
+        200: CategorySerializer,
+        404: "Category not found",
+        400: "Bad request"
+    }
+)
 @api_view(['PUT'])
 def update_category(request, category_id):
     data = request.data.copy()
@@ -47,6 +75,15 @@ def update_category(request, category_id):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
 # delete a category
+@swagger_auto_schema(
+    method='delete',
+    operation_description="Delete a video category",
+    responses={
+        204: "No Content - Category successfully deleted",
+        404: "Category not found",
+        400: "Bad request"
+    }
+)
 @api_view(['DELETE'])
 def delete_category(request, category_id):
     try:

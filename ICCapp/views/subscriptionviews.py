@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
+from drf_yasg.utils import swagger_auto_schema
 
 # get all subscriptions
 class SubscriptionPagination(PageNumberPagination):
@@ -12,6 +13,13 @@ class SubscriptionPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 1000
 
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: SubscriptionSerializer(many=True),
+        404: 'Subscriptions Not Found'
+    }
+)
 @api_view(['GET'])
 def get_subscriptions(request, organization_id):
     try:
@@ -25,6 +33,13 @@ def get_subscriptions(request, organization_id):
 
     
 # get a single subscription
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: SubscriptionSerializer(),
+        404: 'Subscription Not Found'
+    }
+)
 @api_view(['GET'])
 def get_subscription(request, subscription_id):
     try:
@@ -35,6 +50,15 @@ def get_subscription(request, subscription_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # Add a subscription view
+@swagger_auto_schema(
+    method="post",
+    request_body=SubscriptionSerializer,
+    responses={
+        201: SubscriptionSerializer(),
+        400: 'Bad Request',
+        404: 'Organization Not Found'
+    }
+)
 @api_view(['POST'])
 def add_subscription(request, organization_id):
     try:
@@ -48,6 +72,15 @@ def add_subscription(request, organization_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # update a subscription view
+@swagger_auto_schema(
+    method="put",
+    request_body=SubscriptionSerializer,
+    responses={
+        200: SubscriptionSerializer(),
+        400: 'Bad Request',
+        404: 'Subscription Not Found'
+    }
+)
 @api_view(['PUT'])
 def update_subscription(request, subscription_id):
     try:
@@ -62,6 +95,13 @@ def update_subscription(request, subscription_id):
     
 
 # delete a subscription view
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        204: 'No Content',
+        404: 'Subscription Not Found'
+    }
+)
 @api_view(['DELETE'])
 def delete_subscription(request, subscription_id):
     try:

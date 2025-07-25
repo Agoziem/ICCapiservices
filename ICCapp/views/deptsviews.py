@@ -4,11 +4,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from ..models import *
 from ..serializers import *
-from utils import normalize_img_field
+from utils import normalize_img_field, parse_json_fields
 import json
 from rest_framework.pagination import PageNumberPagination
 from django.http import QueryDict
 from rest_framework.parsers import MultiPartParser, FormParser
+from drf_yasg.utils import swagger_auto_schema
 
 class DepartmentPagination(PageNumberPagination):
     page_size = 10  # Default page size
@@ -16,6 +17,13 @@ class DepartmentPagination(PageNumberPagination):
     max_page_size = 1000  # Max allowed page size
 
 # get all depts by an Organization
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: DepartmentSerializer(many=True),
+        404: 'Departments Not Found'
+    }
+)
 @api_view(['GET'])
 def get_org_depts(request, organization_id):
     try:
@@ -31,6 +39,15 @@ def get_org_depts(request, organization_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 # add a dept
+@swagger_auto_schema(
+    method="post",
+    request_body=CreateDepartmentSerializer,
+    responses={
+        201: DepartmentSerializer,
+        400: 'Bad Request',
+        500: 'Internal Server Error'
+    }
+)
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_dept(request,organization_id):    
@@ -63,6 +80,16 @@ def add_dept(request,organization_id):
 
 
 # update a dept
+@swagger_auto_schema(
+    method="put",
+    request_body=UpdateDepartmentSerializer,
+    responses={
+        201: DepartmentSerializer,
+        400: 'Bad Request',
+        404: 'Department Not Found',
+        500: 'Internal Server Error'
+    }
+)
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_dept(request, department_id):
@@ -99,6 +126,14 @@ def update_dept(request, department_id):
         return Response({'error': 'Error in updating department'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # delete a dept
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        204: 'No Content',
+        404: 'Department Not Found',
+        500: 'Internal Server Error'
+    }
+)
 @api_view(['DELETE'])
 def delete_dept(request,department_id):
     try:

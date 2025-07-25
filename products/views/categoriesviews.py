@@ -4,9 +4,17 @@ from ..serializers import *
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from drf_yasg.utils import swagger_auto_schema
 
 
 # get all categories
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: CategorySerializer(many=True),
+        404: 'Categories Not Found'
+    }
+)
 @api_view(['GET'])
 def get_categories(request):
     try:
@@ -18,6 +26,14 @@ def get_categories(request):
     
 
 # add a category
+@swagger_auto_schema(
+    method="post",
+    request_body=CreateCategorySerializer,
+    responses={
+        201: CategorySerializer(),
+        400: 'Bad Request'
+    }
+)
 @api_view(['POST'])
 def add_category(request):
     data = request.data.copy()
@@ -33,6 +49,15 @@ def add_category(request):
     
 
 # update a category
+@swagger_auto_schema(
+    method="put",
+    request_body=CreateCategorySerializer,
+    responses={
+        200: CategorySerializer(),
+        400: 'Bad Request',
+        404: 'Category Not Found'
+    }
+)
 @api_view(['PUT'])
 def update_category(request, category_id):
     data = request.data.copy()
@@ -49,6 +74,14 @@ def update_category(request, category_id):
         return Response(status=status.HTTP_400_BAD_REQUEST)
     
 # delete a category
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        204: 'No Content',
+        404: 'Category Not Found',
+        400: 'Bad Request'
+    }
+)
 @api_view(['DELETE'])
 def delete_category(request, category_id):
     try:

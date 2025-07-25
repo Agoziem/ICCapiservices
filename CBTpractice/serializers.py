@@ -116,6 +116,13 @@ class CreateTestSerializer(serializers.ModelSerializer):
             test = Test.objects.create(**validated_data)
             return test
 
+        def update(self, instance, validated_data):
+            instance.testYear = validated_data.get('testYear', instance.testYear)
+            instance.texttype = validated_data.get('texttype', instance.texttype)
+            instance.testSubject.set(validated_data.get('testSubject', instance.testSubject))
+            instance.save()
+            return instance
+
 
 class TestSubmissionSerializer(serializers.Serializer):
     student_test_id = serializers.IntegerField()

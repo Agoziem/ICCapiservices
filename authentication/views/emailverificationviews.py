@@ -10,12 +10,25 @@ from rest_framework.authtoken.models import Token
 from ICCapp.models import Organization
 import uuid
 from django.utils import timezone
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 User = get_user_model()
 
 # -----------------------------------------------
 #verify email with token
 # -----------------------------------------------
+@swagger_auto_schema(
+    method='post',
+    operation_description="Verify user email with verification token",
+    request_body=VerifyEmailSerializer,
+    responses={
+        200: UserSerializer,
+        400: ErrorResponseSerializer,
+        404: ErrorResponseSerializer,
+        500: "Internal server error"
+    }
+)
 @api_view(['POST'])
 def verify_email(request):
     try:
@@ -39,6 +52,16 @@ def verify_email(request):
 # -----------------------------------------------
 # get user by email
 # -----------------------------------------------
+@swagger_auto_schema(
+    method='post',
+    operation_description="Get user by email for email verification",
+    request_body=GetUserByEmailSerializer,
+    responses={
+        200: SuccessResponseSerializer,
+        404: ErrorResponseSerializer,
+        500: "Internal server error"
+    }
+)
 @api_view(['POST'])
 def get_user_by_email(request):
     try:

@@ -9,6 +9,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import get_user_model
 from utils import normalize_img_field,parse_json_fields
 from rest_framework.parsers import MultiPartParser, FormParser
+from drf_yasg.utils import swagger_auto_schema
 
 User = get_user_model()
 
@@ -18,6 +19,13 @@ class BlogPagination(PageNumberPagination):
     max_page_size = 1000
 
 # get all blogs by an Organization
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: BlogSerializer(many=True),
+        404: 'Not Found'
+    }
+)
 @api_view(['GET'])
 def get_org_blogs(request,organization_id):
     try:
@@ -36,6 +44,13 @@ def get_org_blogs(request,organization_id):
     
 
 # get all blogs by a User
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: BlogSerializer(many=True),
+        404: 'Blog Not Found'
+    }
+)
 @api_view(['GET'])
 def get_blogs(request,user_id):
     try:
@@ -47,6 +62,13 @@ def get_blogs(request,user_id):
     
 
 # get a single blog
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: BlogSerializer,
+        404: 'Blog Not Found'
+    }
+)
 @api_view(['GET'])
 def get_blog(request, blog_id):
     try:
@@ -57,6 +79,13 @@ def get_blog(request, blog_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
 # get a single blog by slug
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: BlogSerializer,
+        404: 'Blog Not Found'
+    }
+)
 @api_view(['GET'])
 def get_blog_by_slug(request, slug):
     try:
@@ -68,6 +97,15 @@ def get_blog_by_slug(request, slug):
 
 
 
+@swagger_auto_schema(
+    method="post",
+    request_body=CreateBlogSerializer,
+    responses={
+        201: BlogSerializer,
+        400: 'Bad Request',
+        404: 'User or Category Not Found'
+    }
+)
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_blog(request, organization_id, user_id):
@@ -104,6 +142,15 @@ def add_blog(request, organization_id, user_id):
 
 
 
+@swagger_auto_schema(
+    method="put",
+    request_body=UpdateBlogSerializer,
+    responses={
+        200: BlogSerializer,
+        400: 'Bad Request',
+        404: 'User or Category Not Found'
+    }
+)
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_blog(request, blog_id):
@@ -143,6 +190,13 @@ def update_blog(request, blog_id):
 
     
 # delete a Blog view
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        204: 'No Content',
+        404: 'Blog Not Found'
+    }
+)
 @api_view(['DELETE'])
 def delete_blog(request, blog_id):
     try:
@@ -153,7 +207,15 @@ def delete_blog(request, blog_id):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 # increase the blog views
-@api_view(['get'])
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: 'OK',
+        400: 'Bad Request',
+        404: 'Blog Not Found'
+    }
+)
+@api_view(['GET'])
 def add_views(request, blog_id):
     try:
         blog = Blog.objects.get(id=blog_id)

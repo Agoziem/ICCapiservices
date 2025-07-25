@@ -3,10 +3,18 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Customer
-from .serializers import CustomerSerializer
+from .serializers import CustomerSerializer, CreateCustomerSerializer, UpdateCustomerSerializer
+from drf_yasg.utils import swagger_auto_schema
 
 
 # get all customers
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: CustomerSerializer(many=True),
+        404: 'Customers Not Found'
+    }
+)
 @api_view(['GET'])
 def getCustomers(request,organization_id):
     try:
@@ -17,6 +25,13 @@ def getCustomers(request,organization_id):
         return Response({'message': 'Customers not found'}, status=status.HTTP_404_NOT_FOUND)
 
 # get customer by id
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: CustomerSerializer,
+        404: 'Customer Not Found'
+    }
+)
 @api_view(['GET'])
 def getCustomer(request, customer_id):
     try:
@@ -28,6 +43,14 @@ def getCustomer(request, customer_id):
 
 
 # create customer
+@swagger_auto_schema(
+    method="post",
+    request_body=CreateCustomerSerializer,
+    responses={
+        201: CustomerSerializer,
+        400: 'Bad Request'
+    }
+)
 @api_view(['POST'])
 def createCustomer(request,organization_id):
     try:
@@ -41,6 +64,15 @@ def createCustomer(request,organization_id):
 
 
 # update customer
+@swagger_auto_schema(
+    method="put",
+    request_body=UpdateCustomerSerializer,
+    responses={
+        200: CustomerSerializer,
+        400: 'Bad Request',
+        404: 'Customer Not Found'
+    }
+)
 @api_view(['PUT'])
 def updateCustomer(request, customer_id):
     try:
@@ -55,6 +87,13 @@ def updateCustomer(request, customer_id):
     
 
 # delete customer
+@swagger_auto_schema(
+    method="delete",
+    responses={
+        200: 'Customer deleted successfully',
+        404: 'Customer Not Found'
+    }
+)
 @api_view(['DELETE'])
 def deleteCustomer(request, customer_id):
     try:
