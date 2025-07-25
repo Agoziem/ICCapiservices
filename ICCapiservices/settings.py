@@ -77,6 +77,35 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID", default="")
+GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", default="")
+GITHUB_CLIENT_ID = config("GITHUB_CLIENT_ID", default="")
+GITHUB_CLIENT_SECRET = config("GITHUB_CLIENT_SECRET", default="")
+REDIRECT_URI = config("REDIRECT_URI", default="http://localhost:8000/api/auth/callback")
+
+AUTHLIB_OAUTH_CLIENTS = {
+    'google': {
+        'client_id': GOOGLE_CLIENT_ID,
+        'client_secret': GOOGLE_CLIENT_SECRET,
+        'authorize_url': 'https://accounts.google.com/o/oauth2/auth',
+        'access_token_url': 'https://oauth2.googleapis.com/token',
+        'api_base_url': 'https://www.googleapis.com/oauth2/v2/',
+        'client_kwargs': {
+            'scope': 'openid email profile'
+        },
+    },
+    'github': {
+        'client_id': GITHUB_CLIENT_ID,
+        'client_secret': GITHUB_CLIENT_SECRET,
+        'authorize_url': 'https://github.com/login/oauth/authorize',
+        'access_token_url': 'https://github.com/login/oauth/access_token',
+        'api_base_url': 'https://api.github.com/',
+        'client_kwargs': {
+            'scope': 'user:email'
+        }
+    }
+}
+
 AUTH_USER_MODEL = "authentication.CustomUser"
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -104,17 +133,15 @@ TEMPLATES = [
 # WSGI_APPLICATION = 'ICCapiservices.wsgi.application'
 ASGI_APPLICATION = "ICCapiservices.asgi.application"
 
-if DEBUG_ENV:
-    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
-else:
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [config("REDIS_URL", default="redis://")],
-            },
+REDIS_URL = config("REDIS_URL", default="redis://localhost:6379/0")
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
         },
     }
+}
 
 
 # Database
@@ -257,6 +284,7 @@ CKEDITOR_CONFIGS = {
 }
 
 DJANGO_IMAGE_URL = config("DJANGO_IMAGE_URL", default="http://127.0.0.1:8000")
+SITE_DOMAIN = config("SITE_DOMAIN", default="http://127.0.0.1:3000")
 
 
 # whatsappAPI settings

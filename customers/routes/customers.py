@@ -3,6 +3,7 @@ from ninja_extra import api_controller, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from ICCapp.models import Organization
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Customer
 from ..schemas import (
@@ -34,7 +35,7 @@ class CustomersController:
         return customer
 
     @route.post(
-        "/{organization_id}", response=CustomerSchema, permissions=[IsAuthenticated]
+        "/{organization_id}", response=CustomerSchema, auth=JWTAuth()
     )
     def create_customer(self, organization_id: int, payload: CreateCustomerSchema):
         """Create a new customer for an organization"""
@@ -48,7 +49,7 @@ class CustomersController:
         except Exception as e:
             return {"error": str(e)}
 
-    @route.put("/{customer_id}", response=CustomerSchema, permissions=[IsAuthenticated])
+    @route.put("/{customer_id}", response=CustomerSchema, auth=JWTAuth())
     def update_customer(self, customer_id: int, payload: UpdateCustomerSchema):
         """Update a customer"""
         customer = get_object_or_404(Customer, id=customer_id)
@@ -61,7 +62,7 @@ class CustomersController:
         return customer
 
     @route.delete(
-        "/{customer_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{customer_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_customer(self, customer_id: int):
         """Delete a customer"""

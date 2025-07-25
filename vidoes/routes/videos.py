@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Count
 from django.http import Http404
 from collections import Counter
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Video, Category, SubCategory, Organization
 from ..schemas import (
@@ -177,7 +178,7 @@ class VideosController:
         return VideoSchema.from_django_model(video)
 
     @route.post(
-        "/{organization_id}", response=VideoSchema, permissions=[IsAuthenticated]
+        "/{organization_id}", response=VideoSchema, auth=JWTAuth()
     )
     def create_video(
         self,
@@ -225,7 +226,7 @@ class VideosController:
         except Exception as e:
             return {"error": str(e)}
 
-    @route.put("/video/{video_id}", response=VideoSchema, permissions=[IsAuthenticated])
+    @route.put("/video/{video_id}", response=VideoSchema, auth=JWTAuth())
     def update_video(
         self,
         video_id: int,
@@ -288,7 +289,7 @@ class VideosController:
     @route.delete(
         "/video/{video_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_video(self, video_id: int):
         """Delete a video"""

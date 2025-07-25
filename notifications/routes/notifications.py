@@ -4,6 +4,7 @@ from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Notification
 from ..schemas import (
@@ -31,7 +32,7 @@ class NotificationsController:
         notification = get_object_or_404(Notification, id=notification_id)
         return notification
 
-    @route.post("/", response=NotificationSchema, permissions=[IsAuthenticated])
+    @route.post("/", response=NotificationSchema, auth=JWTAuth())
     def create_notification(self, payload: CreateNotificationSchema):
         """Create a new notification and send WebSocket update"""
         try:
@@ -57,7 +58,7 @@ class NotificationsController:
             return {"error": str(e)}
 
     @route.put(
-        "/{notification_id}", response=NotificationSchema, permissions=[IsAuthenticated]
+        "/{notification_id}", response=NotificationSchema, auth=JWTAuth()
     )
     def update_notification(
         self, notification_id: int, payload: UpdateNotificationSchema
@@ -89,7 +90,7 @@ class NotificationsController:
     @route.delete(
         "/{notification_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_notification(self, notification_id: int):
         """Delete a notification and send WebSocket update"""

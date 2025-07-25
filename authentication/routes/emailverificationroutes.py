@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 import uuid
 
 from authentication.models import CustomUser
+from authentication.routes.utils import get_tokens_for_user
 
 
 from ..schemas import (
@@ -15,6 +16,7 @@ from ..schemas import (
     UserSchema,
     ErrorResponseSchema,
     SuccessResponseSchema,
+    VerifyUserResponseSchema,
 )
 
 User = cast(type[CustomUser], get_user_model())
@@ -26,7 +28,7 @@ class EmailVerificationController:
     @http_post(
         "/verify",
         response={
-            200: UserSchema,
+            200: VerifyUserResponseSchema,
             400: ErrorResponseSchema,
             404: ErrorResponseSchema,
             500: str,
@@ -45,7 +47,9 @@ class EmailVerificationController:
             user.expiryTime = None
             user.save()
 
-            return 200, UserSchema.model_validate(user)
+            # Generate tokens for the user
+            token = get_tokens_for_user(user)
+            return 200, {"access_token": token["access"], "refresh_token": token["refresh"], "user": UserSchema.model_validate(user)}
 
         except User.DoesNotExist:
             return 404, {"error": "user with the Verification Token not found"}

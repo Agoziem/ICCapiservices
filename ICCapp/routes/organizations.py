@@ -3,6 +3,7 @@ from ninja_extra import api_controller, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from ninja.files import UploadedFile
+from ninja_jwt.authentication import JWTAuth
 from ..models import Organization
 from ..schemas import (
     OrganizationSchema,
@@ -32,7 +33,7 @@ class OrganizationsController:
         organization = get_object_or_404(Organization, id=organization_id)
         return organization
 
-    @route.post("/", response=OrganizationSchema, permissions=[IsAuthenticated])
+    @route.post("/", response=OrganizationSchema, auth=JWTAuth())
     def create_organization(self, payload: CreateOrganizationSchema):
         """Create a new organization"""
         try:
@@ -43,7 +44,7 @@ class OrganizationsController:
             return {"error": str(e)}
 
     @route.put(
-        "/{organization_id}", response=OrganizationSchema, permissions=[IsAuthenticated]
+        "/{organization_id}", response=OrganizationSchema, auth=JWTAuth()
     )
     def update_organization(
         self, organization_id: int, payload: UpdateOrganizationSchema
@@ -61,7 +62,7 @@ class OrganizationsController:
     @route.delete(
         "/{organization_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_organization(self, organization_id: int):
         """Delete an organization"""
@@ -72,7 +73,7 @@ class OrganizationsController:
     @route.post(
         "/{organization_id}/upload-logo",
         response=OrganizationSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def upload_organization_logo(
         self, organization_id: int, logo: Optional[UploadedFile] = None

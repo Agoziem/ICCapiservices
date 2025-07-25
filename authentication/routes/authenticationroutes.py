@@ -1,18 +1,24 @@
 from typing import Any, Optional, cast
+from django.conf import settings
 from ninja_extra import NinjaExtraAPI, api_controller, http_post, http_get, http_put, http_delete
 from ninja import Form, File
 from ninja.files import UploadedFile
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from ICCapiservices.redis import add_oauth_code_to_blocklist, oauth_code_in_blocklist
 from ICCapp.models import Organization
+from django.shortcuts import redirect
 import uuid
 from django.utils import timezone
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from ninja_jwt.tokens import RefreshToken
 from ninja_jwt.exceptions import TokenError
+from ninja_jwt.authentication import JWTAuth
 from authentication.models import CustomUser
 from authentication.routes.utils import get_tokens_for_user
+from authlib.integrations.django_client import OAuth as DjangoOAuth
+from django.conf import settings
 
 from ..schemas import (
     LogoutSchema, RegisterUserSchema, RegisterUserOAuthSchema, VerifyUserSchema, UpdateUserSchema,
@@ -22,6 +28,10 @@ from ..schemas import (
 from utils import normalize_img_field
 
 User = cast(type[CustomUser], get_user_model())
+
+oauth = DjangoOAuth()
+oauth.register(name='google')
+oauth.register(name='github')
 
 
 @api_controller('/auth', tags=['Authentication'])
@@ -72,40 +82,8 @@ class AuthenticationController:
             print(f"Error during user registration: {e}")
             return 500, {"error": "An error occurred during registration"}
 
-    @http_post('/register-oauth/{provider}', response={200: RegisterUserResponseSchema, 201: RegisterUserResponseSchema, 500: ErrorResponseSchema})
-    def register_user_with_oauth(self, provider: str, data: RegisterUserOAuthSchema):
-        """Register or update a user with an OAuth provider"""
-        try:
-            defaults = {
-                "username": data.name,
-                "first_name": data.given_name or '',
-                "last_name": data.family_name or '',
-                "emailIsVerified": data.email_verified,
-                "isOauth": True,
-                "Oauthprovider": provider,
-                "date_joined": timezone.now(),
-            }
-
-            user, created = User.objects.update_or_create(
-                email=data.email, isOauth=True, Oauthprovider=provider,
-                defaults=defaults
-            )
-
-            access_token, refresh_token = get_tokens_for_user(user)
-            user_data = UserSchema.model_validate(user)
-
-            return (201 if created else 200), {
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "user": user_data,
-            }
-
-        except Exception as e:
-            print("OAuth Registration Error:", e)
-            return 500, {"error": "User registration failed"}
-
-    @http_post('/verify', response={200: VerifyUserResponseSchema, 404: ErrorResponseSchema, 500: ErrorResponseSchema})
-    def verify_user(self, data: VerifyUserSchema):
+    @http_post('/login_email', response={200: VerifyUserResponseSchema, 404: ErrorResponseSchema, 500: ErrorResponseSchema})
+    def login_email(self, data: VerifyUserSchema):
         """Verify user with email and password"""
         try:
             user = User.objects.get(email=data.email, isOauth=False)
@@ -113,9 +91,9 @@ class AuthenticationController:
                 return 404, {"error": "wrong password"}
             if not user.emailIsVerified:
                 return 404, {"error": "Email not verified"}
-            refresh_token, access_token = get_tokens_for_user(user)
+            token = get_tokens_for_user(user)
             user_data = UserSchema.model_validate(user)
-            return 200, {"access_token": access_token, "refresh_token": refresh_token, "user": user_data}
+            return 200, {"access_token": token["access"], "refresh_token": token["refresh"], "user": user_data}
 
         except User.DoesNotExist:
             return 404, {"error": "User does not exist"}
@@ -123,7 +101,7 @@ class AuthenticationController:
             print(e)
             return 500, {"error": "User verification failed"}
 
-    @http_post('/logout', response={200: dict[str, str], 404: ErrorResponseSchema, 500: ErrorResponseSchema})
+    @http_post('/logout', response={200: dict[str, str], 404: ErrorResponseSchema, 500: ErrorResponseSchema}, auth=JWTAuth())
     def logout(request, data: LogoutSchema):
         """
         Blacklist the provided refresh token to log the user out.
@@ -137,10 +115,77 @@ class AuthenticationController:
         except Exception as e:
             return {"error": str(e)}, 500
 
-    # --------------------------------------------
+    # -----------------------------------------------------------
+    # Oauth login
+    # -----------------------------------------------------------
+    @http_get("/login-oauth/{provider}", response={400: ErrorResponseSchema})
+    async def login_oauth(request, provider: str):
+        redirect_uri = f"{settings.REDIRECT_URI}/{provider}"
+        if not oauth.google or not oauth.github:
+            return 400, {"error": "OAuth provider not configured"}
+        if provider == "google":
+            return await oauth.google.authorize_redirect(request, redirect_uri)
+        elif provider == "github":
+            return await oauth.github.authorize_redirect(request, redirect_uri)
+
+    @http_get('/callback/{provider}', response={500: ErrorResponseSchema})
+    async def auth_via_oauth(request, provider: str):
+        """Register or update a user with an OAuth provider"""
+        try:
+            if not oauth.google or not oauth.github:
+                return 400, {"error": "OAuth provider not configured"}
+            if provider == "google":
+                token = await oauth.google.authorize_access_token(request)
+            elif provider == "github":
+                token = await oauth.github.authorize_access_token(request)
+            else:
+                return 400, {"error": "Unsupported provider"}
+
+            user_info = token["userinfo"]
+            validated_user = RegisterUserOAuthSchema(**user_info)
+            defaults = {
+                "username": validated_user.name,
+                "first_name": validated_user.given_name or '',
+                "last_name": validated_user.family_name or '',
+                "emailIsVerified": validated_user.email_verified,
+                "isOauth": True,
+                "Oauthprovider": provider,
+                "date_joined": timezone.now(),
+            }
+
+            user, created = User.objects.update_or_create(
+                email=validated_user.email, isOauth=True, Oauthprovider=provider,
+                defaults=defaults
+            )
+            code = str(uuid.uuid4())
+            await add_oauth_code_to_blocklist(code, str(user.pk))
+
+            return redirect(
+                f"{settings.SITE_DOMAIN}/oauth_success?code={code}"
+            )
+
+        except Exception as e:
+            print("OAuth Registration Error:", e)
+            return 500, {"error": "User registration failed"}
+
+    @http_get('/get_oauth_token/{code}', response={200: VerifyUserResponseSchema, 400: ErrorResponseSchema, 500: ErrorResponseSchema})
+    async def get_oauth_token(request, code: str):
+        try:
+            user_id = await oauth_code_in_blocklist(code)
+            if not user_id:
+                return 400, {"error": "Invalid or expired code"}
+            user = get_object_or_404(User, id=user_id)
+            token = get_tokens_for_user(user)
+            return 200, {"access_token": token["access"], "refresh_token": token["refresh"]}
+        except Exception as e:
+            print("Error fetching OAuth token:", e)
+            return 500, {"error": "Internal server error"}
+
+    # --------------------------------------------------------------
     # User management
-    # --------------------------------------------
-    @http_get('/users/{user_id}', response={200: UserSchema, 404: str, 500: str})
+    # --------------------------------------------------------------
+
+    @http_get('/users/{user_id}', response={200: UserSchema, 404: str, 500: str}, auth=JWTAuth())
     def get_user(self, user_id: int):
         """Get user by ID"""
         try:
@@ -152,7 +197,7 @@ class AuthenticationController:
             print(e)
             return 500, "Internal server error"
 
-    @http_get('/users', response={200: list[UserSchema], 404: str, 500: str})
+    @http_get('/users', response={200: list[UserSchema], 404: str, 500: str}, auth=JWTAuth())
     def get_users(self):
         """Get all users"""
         try:
@@ -162,7 +207,7 @@ class AuthenticationController:
             print(e)
             return 500, "Internal server error"
 
-    @http_put('/users/{user_id}', response={200: UserSchema, 404: str, 500: str})
+    @http_put('/users/{user_id}', response={200: UserSchema, 404: str, 500: str}, auth=JWTAuth())
     def update_user(self, user_id: int, data: UpdateUserSchema, avatar: Optional[UploadedFile] = None):
         """Update user information"""
         try:
@@ -182,7 +227,7 @@ class AuthenticationController:
             print(e)
             return 500, "Internal server error"
 
-    @http_delete('/users/{user_id}', response={204: None, 404: str, 500: str})
+    @http_delete('/users/{user_id}', response={204: None, 404: str, 500: str}, auth=JWTAuth())
     def delete_user(self, user_id: int):
         """Delete a user and their token"""
         try:

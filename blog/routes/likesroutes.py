@@ -2,6 +2,7 @@ from ninja_extra import api_controller, http_post, http_delete, http_get
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.http import Http404
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Blog
 from ..schemas import LikeResponseSchema, ErrorResponseSchema, SuccessResponseSchema
@@ -15,6 +16,7 @@ class LikesController:
     @http_post(
         "/blog/{blog_id}/user/{user_id}",
         response={200: LikeResponseSchema, 404: str, 500: str},
+        auth=JWTAuth()
     )
     def add_like(self, request, blog_id: int, user_id: int):
         """Add a like to a blog post"""
@@ -40,6 +42,7 @@ class LikesController:
     @http_delete(
         "/blog/{blog_id}/user/{user_id}",
         response={200: LikeResponseSchema, 404: str, 500: str},
+        auth=JWTAuth()
     )
     def remove_like(self, request, blog_id: int, user_id: int):
         """Remove a like from a blog post"""

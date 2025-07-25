@@ -5,6 +5,7 @@ from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Q
 from django.contrib.auth import get_user_model
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Year, TestType, Test, Subject, Question, TestResult
 from ..schemas import (
@@ -37,7 +38,7 @@ class YearsController:
         years = Year.objects.all()
         return {"years": years}
 
-    @route.post("/", response=YearSchema, permissions=[IsAuthenticated])
+    @route.post("/", response=YearSchema, auth=JWTAuth())
     def create_year(self, payload: CreateYearSchema):
         """Create a new year"""
         year = Year.objects.create(**payload.dict())
@@ -49,7 +50,7 @@ class YearsController:
         year = get_object_or_404(Year, id=year_id)
         return year
 
-    @route.put("/{year_id}", response=YearSchema, permissions=[IsAuthenticated])
+    @route.put("/{year_id}", response=YearSchema, auth=JWTAuth())
     def update_year(self, year_id: int, payload: UpdateYearSchema):
         """Update a year"""
         year = get_object_or_404(Year, id=year_id)
@@ -59,7 +60,7 @@ class YearsController:
         return year
 
     @route.delete(
-        "/{year_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{year_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_year(self, year_id: int):
         """Delete a year"""
@@ -77,7 +78,7 @@ class TestTypesController:
         test_types = TestType.objects.all()
         return {"testtypes": test_types}
 
-    @route.post("/", response=TestTypeSchema, permissions=[IsAuthenticated])
+    @route.post("/", response=TestTypeSchema, auth=JWTAuth())
     def create_test_type(self, payload: CreateTestTypeSchema):
         """Create a new test type"""
         test_type = TestType.objects.create(**payload.dict())
@@ -90,7 +91,7 @@ class TestTypesController:
         return test_type
 
     @route.put(
-        "/{test_type_id}", response=TestTypeSchema, permissions=[IsAuthenticated]
+        "/{test_type_id}", response=TestTypeSchema, auth=JWTAuth()
     )
     def update_test_type(self, test_type_id: int, payload: UpdateTestTypeSchema):
         """Update a test type"""
@@ -101,7 +102,7 @@ class TestTypesController:
         return test_type
 
     @route.delete(
-        "/{test_type_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{test_type_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_test_type(self, test_type_id: int):
         """Delete a test type"""
@@ -129,7 +130,7 @@ class TestsController:
 
         return {"tests": tests}
 
-    @route.post("/", response=TestSchema, permissions=[IsAuthenticated])
+    @route.post("/", response=TestSchema, auth=JWTAuth())
     def create_test(self, payload: CreateTestSchema):
         """Create a new test"""
         test_data = payload.dict()
@@ -152,7 +153,7 @@ class TestsController:
         )
         return test
 
-    @route.put("/{test_id}", response=TestSchema, permissions=[IsAuthenticated])
+    @route.put("/{test_id}", response=TestSchema, auth=JWTAuth())
     def update_test(self, test_id: int, payload: UpdateTestSchema):
         """Update a test"""
         test = get_object_or_404(Test, id=test_id)
@@ -169,7 +170,7 @@ class TestsController:
         return test
 
     @route.delete(
-        "/{test_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{test_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_test(self, test_id: int):
         """Delete a test"""

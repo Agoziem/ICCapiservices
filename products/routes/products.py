@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
 from django.db.models import Count
 from ninja.files import UploadedFile
+from ninja_jwt.authentication import JWTAuth
 
 from ICCapp.models import Organization
 from ..models import Product, Category, SubCategory
@@ -183,7 +184,7 @@ class ProductsController:
         return product
 
     @route.post(
-        "/{organization_id}", response=ProductSchema, permissions=[IsAuthenticated]
+        "/{organization_id}", response=ProductSchema, auth=JWTAuth()
     )
     def add_product(
         self,
@@ -221,7 +222,7 @@ class ProductsController:
             return {"error": str(e)}
 
     @route.put(
-        "/product/{product_id}", response=ProductSchema, permissions=[IsAuthenticated]
+        "/product/{product_id}", response=ProductSchema, auth=JWTAuth()
     )
     def update_product(
         self,
@@ -269,7 +270,7 @@ class ProductsController:
     @route.delete(
         "/product/{product_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_product(self, product_id: int):
         """Delete a product"""

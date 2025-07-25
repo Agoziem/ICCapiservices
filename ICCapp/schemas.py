@@ -228,27 +228,27 @@ class UpdateDepartmentSchema(Schema):
 
 # Response Schemas
 class OrganizationListResponseSchema(Schema):
-    organizations: list[OrganizationSchema] = []
+    organizations: list[OrganizationSchema]
 
 
 class StaffListResponseSchema(Schema):
-    staffs: list[StaffSchema] = []
+    staffs: list[StaffSchema]
 
 
 class TestimonialListResponseSchema(Schema):
-    testimonials: list[TestimonialSchema] = []
+    testimonials: list[TestimonialSchema]
 
 
 class SubscriptionListResponseSchema(Schema):
-    subscriptions: list[SubscriptionSchema] = []
+    subscriptions: list[SubscriptionSchema]
 
 
 class DepartmentListResponseSchema(Schema):
-    departments: list[DepartmentSchema] = []
+    departments: list[DepartmentSchema]
 
 
 class DepartmentServiceListResponseSchema(Schema):
-    services: list[DepartmentServiceSchema] = []
+    services: list[DepartmentServiceSchema]
 
 
 class SuccessResponseSchema(Schema):
@@ -264,18 +264,18 @@ class PaginatedStaffResponseSchema(Schema):
     count: int
     next: Optional[str] = None
     previous: Optional[str] = None
-    results: list[StaffSchema] = []
+    results: list[StaffSchema]
 
 
 class PaginatedTestimonialResponseSchema(Schema):
     count: int
     next: Optional[str] = None
     previous: Optional[str] = None
-    results: list[TestimonialSchema] = []
+    results: list[TestimonialSchema]
 
 
 class PaginatedDepartmentResponseSchema(Schema):
     count: int
     next: Optional[str] = None
     previous: Optional[str] = None
-    results: list[DepartmentSchema] = []
+    results: list[DepartmentSchema]

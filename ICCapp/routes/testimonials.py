@@ -3,6 +3,7 @@ from ninja_extra import api_controller, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Organization, Testimonial
 from ..schemas import (
@@ -76,7 +77,7 @@ class TestimonialsController:
             return {"error": str(e)}
 
     @route.put(
-        "/{testimonial_id}", response=TestimonialSchema, permissions=[IsAuthenticated]
+        "/{testimonial_id}", response=TestimonialSchema, auth=JWTAuth()
     )
     def update_testimonial(self, testimonial_id: int, payload: UpdateTestimonialSchema):
         """Update a testimonial"""
@@ -92,7 +93,7 @@ class TestimonialsController:
     @route.delete(
         "/{testimonial_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_testimonial(self, testimonial_id: int):
         """Delete a testimonial"""

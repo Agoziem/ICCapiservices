@@ -4,6 +4,7 @@ from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Sum, Avg
+from ninja_jwt.authentication import JWTAuth
 
 from ICCapp.models import Organization
 from services.models import Service
@@ -61,7 +62,7 @@ class PaymentsController:
         return order
 
     @route.post(
-        "/{organization_id}", response=OrderSchema, permissions=[IsAuthenticated]
+        "/{organization_id}", response=OrderSchema, auth=JWTAuth()
     )
     def add_payment(self, organization_id: int, payload: CreateOrderSchema):
         """Create a new payment order"""
@@ -167,7 +168,7 @@ class PaymentsController:
         except Exception as e:
             return {"status": "error", "message": str(e), "order": None}
 
-    @route.put("/{payment_id}", response=OrderSchema, permissions=[IsAuthenticated])
+    @route.put("/{payment_id}", response=OrderSchema, auth=JWTAuth())
     def update_payment(self, payment_id: int, payload: UpdateOrderSchema):
         """Update a payment order"""
         order = get_object_or_404(Orders, id=payment_id)
@@ -222,7 +223,7 @@ class PaymentsController:
             return {"error": str(e)}
 
     @route.delete(
-        "/{payment_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{payment_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_payment(self, payment_id: int):
         """Delete a payment order"""
@@ -267,7 +268,7 @@ class PaymentsController:
     @route.post(
         "/{payment_id}/mark-delivered",
         response=OrderSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def mark_service_delivered(self, payment_id: int):
         """Mark service as delivered for a payment"""

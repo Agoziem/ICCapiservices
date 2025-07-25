@@ -2,6 +2,7 @@ from typing import Optional
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Category, SubCategory
 from ..schemas import (
@@ -27,7 +28,7 @@ class CategoriesController:
         categories = Category.objects.all().order_by("category")
         return categories
 
-    @route.post("/", response=CategorySchema, permissions=[IsAuthenticated])
+    @route.post("/", response=CategorySchema, auth=JWTAuth())
     def add_category(self, payload: CreateCategorySchema):
         """Create a new product category"""
         try:
@@ -43,7 +44,7 @@ class CategoriesController:
         category = get_object_or_404(Category, id=category_id)
         return category
 
-    @route.put("/{category_id}", response=CategorySchema, permissions=[IsAuthenticated])
+    @route.put("/{category_id}", response=CategorySchema, auth=JWTAuth())
     def update_category(self, category_id: int, payload: UpdateCategorySchema):
         """Update a category"""
         category = get_object_or_404(Category, id=category_id)
@@ -56,7 +57,7 @@ class CategoriesController:
         return category
 
     @route.delete(
-        "/{category_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{category_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_category(self, category_id: int):
         """Delete a category"""
@@ -87,7 +88,7 @@ class SubCategoriesController:
         )
         return subcategory
 
-    @route.post("/", response=SubCategorySchema, permissions=[IsAuthenticated])
+    @route.post("/", response=SubCategorySchema, auth=JWTAuth())
     def create_subcategory(self, payload: CreateSubCategorySchema):
         """Create a new subcategory"""
         try:
@@ -103,7 +104,7 @@ class SubCategoriesController:
             return {"error": str(e)}
 
     @route.put(
-        "/{subcategory_id}", response=SubCategorySchema, permissions=[IsAuthenticated]
+        "/{subcategory_id}", response=SubCategorySchema, auth=JWTAuth()
     )
     def update_subcategory(self, subcategory_id: int, payload: UpdateSubCategorySchema):
         """Update a subcategory"""
@@ -127,7 +128,7 @@ class SubCategoriesController:
     @route.delete(
         "/{subcategory_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_subcategory(self, subcategory_id: int):
         """Delete a subcategory"""

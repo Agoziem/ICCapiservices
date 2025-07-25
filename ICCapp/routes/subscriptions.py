@@ -2,6 +2,7 @@ from typing import Optional
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Organization, Subscription
 from ..schemas import (
@@ -59,7 +60,7 @@ class SubscriptionsController:
     @route.delete(
         "/{subscription_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_subscription(self, subscription_id: int):
         """Delete a subscription"""

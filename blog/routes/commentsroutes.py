@@ -3,6 +3,7 @@ from ninja_extra import api_controller, http_get, http_post, http_put, http_dele
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.http import Http404
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Comment, Blog
 from ..schemas import (
@@ -42,6 +43,7 @@ class CommentsController:
     @http_post(
         "/blog/{blog_id}/user/{user_id}",
         response={201: CommentSchema, 400: ErrorResponseSchema, 404: str, 500: str},
+        auth=JWTAuth()
     )
     def create_comment(self, blog_id: int, user_id: int, data: CreateCommentSchema):
         """Create a new comment on a blog"""
@@ -59,7 +61,7 @@ class CommentsController:
             print(e)
             return 500, "Failed to create comment"
 
-    @http_put("/{comment_id}", response={200: CommentSchema, 404: str, 500: str})
+    @http_put("/{comment_id}", response={200: CommentSchema, 404: str, 500: str}, auth=JWTAuth())
     def update_comment(self, comment_id: int, data: UpdateCommentSchema):
         """Update an existing comment"""
         try:
@@ -74,7 +76,7 @@ class CommentsController:
             print(e)
             return 500, "Failed to update comment"
 
-    @http_delete("/{comment_id}", response={204: None, 404: str, 500: str})
+    @http_delete("/{comment_id}", response={204: None, 404: str, 500: str}, auth=JWTAuth())
     def delete_comment(self, comment_id: int):
         """Delete a comment"""
         try:

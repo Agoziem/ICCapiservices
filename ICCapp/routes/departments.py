@@ -3,6 +3,7 @@ from ninja_extra import api_controller, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Organization, Department, DepartmentService, Staff
 from ..schemas import (
@@ -64,7 +65,7 @@ class DepartmentsController:
         return department
 
     @route.post(
-        "/{organization_id}", response=DepartmentSchema, permissions=[IsAuthenticated]
+        "/{organization_id}", response=DepartmentSchema, auth=JWTAuth()
     )
     def create_department(self, organization_id: int, payload: CreateDepartmentSchema):
         """Create a new department"""
@@ -99,7 +100,7 @@ class DepartmentsController:
             return {"error": str(e)}
 
     @route.put(
-        "/{department_id}", response=DepartmentSchema, permissions=[IsAuthenticated]
+        "/{department_id}", response=DepartmentSchema, auth=JWTAuth()
     )
     def update_department(self, department_id: int, payload: UpdateDepartmentSchema):
         """Update a department"""
@@ -139,7 +140,7 @@ class DepartmentsController:
     @route.delete(
         "/{department_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_department(self, department_id: int):
         """Delete a department"""
@@ -160,7 +161,7 @@ class DepartmentServicesController:
         except Exception:
             return {"services": []}
 
-    @route.post("/", response=DepartmentServiceSchema, permissions=[IsAuthenticated])
+    @route.post("/", response=DepartmentServiceSchema, auth=JWTAuth())
     def create_service(self, payload: CreateDepartmentServiceSchema):
         """Create a new department service"""
         try:
@@ -176,7 +177,7 @@ class DepartmentServicesController:
         return service
 
     @route.put(
-        "/{service_id}", response=DepartmentServiceSchema, permissions=[IsAuthenticated]
+        "/{service_id}", response=DepartmentServiceSchema, auth=JWTAuth()
     )
     def update_service(self, service_id: int, payload: UpdateDepartmentServiceSchema):
         """Update a department service"""
@@ -190,7 +191,7 @@ class DepartmentServicesController:
         return service
 
     @route.delete(
-        "/{service_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{service_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_service(self, service_id: int):
         """Delete a department service"""

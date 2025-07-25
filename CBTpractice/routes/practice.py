@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Sum
 from django.utils import timezone
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Test, TestResult, Subject, Question, Answer
 from ..schemas import (
@@ -83,7 +84,7 @@ class PracticeController:
         return test_list
 
     @route.post(
-        "/start-test", response=StudentTestDetailSchema, permissions=[IsAuthenticated]
+        "/start-test", response=StudentTestDetailSchema, auth=JWTAuth()
     )
     def start_test(self, payload: StudentTestRequestSchema):
         """Start a practice test for a student"""
@@ -120,7 +121,7 @@ class PracticeController:
         }
 
     @route.post(
-        "/submit-test", response=TestScoreResponseSchema, permissions=[IsAuthenticated]
+        "/submit-test", response=TestScoreResponseSchema, auth=JWTAuth()
     )
     def submit_test(self, payload: SubmitStudentTestSchema):
         """Submit test answers and calculate score"""
@@ -159,7 +160,7 @@ class PracticeController:
     @route.get(
         "/my-results",
         response=TestResultListResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def get_my_test_results(self, request):
         """Get all test results for the current user"""
@@ -169,7 +170,7 @@ class PracticeController:
         return {"test_results": test_results}
 
     @route.get(
-        "/result/{result_id}", response=TestResultSchema, permissions=[IsAuthenticated]
+        "/result/{result_id}", response=TestResultSchema, auth=JWTAuth()
     )
     def get_test_result(self, request, result_id: int):
         """Get detailed test result"""

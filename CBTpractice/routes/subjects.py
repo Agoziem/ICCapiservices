@@ -4,6 +4,7 @@ from ninja_extra import api_controller, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Subject, Question, Answer
 from ..schemas import (
@@ -37,7 +38,7 @@ class SubjectsController:
 
         return {"subjects": subjects}
 
-    @route.post("/", response=SubjectSchema, permissions=[IsAuthenticated])
+    @route.post("/", response=SubjectSchema, auth=JWTAuth())
     def create_subject(self, payload: CreateSubjectSchema):
         """Create a new subject"""
         subject_data = payload.model_dump()
@@ -68,7 +69,7 @@ class SubjectsController:
         )
         return subject
 
-    @route.put("/{subject_id}", response=SubjectSchema, permissions=[IsAuthenticated])
+    @route.put("/{subject_id}", response=SubjectSchema, auth=JWTAuth())
     def update_subject(self, subject_id: int, payload: UpdateSubjectSchema):
         """Update a subject"""
         subject = get_object_or_404(Subject, id=subject_id)
@@ -99,7 +100,7 @@ class SubjectsController:
         return subject
 
     @route.delete(
-        "/{subject_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{subject_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_subject(self, subject_id: int):
         """Delete a subject"""
@@ -128,7 +129,7 @@ class QuestionsController:
 
         return [QuestionSchema.from_orm(q) for q in questions]
 
-    @route.post("/", response=QuestionSchema, permissions=[IsAuthenticated])
+    @route.post("/", response=QuestionSchema, auth=JWTAuth())
     def create_question(self, payload: CreateQuestionSchema):
         """Create a new question with answers"""
         question_data = payload.model_dump()
@@ -150,7 +151,7 @@ class QuestionsController:
         )
         return question
 
-    @route.put("/{question_id}", response=QuestionSchema, permissions=[IsAuthenticated])
+    @route.put("/{question_id}", response=QuestionSchema, auth=JWTAuth())
     def update_question(self, question_id: int, payload: UpdateQuestionSchema):
         """Update a question"""
         question = get_object_or_404(Question, id=question_id)
@@ -174,7 +175,7 @@ class QuestionsController:
         return question
 
     @route.delete(
-        "/{question_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{question_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_question(self, question_id: int):
         """Delete a question"""
@@ -183,7 +184,7 @@ class QuestionsController:
         return {"message": "Question deleted successfully"}
 
     @route.post(
-        "/{question_id}/answers", response=AnswerSchema, permissions=[IsAuthenticated]
+        "/{question_id}/answers", response=AnswerSchema, auth=JWTAuth()
     )
     def add_answer(self, question_id: int, payload: CreateAnswerSchema):
         """Add an answer to a question"""
@@ -201,7 +202,7 @@ class AnswersController:
         answer = get_object_or_404(Answer, id=answer_id)
         return answer
 
-    @route.put("/{answer_id}", response=AnswerSchema, permissions=[IsAuthenticated])
+    @route.put("/{answer_id}", response=AnswerSchema, auth=JWTAuth())
     def update_answer(self, answer_id: int, payload: UpdateAnswerSchema):
         """Update an answer"""
         answer = get_object_or_404(Answer, id=answer_id)
@@ -213,7 +214,7 @@ class AnswersController:
         return answer
 
     @route.delete(
-        "/{answer_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{answer_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_answer(self, answer_id: int):
         """Delete an answer"""

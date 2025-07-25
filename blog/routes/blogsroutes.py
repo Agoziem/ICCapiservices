@@ -21,6 +21,8 @@ from ..schemas import (
     BlogStatsSchema,
 )
 from utils import normalize_img_field
+from ninja_jwt.authentication import JWTAuth
+
 
 User = get_user_model()
 
@@ -31,6 +33,7 @@ class BlogsController:
     @http_get(
         "/organization/{organization_id}",
         response={200: List[BlogSchema], 404: str, 500: str},
+        auth=JWTAuth()
     )
     def get_org_blogs(self, organization_id: int):
         """Get all blogs for a specific organization"""
@@ -104,6 +107,7 @@ class BlogsController:
     @http_post(
         "/organization/{organization_id}/user/{user_id}",
         response={201: BlogSchema, 400: ErrorResponseSchema, 404: str, 500: str},
+        auth=JWTAuth()
     )
     def create_blog(
         self,
@@ -154,6 +158,7 @@ class BlogsController:
     @http_put(
         "/{blog_id}",
         response={200: BlogSchema, 400: ErrorResponseSchema, 404: str, 500: str},
+        auth=JWTAuth()
     )
     def update_blog(
         self,
@@ -201,7 +206,7 @@ class BlogsController:
             print(e)
             return 500, "Failed to update blog"
 
-    @http_delete("/{blog_id}", response={204: None, 404: str, 500: str})
+    @http_delete("/{blog_id}", response={204: None, 404: str, 500: str}, auth=JWTAuth())
     def delete_blog(self, blog_id: int):
         """Delete a blog post"""
         try:

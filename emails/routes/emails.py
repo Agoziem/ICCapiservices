@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from ICCapp.models import Organization, Subscription
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Email, EmailResponse, EmailMessage
 from ..schemas import (
@@ -106,7 +107,7 @@ class EmailsController:
         except Exception as e:
             return {"error": str(e)}
 
-    @route.put("/{email_id}", response=EmailSchema, permissions=[IsAuthenticated])
+    @route.put("/{email_id}", response=EmailSchema, auth=JWTAuth())
     def update_email(self, email_id: int, payload: UpdateEmailSchema):
         """Update an email"""
         email = get_object_or_404(Email, id=email_id)
@@ -119,7 +120,7 @@ class EmailsController:
         return email
 
     @route.delete(
-        "/{email_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{email_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_email(self, email_id: int):
         """Delete an email"""
@@ -152,7 +153,7 @@ class EmailResponsesController:
             return {"error": str(e)}
 
     @route.put(
-        "/{response_id}", response=EmailResponseSchema, permissions=[IsAuthenticated]
+        "/{response_id}", response=EmailResponseSchema, auth=JWTAuth()
     )
     def update_response(self, response_id: int, payload: UpdateEmailResponseSchema):
         """Update an email response"""
@@ -166,7 +167,7 @@ class EmailResponsesController:
         return response
 
     @route.delete(
-        "/{response_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{response_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_response(self, response_id: int):
         """Delete an email response"""
@@ -204,7 +205,7 @@ class EmailMessagesController:
         return message
 
     @route.put(
-        "/{message_id}", response=EmailMessageSchema, permissions=[IsAuthenticated]
+        "/{message_id}", response=EmailMessageSchema, auth=JWTAuth()
     )
     def update_email_message(self, message_id: int, payload: UpdateEmailMessageSchema):
         """Update an email message"""
@@ -218,7 +219,7 @@ class EmailMessagesController:
         return message
 
     @route.delete(
-        "/{message_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{message_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_email_message(self, message_id: int):
         """Delete an email message"""

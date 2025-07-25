@@ -6,6 +6,7 @@ from ninja.files import UploadedFile
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 from collections import Counter
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Service, Category, SubCategory, Organization
 from ..schemas import (
@@ -131,7 +132,7 @@ class ServicesController:
         return ServiceSchema.from_django_model(service)
 
     @route.post(
-        "/{organization_id}", response=ServiceSchema, permissions=[IsAuthenticated]
+        "/{organization_id}", response=ServiceSchema, auth=JWTAuth()
     )
     def create_service(
         self,
@@ -177,7 +178,7 @@ class ServicesController:
             return {"error": str(e)}
 
     @route.put(
-        "/service/{service_id}", response=ServiceSchema, permissions=[IsAuthenticated]
+        "/service/{service_id}", response=ServiceSchema, auth=JWTAuth()
     )
     def update_service(
         self,
@@ -238,7 +239,7 @@ class ServicesController:
     @route.delete(
         "/service/{service_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_service(self, service_id: int):
         """Delete a service"""

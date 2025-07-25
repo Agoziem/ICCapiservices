@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.http import StreamingHttpResponse
 from django.conf import settings
 import requests
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Contact, WAMessage, WATemplateSchema, Status, WebhookEvent
 from ..schemas import (
@@ -48,7 +49,7 @@ class WhatsAppController:
         contact = get_object_or_404(Contact, id=contact_id)
         return ContactSchema.from_django_model(contact)
 
-    @route.post("/contacts", response=ContactSchema, permissions=[IsAuthenticated])
+    @route.post("/contacts", response=ContactSchema, auth=JWTAuth())
     def create_contact(self, payload: CreateContactSchema):
         """Create a new WhatsApp contact"""
         try:
@@ -59,7 +60,7 @@ class WhatsAppController:
             return {"error": str(e)}
 
     @route.put(
-        "/contacts/{contact_id}", response=ContactSchema, permissions=[IsAuthenticated]
+        "/contacts/{contact_id}", response=ContactSchema, auth=JWTAuth()
     )
     def update_contact(self, contact_id: int, payload: UpdateContactSchema):
         """Update a WhatsApp contact"""
@@ -75,7 +76,7 @@ class WhatsAppController:
     @route.delete(
         "/contacts/{contact_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_contact(self, contact_id: int):
         """Delete a WhatsApp contact"""
@@ -96,7 +97,7 @@ class WhatsAppController:
         message = get_object_or_404(WAMessage, id=message_id)
         return message
 
-    @route.post("/messages", response=WAMessageSchema, permissions=[IsAuthenticated])
+    @route.post("/messages", response=WAMessageSchema, auth=JWTAuth())
     def create_message(self, payload: CreateWAMessageSchema):
         """Create a new WhatsApp message"""
         try:
@@ -112,7 +113,7 @@ class WhatsAppController:
     @route.put(
         "/messages/{message_id}",
         response=WAMessageSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def update_message(self, message_id: int, payload: UpdateWAMessageSchema):
         """Update a WhatsApp message"""
@@ -128,7 +129,7 @@ class WhatsAppController:
     @route.delete(
         "/messages/{message_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_message(self, message_id: int):
         """Delete a WhatsApp message"""
@@ -139,7 +140,7 @@ class WhatsAppController:
     @route.patch(
         "/messages/{message_id}/mark-read",
         response=WAMessageSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def mark_message_read(self, message_id: int):
         """Mark a message as read"""
@@ -151,7 +152,7 @@ class WhatsAppController:
     @route.patch(
         "/messages/{message_id}/mark-unread",
         response=WAMessageSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def mark_message_unread(self, message_id: int):
         """Mark a message as unread"""
@@ -176,7 +177,7 @@ class WhatsAppTemplateController:
         template = get_object_or_404(WATemplateSchema, id=template_id)
         return template
 
-    @route.post("/", response=WATemplateSchemaSchema, permissions=[IsAuthenticated])
+    @route.post("/", response=WATemplateSchemaSchema, auth=JWTAuth())
     def create_template(self, payload: CreateWATemplateSchemaSchema):
         """Create a new WhatsApp template"""
         try:
@@ -189,7 +190,7 @@ class WhatsAppTemplateController:
             return {"error": str(e)}
 
     @route.put(
-        "/{template_id}", response=WATemplateSchemaSchema, permissions=[IsAuthenticated]
+        "/{template_id}", response=WATemplateSchemaSchema, auth=JWTAuth()
     )
     def update_template(self, template_id: int, payload: UpdateWATemplateSchemaSchema):
         """Update a WhatsApp template"""
@@ -203,7 +204,7 @@ class WhatsAppTemplateController:
         return template
 
     @route.delete(
-        "/{template_id}", response=SuccessResponseSchema, permissions=[IsAuthenticated]
+        "/{template_id}", response=SuccessResponseSchema, auth=JWTAuth()
     )
     def delete_template(self, template_id: int):
         """Delete a WhatsApp template"""
@@ -276,7 +277,7 @@ class WhatsAppWebhookController:
     @route.delete(
         "/events/{event_id}",
         response=SuccessResponseSchema,
-        permissions=[IsAuthenticated],
+        auth=JWTAuth(),
     )
     def delete_webhook_event(self, event_id: int):
         """Delete a webhook event"""

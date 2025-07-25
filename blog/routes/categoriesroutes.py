@@ -2,6 +2,7 @@ from typing import List
 from ninja_extra import api_controller, http_get, http_post, http_put, http_delete
 from django.shortcuts import get_object_or_404
 from django.http import Http404
+from ninja_jwt.authentication import JWTAuth
 
 from ..models import Category
 from ..schemas import (
@@ -29,7 +30,7 @@ class CategoriesController:
             print(e)
             return 500, "Internal server error"
 
-    @http_post("/", response={201: CategorySchema, 400: ErrorResponseSchema, 500: str})
+    @http_post("/", response={201: CategorySchema, 400: ErrorResponseSchema, 500: str}, auth=JWTAuth())
     def create_category(self, data: CreateCategorySchema):
         """Create a new blog category"""
         try:
@@ -39,7 +40,7 @@ class CategoriesController:
             print(e)
             return 500, "Failed to create category"
 
-    @http_put("/{category_id}", response={200: CategorySchema, 404: str, 500: str})
+    @http_put("/{category_id}", response={200: CategorySchema, 404: str, 500: str}, auth=JWTAuth())
     def update_category(self, category_id: int, data: UpdateCategorySchema):
         """Update an existing blog category"""
         try:
@@ -59,7 +60,7 @@ class CategoriesController:
             print(e)
             return 500, "Failed to update category"
 
-    @http_delete("/{category_id}", response={204: None, 404: str, 500: str})
+    @http_delete("/{category_id}", response={204: None, 404: str, 500: str}, auth=JWTAuth())
     def delete_category(self, category_id: int):
         """Delete a blog category"""
         try:
