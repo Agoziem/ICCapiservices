@@ -46,10 +46,7 @@ INSTALLED_APPS = [
     'CBTpractice',
     'products',
     'vidoes',
-
-    'rest_framework',
-    'drf_yasg',
-    'rest_framework.authtoken',
+    'ninja_extra',
     'corsheaders',
     'ckeditor',
 ]
@@ -64,13 +61,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication', 
-        'rest_framework.authentication.TokenAuthentication', 
-    ),
-}
 
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
