@@ -4,26 +4,27 @@ from django.utils import timezone
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 import uuid
+from authentication.models import CustomUser
+from typing import cast
 
 from ..schemas import (
     VerifyTokenSchema, ResetPasswordSchema, GetVerificationTokenSchema,
     UserSchema, ErrorResponseSchema, SuccessResponseSchema
 )
 
-User = get_user_model()
+User = cast(type[CustomUser], get_user_model())
 
 
 @api_controller('/auth/password-reset', tags=['Password Reset'])
 class PasswordResetController:
     
     @http_post('/verify-token', response={200: UserSchema, 400: ErrorResponseSchema, 404: ErrorResponseSchema})
-    def verify_token(self, request, data: VerifyTokenSchema):
+    def verify_token(self, data: VerifyTokenSchema):
         """Verify user token for password reset"""
         try:
             user = User.objects.get(verificationToken=data.token)
-            if user.expiryTime < timezone.now():
+            if not user.expiryTime or user.expiryTime < timezone.now():
                 return 400, {"error": "Token has expired, please try again"}
-            
             return 200, UserSchema.model_validate(user)
             
         except User.DoesNotExist:
@@ -33,11 +34,12 @@ class PasswordResetController:
             return 500, {"error": "Internal server error"}
 
     @http_post('/reset', response={200: SuccessResponseSchema, 400: ErrorResponseSchema, 404: ErrorResponseSchema, 500: str})
-    def reset_password(self, request, data: ResetPasswordSchema):
+    def reset_password(self, data: ResetPasswordSchema):
         """Reset user password using verification token"""
         try:
             user = User.objects.get(verificationToken=data.token)
-            if user.expiryTime < timezone.now():
+            # Check if token is expired
+            if not user.expiryTime or user.expiryTime < timezone.now():
                 return 400, {"error": "Token has expired, please try again"}
             
             user.set_password(data.password)
@@ -54,7 +56,7 @@ class PasswordResetController:
             return 500, "Internal server error"
 
     @http_post('/get-token', response={200: SuccessResponseSchema, 404: ErrorResponseSchema, 500: str})
-    def get_verification_token_by_email(self, request, data: GetVerificationTokenSchema):
+    def get_verification_token_by_email(self, data: GetVerificationTokenSchema):
         """Get verification token by email for password reset"""
         try:
             user = User.objects.get(email=data.email)

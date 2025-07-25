@@ -57,12 +57,16 @@ class VerifyUserSchema(Schema):
     email: str
     password: str
 
+class LogoutSchema(Schema):
+    refresh: str
+
 
 class UpdateUserSchema(Schema):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    Sex: Optional[str] = None
     address: Optional[str] = None
     avatar: Optional[str] = None  # For file uploads, you might need to handle this differently
 
@@ -91,12 +95,14 @@ class GetUserByEmailSchema(Schema):
 
 # Response Schemas
 class RegisterUserResponseSchema(Schema):
-    token: str
+    access_token: str
+    refresh_token: str
     user: UserSchema
 
 
 class VerifyUserResponseSchema(Schema):
-    token: str
+    access_token: str
+    refresh_token: str
     user: UserSchema
 
 

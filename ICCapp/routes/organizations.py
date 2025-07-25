@@ -2,8 +2,7 @@ from typing import Optional
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from django.core.files.uploadedfile import InMemoryUploadedFile
-
+from ninja.files import UploadedFile
 from ..models import Organization
 from ..schemas import (
     OrganizationSchema, OrganizationListResponseSchema,
@@ -60,7 +59,7 @@ class OrganizationsController:
         return {"message": "Organization deleted successfully"}
     
     @route.post('/{organization_id}/upload-logo', response=OrganizationSchema, permissions=[IsAuthenticated])
-    def upload_organization_logo(self, organization_id: int, logo: InMemoryUploadedFile):
+    def upload_organization_logo(self, organization_id: int, logo: Optional[UploadedFile] = None):
         """Upload logo for organization"""
         organization = get_object_or_404(Organization, id=organization_id)
         organization.logo = logo # type: ignore

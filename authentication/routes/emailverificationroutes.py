@@ -1,3 +1,4 @@
+from typing import cast
 from ninja_extra import api_controller, http_post
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -5,23 +6,27 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 import uuid
 
+from authentication.models import CustomUser
+
+
 from ..schemas import (
     VerifyEmailSchema, GetUserByEmailSchema,
     UserSchema, ErrorResponseSchema, SuccessResponseSchema
 )
 
-User = get_user_model()
+User = cast(type[CustomUser], get_user_model())
 
 
 @api_controller('/auth/email-verification', tags=['Email Verification'])
 class EmailVerificationController:
     
     @http_post('/verify', response={200: UserSchema, 400: ErrorResponseSchema, 404: ErrorResponseSchema, 500: str})
-    def verify_email(self, request, data: VerifyEmailSchema):
+    def verify_email(self, data: VerifyEmailSchema):
         """Verify user email with verification token"""
         try:
             user = User.objects.get(verificationToken=data.token)
-            if user.expiryTime < timezone.now():
+
+            if not user.expiryTime or user.expiryTime < timezone.now():
                 return 400, {"error": "Token has expired, please try again"}
             
             user.emailIsVerified = True
@@ -38,7 +43,7 @@ class EmailVerificationController:
             return 500, "Internal server error"
 
     @http_post('/get-user', response={200: SuccessResponseSchema, 404: ErrorResponseSchema, 500: str})
-    def get_user_by_email(self, request, data: GetUserByEmailSchema):
+    def get_user_by_email(self, data: GetUserByEmailSchema):
         """Get user by email for email verification"""
         try:
             user = User.objects.get(email=data.email)

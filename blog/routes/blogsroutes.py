@@ -144,7 +144,7 @@ class BlogsController:
                 blog.slug = new_slug
             
             if img:
-                blog.img = img
+                blog.img = img # type: ignore
             
             blog.save()
             

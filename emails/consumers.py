@@ -1,8 +1,9 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+from emails.schemas import EmailSchema
 from .models import Email
 from channels.db import database_sync_to_async
-from .serializers import *
 
 
 class EmailConsumer(AsyncWebsocketConsumer):
@@ -59,13 +60,13 @@ class EmailConsumer(AsyncWebsocketConsumer):
     async def create_email(self, data):
         try:
             email = await self.create_email_in_db(data)
-            serialized_email = EmailSerializer(email, many=False)
+            serialized_email = EmailSchema.model_validate(email).model_dump()
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     'type': 'chat_message',
                     'operation': "create",
-                    'message': serialized_email.data
+                    'message': serialized_email
                 }
             )
         except Exception as e:
@@ -80,8 +81,8 @@ class EmailConsumer(AsyncWebsocketConsumer):
             email = Email.objects.get(id=email_id)
             email.read = True
             email.save()
-            serialized_email = EmailSerializer(email, many=False)
-            return serialized_email.data
+            serialized_email = EmailSchema.model_validate(email).model_dump()
+            return serialized_email
         except Email.DoesNotExist:
             return None
 

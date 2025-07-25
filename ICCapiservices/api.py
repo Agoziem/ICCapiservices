@@ -4,7 +4,7 @@ from blog.routes.blogsroutes import BlogsController
 from blog.routes.categoriesroutes import CategoriesController
 from blog.routes.commentsroutes import CommentsController
 from blog.routes.likesroutes import LikesController
-from ..authentication.routes import AuthenticationController, PasswordResetController, EmailVerificationController
+from authentication.routes import AuthenticationController, PasswordResetController, EmailVerificationController
 from CBTpractice.routes.tests import YearsController, TestTypesController, TestsController
 from CBTpractice.routes.subjects import SubjectsController, QuestionsController, AnswersController
 from CBTpractice.routes.practice import PracticeController, ComputingController
@@ -25,6 +25,8 @@ from vidoes.routes.videos import VideosController, VideoUserController
 from vidoes.routes.categories import VideoCategoriesController, VideoSubCategoriesController
 from whatsappAPI.routes.whatsapp import WhatsAppController, WhatsAppTemplateController, WhatsAppMediaController, WhatsAppWebhookController as WhatsAppWebhookEventsController
 from whatsappAPI.routes.webhook import WhatsAppWebhookController
+from ninja_jwt.controller import NinjaJWTDefaultController
+
 
 # Create the ninja API instance for authentication
 ninja_api = NinjaExtraAPI(
@@ -101,5 +103,8 @@ ninja_api.register_controllers(
     WhatsAppMediaController,
     WhatsAppWebhookEventsController,
     WhatsAppWebhookController,
+
+    # AuthTokens
+    NinjaJWTDefaultController
 )
 

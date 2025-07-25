@@ -1,7 +1,8 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+from notifications.schemas import NotificationSchema
 from .models import Notification
-from .serializers import NotificationSerializer
 from asgiref.sync import sync_to_async
 
 
@@ -81,14 +82,14 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
     async def notify_group(self, action, notification):
         """Send message to the group in the desired format"""
-        serializer = NotificationSerializer(notification)
+        serialized_notification = NotificationSchema.model_validate(notification).model_dump()
 
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'notification_message',
                 'action': action,
-                'notification': serializer.data
+                'notification': serialized_notification
             }
         )
 

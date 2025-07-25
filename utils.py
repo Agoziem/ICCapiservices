@@ -2,9 +2,6 @@
 import re
 from django.conf import settings
 import json
-from functools import wraps
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 
 def get_full_image_url(image_field, base_url=settings.DJANGO_IMAGE_URL):
     if not image_field:
@@ -80,69 +77,3 @@ def parse_json_fields(data, exclude_fields=None):
     return parsed_data
 
 
-
-
-
-
-def swagger_doc(
-    method='get',
-    input_schema=None,         # dict or openapi.Schema
-    required=None,
-    output_schemas=None,       # dict of status_code: (description, schema_dict or openapi.Schema)
-    query_params=None,         # list of dicts: [{name, type, required, description}]
-):
-    def decorator(view_func):
-        # --- Build request body ---
-        request_body = None
-        if isinstance(input_schema, dict):
-            request_body = openapi.Schema(
-                type=openapi.TYPE_OBJECT,
-                properties={k: openapi.Schema(type=v) for k, v in input_schema.items()},
-                required=required or []
-            )
-        elif isinstance(input_schema, openapi.Schema):
-            request_body = input_schema
-
-        # --- Build responses ---
-        responses = {}
-        if output_schemas:
-            for status, (desc, schema_data) in output_schemas.items():
-                if isinstance(schema_data, dict):
-                    schema = openapi.Schema(
-                        type=openapi.TYPE_OBJECT,
-                        properties={k: openapi.Schema(type=v) for k, v in schema_data.items()}
-                    )
-                elif isinstance(schema_data, openapi.Schema):
-                    schema = schema_data
-                else:
-                    schema = None
-                responses[status] = openapi.Response(desc, schema=schema)
-
-        # --- Build query parameters ---
-        manual_parameters = []
-        if query_params:
-            for param in query_params:
-                manual_parameters.append(
-                    openapi.Parameter(
-                        name=param['name'],
-                        in_=openapi.IN_QUERY,
-                        type=param['type'],
-                        required=param.get('required', False),
-                        description=param.get('description', '')
-                    )
-                )
-
-        # --- Final wrapper ---
-        decorated = swagger_auto_schema(
-            method=method,
-            request_body=request_body,
-            responses=responses if responses else None,
-            manual_parameters=manual_parameters if manual_parameters else None
-        )(view_func)
-
-        @wraps(view_func)
-        def wrapper(*args, **kwargs):
-            return decorated(*args, **kwargs)
-
-        return wrapper
-    return decorator
