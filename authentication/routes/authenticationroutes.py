@@ -1,12 +1,5 @@
 from typing import Any, Optional, cast
-from ninja_extra import (
-    NinjaExtraAPI,
-    api_controller,
-    http_post,
-    http_get,
-    http_put,
-    http_delete,
-)
+from ninja_extra import NinjaExtraAPI, api_controller, http_post, http_get, http_put, http_delete
 from ninja import Form, File
 from ninja.files import UploadedFile
 from django.contrib.auth import get_user_model
@@ -22,35 +15,25 @@ from authentication.models import CustomUser
 from authentication.routes.utils import get_tokens_for_user
 
 from ..schemas import (
-    LogoutSchema,
-    RegisterUserSchema,
-    RegisterUserOAuthSchema,
-    VerifyUserSchema,
-    UpdateUserSchema,
-    UserSchema,
-    RegisterUserResponseSchema,
-    VerifyUserResponseSchema,
-    ErrorResponseSchema,
-    SuccessResponseSchema,
-    UserMiniSchema,
+    LogoutSchema, RegisterUserSchema, RegisterUserOAuthSchema, VerifyUserSchema, UpdateUserSchema,
+    UserSchema, RegisterUserResponseSchema, VerifyUserResponseSchema,
+    ErrorResponseSchema, SuccessResponseSchema, UserMiniSchema
 )
 from utils import normalize_img_field
 
 User = cast(type[CustomUser], get_user_model())
 
 
-@api_controller("/auth", tags=["Authentication"])
+@api_controller('/auth', tags=['Authentication'])
 class AuthenticationController:
 
-    @http_post(
-        "/register",
-        response={201: UserSchema, 400: ErrorResponseSchema, 500: ErrorResponseSchema},
-    )
+    @http_post('/register', response={201: UserSchema, 400: ErrorResponseSchema, 500: ErrorResponseSchema})
     def register_user(self, data: RegisterUserSchema):
         """Register a new user without OAuth"""
         try:
             # Check if user already exists
-            existing_user = User.objects.filter(email=data.email, isOauth=False).first()
+            existing_user = User.objects.filter(
+                email=data.email, isOauth=False).first()
             if existing_user:
                 return 400, {"error": "User already exists"}
 
@@ -61,7 +44,7 @@ class AuthenticationController:
                 first_name=data.firstname,
                 last_name=data.lastname,
                 password=data.password,
-                date_joined=timezone.now(),
+                date_joined=timezone.now()
             )
 
             # Set verification token and expiry time
@@ -73,9 +56,11 @@ class AuthenticationController:
             # Check if organization ID is passed
             if data.organization_id:
                 try:
-                    organization = Organization.objects.get(id=data.organization_id)
+                    organization = Organization.objects.get(
+                        id=data.organization_id)
                     group_name = organization.name
-                    group, created = Group.objects.get_or_create(name=group_name)
+                    group, created = Group.objects.get_or_create(
+                        name=group_name)
                     new_user.groups.add(group)
                 except Organization.DoesNotExist:
                     pass
@@ -87,21 +72,14 @@ class AuthenticationController:
             print(f"Error during user registration: {e}")
             return 500, {"error": "An error occurred during registration"}
 
-    @http_post(
-        "/register-oauth/{provider}",
-        response={
-            200: RegisterUserResponseSchema,
-            201: RegisterUserResponseSchema,
-            500: ErrorResponseSchema,
-        },
-    )
+    @http_post('/register-oauth/{provider}', response={200: RegisterUserResponseSchema, 201: RegisterUserResponseSchema, 500: ErrorResponseSchema})
     def register_user_with_oauth(self, provider: str, data: RegisterUserOAuthSchema):
         """Register or update a user with an OAuth provider"""
         try:
             defaults = {
                 "username": data.name,
-                "first_name": data.given_name or "",
-                "last_name": data.family_name or "",
+                "first_name": data.given_name or '',
+                "last_name": data.family_name or '',
                 "emailIsVerified": data.email_verified,
                 "isOauth": True,
                 "Oauthprovider": provider,
@@ -109,10 +87,8 @@ class AuthenticationController:
             }
 
             user, created = User.objects.update_or_create(
-                email=data.email,
-                isOauth=True,
-                Oauthprovider=provider,
-                defaults=defaults,
+                email=data.email, isOauth=True, Oauthprovider=provider,
+                defaults=defaults
             )
 
             access_token, refresh_token = get_tokens_for_user(user)
@@ -128,14 +104,7 @@ class AuthenticationController:
             print("OAuth Registration Error:", e)
             return 500, {"error": "User registration failed"}
 
-    @http_post(
-        "/verify",
-        response={
-            200: VerifyUserResponseSchema,
-            404: ErrorResponseSchema,
-            500: ErrorResponseSchema,
-        },
-    )
+    @http_post('/verify', response={200: VerifyUserResponseSchema, 404: ErrorResponseSchema, 500: ErrorResponseSchema})
     def verify_user(self, data: VerifyUserSchema):
         """Verify user with email and password"""
         try:
@@ -146,11 +115,7 @@ class AuthenticationController:
                 return 404, {"error": "Email not verified"}
             refresh_token, access_token = get_tokens_for_user(user)
             user_data = UserSchema.model_validate(user)
-            return 200, {
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "user": user_data,
-            }
+            return 200, {"access_token": access_token, "refresh_token": refresh_token, "user": user_data}
 
         except User.DoesNotExist:
             return 404, {"error": "User does not exist"}
@@ -158,14 +123,7 @@ class AuthenticationController:
             print(e)
             return 500, {"error": "User verification failed"}
 
-    @http_post(
-        "/logout",
-        response={
-            200: dict[str, str],
-            404: ErrorResponseSchema,
-            500: ErrorResponseSchema,
-        },
-    )
+    @http_post('/logout', response={200: dict[str, str], 404: ErrorResponseSchema, 500: ErrorResponseSchema})
     def logout(request, data: LogoutSchema):
         """
         Blacklist the provided refresh token to log the user out.
@@ -182,7 +140,7 @@ class AuthenticationController:
     # --------------------------------------------
     # User management
     # --------------------------------------------
-    @http_get("/users/{user_id}", response={200: UserSchema, 404: str, 500: str})
+    @http_get('/users/{user_id}', response={200: UserSchema, 404: str, 500: str})
     def get_user(self, user_id: int):
         """Get user by ID"""
         try:
@@ -194,7 +152,7 @@ class AuthenticationController:
             print(e)
             return 500, "Internal server error"
 
-    @http_get("/users", response={200: list[UserSchema], 404: str, 500: str})
+    @http_get('/users', response={200: list[UserSchema], 404: str, 500: str})
     def get_users(self):
         """Get all users"""
         try:
@@ -204,20 +162,15 @@ class AuthenticationController:
             print(e)
             return 500, "Internal server error"
 
-    @http_put("/users/{user_id}", response={200: UserSchema, 404: str, 500: str})
-    def update_user(
-        self,
-        user_id: int,
-        data: UpdateUserSchema,
-        avatar: Optional[UploadedFile] = None,
-    ):
+    @http_put('/users/{user_id}', response={200: UserSchema, 404: str, 500: str})
+    def update_user(self, user_id: int, data: UpdateUserSchema, avatar: Optional[UploadedFile] = None):
         """Update user information"""
         try:
             user = get_object_or_404(User, id=user_id)
 
             # Update user fields
             for attr, value in data.model_dump(exclude_unset=True).items():
-                if attr == "avatar" and avatar:
+                if attr == 'avatar' and avatar:
                     value = normalize_img_field(avatar, "avatar")
                 setattr(user, attr, value)
             user.save()
@@ -229,7 +182,7 @@ class AuthenticationController:
             print(e)
             return 500, "Internal server error"
 
-    @http_delete("/users/{user_id}", response={204: None, 404: str, 500: str})
+    @http_delete('/users/{user_id}', response={204: None, 404: str, 500: str})
     def delete_user(self, user_id: int):
         """Delete a user and their token"""
         try:
