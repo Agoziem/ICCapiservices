@@ -54,16 +54,7 @@ class OrganizationSchema(BaseModel):
         from_attributes = True
 
 
-# User Schema (simplified for service relationships)
-class UserSchema(BaseModel):
-    id: int
-    username: str
-    email: str
-    avatar_url: Optional[str] = None
-    date_joined: datetime
 
-    class Config:
-        from_attributes = True
 
 
 # Service Schemas
@@ -127,6 +118,15 @@ class ServiceSchema(BaseModel):
             ),
         )
 
+class ServiceMiniSchema(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    price: Decimal
+    img_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class CreateServiceSchema(BaseModel):
     name: str
@@ -177,4 +177,25 @@ class ServiceUserDetailsSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Paginated response schemas
+class PaginatedServiceResponseSchema(BaseModel):
+    count: int
+    items: List[ServiceSchema]
+
+
+class PaginatedCategoryResponseSchema(BaseModel):
+    count: int
+    items: List[CategorySchema]
+
+
+class PaginatedSubCategoryResponseSchema(BaseModel):
+    count: int
+    items: List[SubCategorySchema]
+
+
+class PaginatedServiceUserResponseSchema(BaseModel):
+    count: int
+    items: List[ServiceUserDetailsSchema]
 

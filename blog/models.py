@@ -8,7 +8,7 @@ class Tag(models.Model):
     tag = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
-        return self.tag
+        return self.tag if self.tag else "Unknown Tag"
 
 
 class Category(models.Model):
@@ -16,7 +16,7 @@ class Category(models.Model):
     description = models.TextField(default="None")
 
     def __str__(self):
-        return self.category
+        return self.category if self.category else "Unknown Category"
 
 
 class Blog(models.Model):
@@ -42,12 +42,13 @@ class Blog(models.Model):
         settings.AUTH_USER_MODEL, related_name="liked_posts", blank=True
     )
     updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
 
     class Meta:
-        ordering = ["-updated_at"]
+        ordering = ["-created_at"]
 
 
 class Comment(models.Model):

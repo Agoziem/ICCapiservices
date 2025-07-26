@@ -1,6 +1,8 @@
 from typing import Optional, List
 from ninja import ModelSchema, Schema
 from datetime import datetime
+
+from pydantic import computed_field, field_serializer
 from .models import Blog, Tag, Category, Comment
 from authentication.schemas import UserMiniSchema  # This will work at runtime
 from utils import get_full_image_url, get_image_name
@@ -28,6 +30,7 @@ class CategorySchema(ModelSchema):
 
 class CommentSchema(ModelSchema):
     user: UserMiniSchemaTemp
+    blog_id: Optional[int] = None  # Blog ID
 
     class Meta:
         model = Comment
@@ -39,7 +42,7 @@ class BlogSchema(ModelSchema):
     img_name: Optional[str] = None
     author: Optional[UserMiniSchemaTemp] = None
     category: Optional[CategorySchema] = None
-    tags: List[TagSchema] = []
+    tags: List[TagSchema]
     likes_count: int = 0
 
     class Meta:
@@ -70,9 +73,7 @@ class BlogSchema(ModelSchema):
     def resolve_img_name(obj):
         return get_image_name(obj.img) if obj.img else None
 
-    @staticmethod
-    def resolve_likes_count(obj):
-        return obj.likes.count()
+
 
 
 # Input Schemas for Blog Operations
@@ -81,7 +82,7 @@ class CreateBlogSchema(Schema):
     subtitle: Optional[str] = None
     body: Optional[str] = None
     category: Optional[int] = None
-    tags: Optional[List[str]] = []
+    tags: List[str]
     author: int
     organization: Optional[int] = None
     readTime: Optional[int] = 0
@@ -92,7 +93,7 @@ class UpdateBlogSchema(Schema):
     subtitle: Optional[str] = None
     body: Optional[str] = None
     category: Optional[int] = None
-    tags: Optional[List[str]] = []
+    tags: List[str]
     author: Optional[int] = None
     readTime: Optional[int] = None
 
@@ -119,19 +120,19 @@ class UpdateCommentSchema(Schema):
 
 # Response Schemas
 class BlogListResponseSchema(Schema):
-    blogs: List[BlogSchema] = []
+    blogs: List[BlogSchema]
 
 
 class CategoryListResponseSchema(Schema):
-    categories: List[CategorySchema] = []
+    categories: List[CategorySchema]
 
 
 class CommentListResponseSchema(Schema):
-    comments: List[CommentSchema] = []
+    comments: List[CommentSchema]
 
 
 class TagListResponseSchema(Schema):
-    tags: List[TagSchema] = []
+    tags: List[TagSchema]
 
 
 class ErrorResponseSchema(Schema):
@@ -162,18 +163,9 @@ class BlogStatsSchema(Schema):
     total_comments: int
 
 
-# Blog with Comments Schema (for detailed view)
-class BlogWithCommentsSchema(BlogSchema):
-    comments: List[CommentSchema] = []
-    comments_count: int = 0
-
-    @staticmethod
-    def resolve_comments_count(obj):
-        return obj.comment_set.count()
-
 
 # Simplified schemas for listing
-class BlogSummarySchema(Schema):
+class BlogResponseSchema(Schema):
     id: int
     title: str
     subtitle: Optional[str] = None
@@ -190,12 +182,24 @@ class BlogSummarySchema(Schema):
     def resolve_img_url(obj):
         return get_full_image_url(obj.img) if obj.img else None
 
-    @staticmethod
-    def resolve_likes_count(obj):
-        return obj.likes.count()
-
 
 # Like operation schemas
 class LikeResponseSchema(Schema):
     liked: bool
     likes_count: int
+
+
+# Paginated response schemas
+class PaginatedBlogResponseSchema(Schema):
+    count: int
+    items: List[BlogSchema]
+
+
+class PaginatedBlogSummaryResponseSchema(Schema):
+    count: int
+    items: List[BlogResponseSchema]
+
+
+class PaginatedCommentResponseSchema(Schema):
+    count: int
+    items: List[CommentSchema]

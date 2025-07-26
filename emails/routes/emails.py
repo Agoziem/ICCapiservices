@@ -1,12 +1,12 @@
 from typing import Optional
-from ninja_extra import api_controller, route
+from ninja_extra import api_controller, paginate, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from django.core.paginator import Paginator
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from ICCapp.models import Organization, Subscription
 from ninja_jwt.authentication import JWTAuth
+from ninja_extra.pagination import LimitOffsetPagination
 
 from ..models import Email, EmailResponse, EmailMessage
 from ..schemas import (
@@ -22,11 +22,14 @@ from ..schemas import (
     EmailMessageListSchema,
     CreateEmailMessageSchema,
     UpdateEmailMessageSchema,
-    PaginatedEmailResponseSchema,
     SuccessResponseSchema,
     ErrorResponseSchema,
 )
 
+class EmailPagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
 
 @api_controller("/emails", tags=["Emails"])
 class EmailsController:
@@ -42,37 +45,18 @@ class EmailsController:
         except Exception:
             return []
 
-    @route.get("/{organization_id}", response=PaginatedEmailResponseSchema)
+    @route.get("/{organization_id}", response=EmailListResponseSchema)
+    @paginate(EmailPagination)
     def get_emails(
         self,
         organization_id: int,
-        page: Optional[int] = 1,
-        page_size: Optional[int] = 10,
     ):
         """Get all emails for an organization with pagination"""
         try:
             emails = Email.objects.filter(organization=organization_id).order_by(
                 "-created_at"
             )
-            if not page_size:
-                page_size = 10
-            paginator = Paginator(emails, page_size)
-            page_obj = paginator.get_page(page)
-
-            return {
-                "count": paginator.count,
-                "next": (
-                    f"?page={page_obj.next_page_number()}"
-                    if page_obj.has_next()
-                    else None
-                ),
-                "previous": (
-                    f"?page={page_obj.previous_page_number()}"
-                    if page_obj.has_previous()
-                    else None
-                ),
-                "results": list(page_obj.object_list),
-            }
+            return emails
         except Exception:
             return {"count": 0, "next": None, "previous": None, "results": []}
 
@@ -180,6 +164,7 @@ class EmailResponsesController:
 class EmailMessagesController:
 
     @route.get("/", response=EmailMessageListSchema)
+    @paginate(EmailPagination)
     def get_sent_emails(self):
         """Get all sent email messages"""
         try:

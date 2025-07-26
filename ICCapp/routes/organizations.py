@@ -1,18 +1,17 @@
-from typing import Optional
+from typing import List, Optional
 from ninja_extra import api_controller, route, paginate
 from ninja_extra.pagination import LimitOffsetPagination
-from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from ninja.files import UploadedFile
 from ninja_jwt.authentication import JWTAuth
 from ..models import Organization
 from ..schemas import (
     OrganizationSchema,
-    OrganizationListResponseSchema,
     CreateOrganizationSchema,
     UpdateOrganizationSchema,
     SuccessResponseSchema,
     ErrorResponseSchema,
+    PaginatedOrganizationResponseSchema,
 )
 
 
@@ -25,11 +24,12 @@ class OrganizationPagination(LimitOffsetPagination):
 @api_controller("/organizations", tags=["Organizations"])
 class OrganizationsController:
 
-    @route.get("/", response=list[OrganizationSchema])
+    @route.get("/", response=PaginatedOrganizationResponseSchema)
     @paginate(OrganizationPagination)
     def list_organizations(self):
         """Get all organizations"""
         organizations = Organization.objects.all().order_by('-created_at')
+        print("Organizations fetched:", organizations)
         return organizations
 
     @route.get("/{organization_id}", response=OrganizationSchema)

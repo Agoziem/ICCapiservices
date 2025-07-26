@@ -18,6 +18,8 @@ from ..schemas import (
     SuccessResponseSchema,
     ErrorResponseSchema,
     VideoUserDetailsSchema,
+    PaginatedVideoResponseSchema,
+    PaginatedVideoUserResponseSchema,
 )
 
 
@@ -30,7 +32,7 @@ class VideoPagination(LimitOffsetPagination):
 @api_controller("/videos", tags=["Videos"])
 class VideosController:
 
-    @route.get("/{organization_id}", response=list[VideoSchema])
+    @route.get("/{organization_id}", response=PaginatedVideoResponseSchema)
     @paginate(VideoPagination)
     def get_videos(self, organization_id: int, category: Optional[str] = None):
         """Get all videos for a specific organization, with optional category filtering"""
@@ -54,7 +56,7 @@ class VideosController:
 
         return videos
 
-    @route.get("/trending/{organization_id}", response=list[VideoSchema])
+    @route.get("/trending/{organization_id}", response=PaginatedVideoResponseSchema)
     @paginate(VideoPagination)
     def get_trending_videos(self, organization_id: int, category: Optional[str] = None):
         """Get trending videos for a specific organization, sorted by number of watchers"""
@@ -80,7 +82,7 @@ class VideosController:
 
         return videos
 
-    @route.get("/user/{organization_id}", response=list[VideoSchema])
+    @route.get("/user/{organization_id}", response=PaginatedVideoResponseSchema)
     @paginate(VideoPagination)
     def get_user_videos(
         self, request, organization_id: int, category: Optional[str] = None
@@ -109,7 +111,7 @@ class VideosController:
 
         return videos
 
-    @route.get("/free/{organization_id}", response=list[VideoSchema])
+    @route.get("/free/{organization_id}", response=PaginatedVideoResponseSchema)
     @paginate(VideoPagination)
     def get_free_videos(self, organization_id: int, category: Optional[str] = None):
         """Get all free videos for a specific organization"""
@@ -133,7 +135,7 @@ class VideosController:
 
         return videos
 
-    @route.get("/paid/{organization_id}", response=list[VideoSchema])
+    @route.get("/paid/{organization_id}", response=PaginatedVideoResponseSchema)
     @paginate(VideoPagination)
     def get_paid_videos(self, organization_id: int, category: Optional[str] = None):
         """Get all paid videos for a specific organization"""
@@ -305,7 +307,7 @@ class VideosController:
 @api_controller("/video-users", tags=["Video User Management"])
 class VideoUserController:
 
-    @route.get("/watchers/{video_id}", response=list[VideoUserDetailsSchema])
+    @route.get("/watchers/{video_id}", response=PaginatedVideoUserResponseSchema)
     @paginate(VideoPagination)
     def get_users_that_bought_video(self, video_id: int):
         """Get all users that have purchased/watched a specific video"""

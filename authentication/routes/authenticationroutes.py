@@ -24,7 +24,7 @@ from django.conf import settings
 from ..schemas import (
     LogoutSchema, RegisterUserSchema, RegisterUserOAuthSchema, VerifyUserSchema, UpdateUserSchema,
     UserSchema, RegisterUserResponseSchema, VerifyUserResponseSchema,
-    ErrorResponseSchema, SuccessResponseSchema, UserMiniSchema
+    ErrorResponseSchema, SuccessResponseSchema, UserMiniSchema, PaginatedUserResponseSchema
 )
 from utils import normalize_img_field
 
@@ -198,7 +198,7 @@ class AuthenticationController:
         user = request.user
         return UserSchema.model_validate(user)
 
-    @http_get('/users', response=list[UserSchema], auth=JWTAuth())
+    @http_get('/users', response=PaginatedUserResponseSchema, auth=JWTAuth())
     @paginate(UserPagination)
     def get_users(self):
         """Get all users"""

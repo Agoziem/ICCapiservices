@@ -24,7 +24,7 @@ class AnswerSchema(ModelSchema):
 
 
 class QuestionSchema(ModelSchema):
-    answers: List[AnswerSchema] = []
+    answers: List[AnswerSchema]
 
     class Meta:
         model = Question
@@ -32,7 +32,7 @@ class QuestionSchema(ModelSchema):
 
 
 class SubjectSchema(ModelSchema):
-    questions: List[QuestionSchema] = []
+    questions: List[QuestionSchema]
 
     class Meta:
         model = Subject
@@ -42,7 +42,7 @@ class SubjectSchema(ModelSchema):
 class TestSchema(ModelSchema):
     testYear: Optional[YearSchema] = None
     texttype: Optional[TestTypeSchema] = None
-    testSubject: List[SubjectSchema] = []
+    testSubject: List[SubjectSchema]
 
     class Meta:
         model = Test
@@ -50,7 +50,7 @@ class TestSchema(ModelSchema):
 
 
 class TestResultSchema(ModelSchema):
-    tests: List[TestSchema] = []
+    tests: List[TestSchema]
 
     class Meta:
         model = TestResult
@@ -89,7 +89,7 @@ class CreateQuestionSchema(Schema):
     questionMark: int = 0
     required: bool = True
     correctAnswerdescription: Optional[str] = None
-    answers: List[CreateAnswerSchema] = []
+    answers: List[CreateAnswerSchema]
 
 
 class UpdateQuestionSchema(Schema):
@@ -97,19 +97,19 @@ class UpdateQuestionSchema(Schema):
     questionMark: Optional[int] = None
     required: Optional[bool] = None
     correctAnswerdescription: Optional[str] = None
-    answers: Optional[List[CreateAnswerSchema]] = None
+    answers: List[CreateAnswerSchema]
 
 
 class CreateSubjectSchema(Schema):
     subjectname: str
     subjectduration: int = 0
-    questions: Optional[List[dict]] = []
+    questions: List[dict]
 
 
 class UpdateSubjectSchema(Schema):
     subjectname: Optional[str] = None
     subjectduration: Optional[int] = None
-    questions: Optional[List[dict]] = None
+    questions: List[dict]
 
 
 class CreateTestSchema(Schema):
@@ -122,14 +122,14 @@ class CreateTestSchema(Schema):
 class UpdateTestSchema(Schema):
     testYear: Optional[int] = None
     texttype: Optional[int] = None
-    testSubject: Optional[List[int]] = None
+    testSubject: List[int]
 
 
 # Student Test Schemas
 class StudentTestRequestSchema(Schema):
     user_id: int
     test_id: int
-    examSubjects: List[dict] = []
+    examSubjects: List[dict]
 
 
 class QuestionAnswerSchema(Schema):
@@ -153,23 +153,23 @@ class TestScoreResponseSchema(Schema):
 
 # Response Schemas
 class YearListResponseSchema(Schema):
-    years: List[YearSchema] = []
+    years: List[YearSchema]
 
 
 class TestTypeListResponseSchema(Schema):
-    testtypes: List[TestTypeSchema] = []
+    testtypes: List[TestTypeSchema]
 
 
 class SubjectListResponseSchema(Schema):
-    subjects: List[SubjectSchema] = []
+    subjects: List[SubjectSchema]
 
 
 class TestListResponseSchema(Schema):
-    tests: List[TestSchema] = []
+    tests: List[TestSchema]
 
 
 class TestResultListResponseSchema(Schema):
-    test_results: List[TestResultSchema] = []
+    test_results: List[TestResultSchema]
 
 
 class ErrorResponseSchema(Schema):
@@ -178,6 +178,27 @@ class ErrorResponseSchema(Schema):
 
 class SuccessResponseSchema(Schema):
     message: str
+
+
+# Paginated response schemas
+class PaginatedTestResponseSchema(Schema):
+    count: int
+    items: List[TestSchema]
+
+
+class PaginatedSubjectResponseSchema(Schema):
+    count: int
+    items: List[SubjectSchema]
+
+
+class PaginatedQuestionResponseSchema(Schema):
+    count: int
+    items: List[QuestionSchema]
+
+
+class PaginatedTestResultResponseSchema(Schema):
+    count: int
+    items: List[TestResultSchema]
 
 
 # Simplified schemas for listing without deep nesting
@@ -198,10 +219,6 @@ class TestSummarySchema(Schema):
     texttype: Optional[TestTypeSchema] = None
     subjects_count: int = 0
 
-    @staticmethod
-    def resolve_subjects_count(obj):
-        return obj.testSubject.count()
-
 
 class QuestionSummarySchema(Schema):
     id: int
@@ -210,16 +227,13 @@ class QuestionSummarySchema(Schema):
     required: bool
     answers_count: int = 0
 
-    @staticmethod
-    def resolve_answers_count(obj):
-        return obj.answers.count()
 
 
 # Practice/Student specific schemas
 class StudentTestSchema(Schema):
     test_id: int
     test_name: str
-    subjects: List[SubjectSummarySchema] = []
+    subjects: Optional[List[SubjectSummarySchema]] = None
     total_questions: int = 0
     total_marks: int = 0
     duration: int = 0
@@ -227,7 +241,7 @@ class StudentTestSchema(Schema):
 
 class StudentTestDetailSchema(Schema):
     test: TestSchema
-    questions: List[QuestionSchema] = []
+    questions: Optional[List[QuestionSchema]] = None
     total_questions: int
     total_marks: int
     time_limit: int

@@ -16,6 +16,8 @@ from ..schemas import (
     SuccessResponseSchema,
     ErrorResponseSchema,
     ServiceUserDetailsSchema,
+    PaginatedServiceResponseSchema,
+    PaginatedServiceUserResponseSchema,
 )
 from utils import normalize_img_field, parse_json_fields
 
@@ -29,7 +31,7 @@ class ServicePagination(LimitOffsetPagination):
 @api_controller("/services", tags=["Services"])
 class ServicesController:
 
-    @route.get("/{organization_id}", response=list[ServiceSchema])
+    @route.get("/{organization_id}", response=PaginatedServiceResponseSchema)
     @paginate(ServicePagination)
     def get_services(self, organization_id: int, category: Optional[str] = None):
         """Get all services for a specific organization, with optional category filtering"""
@@ -53,7 +55,7 @@ class ServicesController:
 
         return services
 
-    @route.get("/trending/{organization_id}", response=list[ServiceSchema])
+    @route.get("/trending/{organization_id}", response=PaginatedServiceResponseSchema)
     @paginate(ServicePagination)
     def get_trending_services(
         self, organization_id: int, category: Optional[str] = None
@@ -81,7 +83,7 @@ class ServicesController:
 
         return services
 
-    @route.get("/user/{organization_id}", response=list[ServiceSchema], auth=JWTAuth())
+    @route.get("/user/{organization_id}", response=PaginatedServiceResponseSchema, auth=JWTAuth())
     @paginate(ServicePagination)
     def get_user_services(
         self, request, organization_id: int, category: Optional[str] = None
@@ -248,7 +250,7 @@ class ServicesController:
 @api_controller("/service-users", tags=["Service User Management"])
 class ServiceUserController:
 
-    @route.get("/buyers/{service_id}", response=list[ServiceUserDetailsSchema])
+    @route.get("/buyers/{service_id}", response=PaginatedServiceUserResponseSchema)
     @paginate(ServicePagination)
     def get_users_that_bought_service(self, service_id: int):
         """Get all users that have purchased a specific service"""
@@ -298,7 +300,7 @@ class ServiceUserController:
 
         return user_data
 
-    @route.get("/completed/{service_id}", response=list[ServiceUserDetailsSchema])
+    @route.get("/completed/{service_id}", response=PaginatedServiceUserResponseSchema)
     @paginate(ServicePagination)
     def get_users_with_completed_service(self, service_id: int):
         """Get all users whose service has been completed"""

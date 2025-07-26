@@ -23,6 +23,7 @@ from ..schemas import (
     PaymentVerificationResponseSchema,
     SuccessResponseSchema,
     ErrorResponseSchema,
+    PaginatedOrderResponseSchema,
 )
 
 User = get_user_model()
@@ -36,8 +37,7 @@ class PaymentPagination(LimitOffsetPagination):
 
 @api_controller("/payments", tags=["Payments"])
 class PaymentsController:
-
-    @route.get("/{organization_id}", response=list[OrderSchema], auth=JWTAuth())
+    @route.get("/{organization_id}", response=PaginatedOrderResponseSchema, auth=JWTAuth())
     @paginate(PaymentPagination)
     def get_payments(self, organization_id: int):
         """Get all payments for an organization"""
@@ -48,8 +48,7 @@ class PaymentsController:
             .order_by("-created_at")
         )
         return orders
-
-    @route.get("/user", response=list[OrderSchema], auth=JWTAuth())
+    @route.get("/user", response=PaginatedOrderResponseSchema, auth=JWTAuth())
     @paginate(PaymentPagination)
     def get_payments_by_user(self, request):
         """Get all payments by authenticated user"""
@@ -288,8 +287,9 @@ class PaymentsController:
         order.service_delivered = True
         order.save()
         return order
-
-    @route.get("/pending/{organization_id}", response=list[OrderSchema])
+    
+    @route.get("/pending/{organization_id}", response=PaginatedOrderResponseSchema)
+    @paginate(PaymentPagination)
     def get_pending_payments(self, organization_id: int):
         """Get all pending payments for an organization"""
         orders = (
@@ -298,8 +298,9 @@ class PaymentsController:
             .prefetch_related("services", "products", "videos")
         )
         return orders
-
-    @route.get("/completed/{organization_id}", response=list[OrderSchema])
+    
+    @route.get("/completed/{organization_id}", response=PaginatedOrderResponseSchema)
+    @paginate(PaymentPagination)
     def get_completed_payments(self, organization_id: int):
         """Get all completed payments for an organization"""
         orders = (

@@ -1,16 +1,13 @@
-from typing import Optional
+from typing import List, Optional
 from ninja import UploadedFile
-from ninja_extra import api_controller, route
-from ninja_extra.permissions import IsAuthenticated
+from ninja_extra import api_controller, route, paginate
 from django.shortcuts import get_object_or_404
-from django.core.paginator import Paginator
 from ninja_jwt.authentication import JWTAuth
+from ninja_extra.pagination import LimitOffsetPagination
 
 from ..models import Organization, Department, DepartmentService, Staff
 from ..schemas import (
     DepartmentSchema,
-    DepartmentListResponseSchema,
-    PaginatedDepartmentResponseSchema,
     DepartmentServiceSchema,
     DepartmentServiceListResponseSchema,
     CreateDepartmentSchema,
@@ -22,42 +19,29 @@ from ..schemas import (
 )
 
 
+class DepartmentPagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
+
+
 @api_controller("/departments", tags=["Departments"])
 class DepartmentsController:
 
-    @route.get("/{organization_id}", response=PaginatedDepartmentResponseSchema)
+    @route.get("/{organization_id}", response={200: List[DepartmentSchema], 500: ErrorResponseSchema})
+    @paginate(DepartmentPagination)
     def list_departments(
         self,
         organization_id: int,
-        page: Optional[int] = 1,
-        page_size: Optional[int] = 10,
     ):
         """Get all departments for an organization with pagination"""
         try:
             departments = Department.objects.filter(
                 organization=organization_id
             ).order_by("name")
-            if not page_size:
-                page_size = 10
-            paginator = Paginator(departments, page_size)
-            page_obj = paginator.get_page(page)
-
-            return {
-                "count": paginator.count,
-                "next": (
-                    f"?page={page_obj.next_page_number()}"
-                    if page_obj.has_next()
-                    else None
-                ),
-                "previous": (
-                    f"?page={page_obj.previous_page_number()}"
-                    if page_obj.has_previous()
-                    else None
-                ),
-                "results": list(page_obj.object_list),
-            }
+            return departments
         except Exception:
-            return {"count": 0, "next": None, "previous": None, "results": []}
+            return {"error": "An error occurred while fetching departments"}
 
     @route.get("/department/{department_id}", response=DepartmentSchema)
     def get_department(self, department_id: int):
@@ -155,14 +139,14 @@ class DepartmentsController:
 @api_controller("/department-services", tags=["Department Services"])
 class DepartmentServicesController:
 
-    @route.get("/", response=DepartmentServiceListResponseSchema)
+    @route.get("/", response={200: List[DepartmentServiceSchema], 500: ErrorResponseSchema})
     def list_services(self):
         """Get all department services"""
         try:
             services = DepartmentService.objects.all().order_by("name")
-            return {"services": list(services)}
+            return services
         except Exception:
-            return {"services": []}
+            return {"error": "Failed to retrieve services"}
 
     @route.post("/", response=DepartmentServiceSchema, auth=JWTAuth())
     def create_service(self, payload: CreateDepartmentServiceSchema):

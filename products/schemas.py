@@ -4,6 +4,8 @@ from ninja.files import UploadedFile
 from datetime import datetime
 from decimal import Decimal
 from .models import Product, Category, SubCategory
+from ICCapp.schemas import OrganizationMiniSchema
+from authentication.schemas import UserMiniSchema
 
 
 # Base Model Schemas
@@ -14,38 +16,25 @@ class CategorySchema(ModelSchema):
 
 
 class SubCategorySchema(ModelSchema):
-    category_details: Optional[CategorySchema] = None
+    category: Optional[CategorySchema] = None
 
     class Meta:
         model = SubCategory
         fields = "__all__"
 
-    @staticmethod
-    def resolve_category_details(obj):
-        if obj.category:
-            return obj.category
-        return None
-
-
 class ProductSchema(ModelSchema):
-    organization_details: Optional[dict] = None
+    organization: Optional[OrganizationMiniSchema] = None
     img_url: Optional[str] = None
     img_name: Optional[str] = None
     product_url: Optional[str] = None
     product_name: Optional[str] = None
-    category_details: Optional[CategorySchema] = None
-    subcategory_details: Optional[SubCategorySchema] = None
+    category: Optional[CategorySchema] = None
+    subcategory: Optional[SubCategorySchema] = None
     buyers_count: Optional[int] = None
 
     class Meta:
         model = Product
         fields = "__all__"
-
-    @staticmethod
-    def resolve_organization_details(obj):
-        if obj.organization:
-            return {"id": obj.organization.id, "name": obj.organization.name}
-        return None
 
     @staticmethod
     def resolve_img_url(obj):
@@ -63,21 +52,12 @@ class ProductSchema(ModelSchema):
     def resolve_product_name(obj):
         return obj.product.name if obj.product else None
 
-    @staticmethod
-    def resolve_category_details(obj):
-        if obj.category:
-            return obj.category
-        return None
 
-    @staticmethod
-    def resolve_subcategory_details(obj):
-        if obj.subcategory:
-            return obj.subcategory
-        return None
+class ProductMiniSchema(Schema):
+    id: int
+    name: str
+    price: Decimal
 
-    @staticmethod
-    def resolve_buyers_count(obj):
-        return obj.userIDs_that_bought_this_product.count()
 
 
 # Input Schemas for Creating/Updating
@@ -135,18 +115,11 @@ class CategoryListResponseSchema(Schema):
 
 
 class SubCategoryListResponseSchema(Schema):
-    subcategories: list[SubCategorySchema] = []
+    subcategories: list[SubCategorySchema]
 
 
 class ProductListResponseSchema(Schema):
-    products: list[ProductSchema] = []
-
-
-class PaginatedProductResponseSchema(Schema):
-    count: int
-    next: Optional[str] = None
-    previous: Optional[str] = None
-    results: list[ProductSchema] = []
+    products: list[ProductSchema]
 
 
 class SuccessResponseSchema(Schema):
@@ -174,3 +147,9 @@ class UserProductsResponseSchema(Schema):
 class TrendingProductsResponseSchema(Schema):
     trending_products: list[ProductSchema] = []
     period: str = "all_time"
+
+
+# Paginated response schemas
+class PaginatedProductResponseSchema(Schema):
+    count: int
+    items: list[ProductSchema]

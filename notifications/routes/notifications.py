@@ -15,6 +15,7 @@ from ..schemas import (
     UpdateNotificationSchema,
     SuccessResponseSchema,
     ErrorResponseSchema,
+    PaginatedNotificationResponseSchema,
 )
 
 
@@ -27,7 +28,7 @@ class NotificationPagination(LimitOffsetPagination):
 @api_controller("/notifications", tags=["Notifications"])
 class NotificationsController:
 
-    @route.get("/", response=list[NotificationSchema])
+    @route.get("/", response=PaginatedNotificationResponseSchema)
     @paginate(NotificationPagination)
     def fetch_notifications(self):
         """Get all notifications"""

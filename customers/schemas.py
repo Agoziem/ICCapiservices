@@ -26,7 +26,7 @@ class UpdateCustomerSchema(Schema):
 
 # Response Schemas
 class CustomerListResponseSchema(Schema):
-    customers: list[CustomerSchema] = []
+    customers: list[CustomerSchema]
 
 
 class SuccessResponseSchema(Schema):
@@ -35,3 +35,9 @@ class SuccessResponseSchema(Schema):
 
 class ErrorResponseSchema(Schema):
     error: str
+
+
+# Paginated response schemas
+class PaginatedCustomerResponseSchema(Schema):
+    count: int
+    items: list[CustomerSchema]

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from ninja_extra import api_controller, route, paginate
 from ninja_extra.pagination import LimitOffsetPagination
 from ninja_extra.permissions import IsAuthenticated
@@ -13,14 +13,13 @@ from ..models import Product, Category, SubCategory
 from ..schemas import (
     ProductSchema,
     ProductListResponseSchema,
-    PaginatedProductResponseSchema,
     CreateProductSchema,
     UpdateProductSchema,
-    ProductFileUploadSchema,
     TrendingProductsResponseSchema,
     UserProductsResponseSchema,
     SuccessResponseSchema,
     ErrorResponseSchema,
+    PaginatedProductResponseSchema,
 )
 
 
@@ -34,12 +33,11 @@ class ProductPagination(LimitOffsetPagination):
 class ProductsController:
 
     @route.get("/{organization_id}", response=PaginatedProductResponseSchema)
+    @paginate(ProductPagination)
     def get_products(
         self,
         organization_id: int,
         category: Optional[str] = None,
-        page: Optional[int] = 1,
-        page_size: Optional[int] = 10,
     ):
         """Get all products for an organization with optional category filtering and pagination"""
         try:
@@ -57,35 +55,16 @@ class ProductsController:
             products = products.select_related(
                 "organization", "category", "subcategory__category"
             )
-            if not page_size:
-                page_size = 10
-            paginator = Paginator(products, page_size)
-            page_obj = paginator.get_page(page)
-
-            return {
-                "count": paginator.count,
-                "next": (
-                    f"?page={page_obj.next_page_number()}"
-                    if page_obj.has_next()
-                    else None
-                ),
-                "previous": (
-                    f"?page={page_obj.previous_page_number()}"
-                    if page_obj.has_previous()
-                    else None
-                ),
-                "results": list(page_obj.object_list),
-            }
+            return products
         except Exception:
-            return {"count": 0, "next": None, "previous": None, "results": []}
+            return {"error": "An error occurred while fetching products"}
 
     @route.get("/trending/{organization_id}", response=PaginatedProductResponseSchema)
+    @paginate(ProductPagination)
     def get_trending_products(
         self,
         organization_id: int,
         category: Optional[str] = None,
-        page: Optional[int] = 1,
-        page_size: Optional[int] = 10,
     ):
         """Get trending products based on purchase count"""
         try:
@@ -104,32 +83,11 @@ class ProductsController:
             )
 
             # Optimize queries
-            products = products.select_related(
-                "organization", "category", "subcategory__category"
-            )
-            if not page_size:
-                page_size = 10
-            paginator = Paginator(products, page_size)
-            page_obj = paginator.get_page(page)
-
-            return {
-                "count": paginator.count,
-                "next": (
-                    f"?page={page_obj.next_page_number()}"
-                    if page_obj.has_next()
-                    else None
-                ),
-                "previous": (
-                    f"?page={page_obj.previous_page_number()}"
-                    if page_obj.has_previous()
-                    else None
-                ),
-                "results": list(page_obj.object_list),
-            }
+            return products
         except Exception:
-            return {"count": 0, "next": None, "previous": None, "results": []}
+            return {"error": "An error occurred while fetching products"}
 
-    @route.get("/user/{organization_id}", response=list[ProductSchema], auth=JWTAuth())
+    @route.get("/user/{organization_id}", response=PaginatedProductResponseSchema, auth=JWTAuth())
     @paginate(ProductPagination) 
     def get_user_products(
         self,
@@ -262,7 +220,7 @@ class ProductsController:
         product.delete()
         return {"message": "Product deleted successfully"}
 
-    @route.get("/free/{organization_id}", response=list[ProductSchema])
+    @route.get("/free/{organization_id}", response=List[ProductSchema])
     def get_free_products(self, organization_id: int):
         """Get all free products for an organization"""
         products = (
@@ -272,7 +230,7 @@ class ProductsController:
         )
         return products
 
-    @route.get("/digital/{organization_id}", response=list[ProductSchema])
+    @route.get("/digital/{organization_id}", response=List[ProductSchema])
     def get_digital_products(self, organization_id: int):
         """Get all digital products for an organization"""
         products = (
@@ -282,7 +240,7 @@ class ProductsController:
         )
         return products
 
-    @route.get("/physical/{organization_id}", response=list[ProductSchema])
+    @route.get("/physical/{organization_id}", response=List[ProductSchema])
     def get_physical_products(self, organization_id: int):
         """Get all physical products for an organization"""
         products = (
@@ -304,7 +262,7 @@ class ProductsController:
         else:
             return {"error": "Rating must be between 1 and 5"}
 
-    @route.get("/search/{organization_id}", response=list[ProductSchema])
+    @route.get("/search/{organization_id}", response=List[ProductSchema])
     def search_products(self, organization_id: int, query: str):
         """Search products by name or description"""
         products = (

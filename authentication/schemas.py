@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from ninja import ModelSchema, Schema
 from django.contrib.auth import get_user_model
@@ -34,6 +35,16 @@ class UserMiniSchema(ModelSchema):
     @staticmethod
     def resolve_img(obj):
         return get_full_image_url(obj.avatar) if obj.avatar else None
+
+# User Schema (simplified for service relationships)
+
+
+class UserMiniExtensionSchema(Schema):
+    id: int
+    username: str
+    email: str
+    avatar_url: Optional[str] = None
+    date_joined: datetime
 
 
 # Input Schemas for Authentication
@@ -128,3 +139,8 @@ class UserListResponseSchema(Schema):
 
 class UserDetailResponseSchema(UserSchema):
     pass
+
+
+class PaginatedUserResponseSchema(Schema):
+    count: int
+    items: list[UserSchema]

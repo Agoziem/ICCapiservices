@@ -26,7 +26,7 @@ class UpdateNotificationSchema(Schema):
 
 # Response Schemas
 class NotificationListResponseSchema(Schema):
-    notifications: list[NotificationSchema] = []
+    notifications: list[NotificationSchema]
 
 
 class SuccessResponseSchema(Schema):
@@ -35,3 +35,9 @@ class SuccessResponseSchema(Schema):
 
 class ErrorResponseSchema(Schema):
     error: str
+
+
+# Paginated response schemas
+class PaginatedNotificationResponseSchema(Schema):
+    count: int
+    items: list[NotificationSchema]

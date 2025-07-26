@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.http import Http404
 from ninja_jwt.authentication import JWTAuth
+from ninja_extra.permissions import IsAuthenticated
 
 from ..models import Comment, Blog
 from ..schemas import (
@@ -42,7 +43,8 @@ class CommentsController:
 
     @http_post(
         "/blog/{blog_id}",
-        response={201: CommentSchema, 400: ErrorResponseSchema, 404: str, 500: str},
+        response={201: CommentSchema,
+                  400: ErrorResponseSchema, 404: str, 500: str},
         auth=JWTAuth()
     )
     def create_comment(self, request, blog_id: int, data: CreateCommentSchema):
@@ -50,7 +52,8 @@ class CommentsController:
         try:
             blog = get_object_or_404(Blog, id=blog_id)
 
-            comment = Comment.objects.create(blog=blog, user=request.user, comment=data.comment)
+            comment = Comment.objects.create(
+                blog=blog, user=request.user, comment=data.comment)
 
             return 201, CommentSchema.model_validate(comment)
 
@@ -59,6 +62,36 @@ class CommentsController:
         except Exception as e:
             print(e)
             return 500, "Failed to create comment"
+
+    @http_get(
+        "/user", response={200: List[CommentSchema], 404: str, 500: str}, auth=JWTAuth()
+    )
+    def get_user_comments(self, request):
+        """Get all comments by the authenticated user"""
+        try:
+            comments = (
+                Comment.objects.filter(user=request.user)
+                .select_related("blog")
+                .order_by("-date")
+            )
+            return 200, [CommentSchema.model_validate(comment) for comment in comments]
+        except Http404:
+            return 404, "User not found"
+        except Exception as e:
+            print(e)
+            return 500, "Internal server error"
+
+    @http_get("/{comment_id}", response={200: CommentSchema, 404: str, 500: str})
+    def get_comment(self, comment_id: int):
+        """Get a specific comment by ID"""
+        try:
+            comment = get_object_or_404(Comment, id=comment_id)
+            return 200, CommentSchema.model_validate(comment)
+        except Http404:
+            return 404, "Comment not found"
+        except Exception as e:
+            print(e)
+            return 500, "Internal server error"
 
     @http_put("/{comment_id}", response={200: CommentSchema, 404: str, 500: str}, auth=JWTAuth())
     def update_comment(self, comment_id: int, data: UpdateCommentSchema):
@@ -87,33 +120,3 @@ class CommentsController:
         except Exception as e:
             print(e)
             return 500, "Failed to delete comment"
-
-    @http_get("/{comment_id}", response={200: CommentSchema, 404: str, 500: str})
-    def get_comment(self, comment_id: int):
-        """Get a specific comment by ID"""
-        try:
-            comment = get_object_or_404(Comment, id=comment_id)
-            return 200, CommentSchema.model_validate(comment)
-        except Http404:
-            return 404, "Comment not found"
-        except Exception as e:
-            print(e)
-            return 500, "Internal server error"
-
-    @http_get(
-        "/user", response={200: List[CommentSchema], 404: str, 500: str}, auth=JWTAuth()
-    )
-    def get_user_comments(self, request):
-        """Get all comments by the authenticated user"""
-        try:
-            comments = (
-                Comment.objects.filter(user=request.user)
-                .select_related("blog")
-                .order_by("-date")
-            )
-            return 200, [CommentSchema.model_validate(comment) for comment in comments]
-        except Http404:
-            return 404, "User not found"
-        except Exception as e:
-            print(e)
-            return 500, "Internal server error"

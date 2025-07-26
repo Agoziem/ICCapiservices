@@ -12,18 +12,20 @@ from django.http import Http404
 from ..models import Blog, Tag, Category
 from ICCapp.models import Organization
 from ..schemas import (
+    BlogResponseSchema,
     BlogSchema,
     CreateBlogSchema,
     UpdateBlogSchema,
-    BlogSummarySchema,
-    BlogWithCommentsSchema,
     ErrorResponseSchema,
     SuccessResponseSchema,
     BlogListResponseSchema,
     BlogStatsSchema,
+    PaginatedBlogResponseSchema,
+    PaginatedBlogSummaryResponseSchema,
 )
 from utils import normalize_img_field
 from ninja_jwt.authentication import JWTAuth
+from django.db.models import Count
 
 
 User = get_user_model()
@@ -40,7 +42,7 @@ class BlogsController:
 
     @http_get(
         "/organization/{organization_id}",
-        response=List[BlogSchema],
+        response=PaginatedBlogResponseSchema,
         auth=JWTAuth()
     )
     @paginate(BlogPagination)
@@ -55,7 +57,7 @@ class BlogsController:
         )
         return [BlogSchema.model_validate(blog) for blog in blogs]
 
-    @http_get("/user", response=List[BlogSchema], auth=JWTAuth())
+    @http_get("/user", response=PaginatedBlogResponseSchema, auth=JWTAuth())
     @paginate(BlogPagination)
     def get_user_blogs(self, request):
         """Get all blogs by a specific user"""
@@ -68,17 +70,17 @@ class BlogsController:
         )
         return [BlogSchema.model_validate(blog) for blog in blogs]
 
-    @http_get("/{blog_id}", response={200: BlogWithCommentsSchema, 404: str, 500: str})
+    @http_get("/{blog_id}", response={200: BlogSchema, 404: str, 500: str})
     def get_blog(self, blog_id: int):
         """Get a specific blog by ID with comments"""
         try:
             blog = get_object_or_404(
                 Blog.objects.select_related("author", "category").prefetch_related(
-                    "tags", "likes", "comment_set__user"
-                ),
+                    "tags", "likes"
+                ).annotate(likes_count=Count('likes')),
                 id=blog_id,
             )
-            return 200, BlogWithCommentsSchema.model_validate(blog)
+            return 200, BlogSchema.model_validate(blog)
         except Http404:
             return 404, "Blog not found"
         except Exception as e:
@@ -86,18 +88,18 @@ class BlogsController:
             return 500, "Internal server error"
 
     @http_get(
-        "/slug/{slug}", response={200: BlogWithCommentsSchema, 404: str, 500: str}
+        "/slug/{slug}", response={200: BlogSchema, 404: str, 500: str}
     )
     def get_blog_by_slug(self, slug: str):
         """Get a specific blog by slug with comments"""
         try:
             blog = get_object_or_404(
                 Blog.objects.select_related("author", "category").prefetch_related(
-                    "tags", "likes", "comment_set__user"
-                ),
+                    "tags", "likes"
+                ).annotate(likes_count=Count('likes')),
                 slug=slug,
             )
-            return 200, BlogWithCommentsSchema.model_validate(blog)
+            return 200, BlogSchema.model_validate(blog)
         except Http404:
             return 404, "Blog not found"
         except Exception as e:
@@ -235,11 +237,11 @@ class BlogsController:
             print(e)
             return 500, "Failed to add view"
 
-    @http_get("/", response=List[BlogSummarySchema])
+    @http_get("/", response=PaginatedBlogSummaryResponseSchema)
     @paginate(BlogPagination)
     def get_all_blogs(self):
         """Get all blogs (summary view)"""
         blogs = Blog.objects.select_related("author", "category").prefetch_related(
             "likes"
-        ).order_by("-created_at")
-        return [BlogSummarySchema.model_validate(blog) for blog in blogs]
+        ).annotate(likes_count=Count('likes')).order_by("-created_at")
+        return [BlogResponseSchema.model_validate(blog) for blog in blogs]

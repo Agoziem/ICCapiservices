@@ -66,15 +66,15 @@ class UpdateEmailMessageSchema(Schema):
 
 # Response Schemas
 class EmailListResponseSchema(Schema):
-    emails: list[EmailSchema] = []
+    emails: list[EmailSchema]
 
 
 class EmailResponseListSchema(Schema):
-    responses: list[EmailResponseSchema] = []
+    responses: list[EmailResponseSchema]
 
 
 class EmailMessageListSchema(Schema):
-    messages: list[EmailMessageSchema] = []
+    messages: list[EmailMessageSchema]
 
 
 class SuccessResponseSchema(Schema):
@@ -85,9 +85,12 @@ class ErrorResponseSchema(Schema):
     error: str
 
 
-# Paginated Response Schema
+# Paginated response schemas
 class PaginatedEmailResponseSchema(Schema):
     count: int
-    next: Optional[str] = None
-    previous: Optional[str] = None
-    results: list[EmailSchema] = []
+    items: list[EmailSchema]
+
+
+class PaginatedEmailMessageResponseSchema(Schema):
+    count: int
+    items: list[EmailMessageSchema]

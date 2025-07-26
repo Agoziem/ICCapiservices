@@ -1,57 +1,41 @@
-from typing import Optional
+from typing import List, Optional
 from ninja import UploadedFile
-from ninja_extra import api_controller, route
-from ninja_extra.permissions import IsAuthenticated
+from ninja_extra import api_controller, route, paginate
+from ninja_extra.pagination import LimitOffsetPagination
 from django.shortcuts import get_object_or_404
-from django.core.paginator import Paginator
 from ninja_jwt.authentication import JWTAuth
 
 from ..models import Organization, Staff
 from ..schemas import (
     StaffSchema,
     StaffListResponseSchema,
-    PaginatedStaffResponseSchema,
     CreateStaffSchema,
     UpdateStaffSchema,
     SuccessResponseSchema,
     ErrorResponseSchema,
 )
 
+class StaffPagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
+
 
 @api_controller("/staff", tags=["Staff"])
 class StaffController:
 
-    @route.get("/{organization_id}", response=PaginatedStaffResponseSchema)
+    @route.get("/{organization_id}", response={200: List[StaffSchema], 500: ErrorResponseSchema})
+    @paginate(StaffPagination)
     def list_staff(
         self,
         organization_id: int,
-        page: Optional[int] = 1,
-        page_size: Optional[int] = 10,
     ):
         """Get all staff for an organization with pagination"""
         try:
             staff = Staff.objects.filter(organization=organization_id).order_by("id")
-            if not page_size:
-                page_size = 10
-            paginator = Paginator(staff, page_size)
-            page_obj = paginator.get_page(page)
-
-            return {
-                "count": paginator.count,
-                "next": (
-                    f"?page={page_obj.next_page_number()}"
-                    if page_obj.has_next()
-                    else None
-                ),
-                "previous": (
-                    f"?page={page_obj.previous_page_number()}"
-                    if page_obj.has_previous()
-                    else None
-                ),
-                "results": list(page_obj.object_list),
-            }
+            return 200, staff
         except Exception:
-            return {"count": 0, "next": None, "previous": None, "results": []}
+            return 500, {"error": "An error occurred while fetching staff members"}
 
     @route.get("/member/{staff_id}", response=StaffSchema)
     def get_staff(self, staff_id: int):

@@ -130,6 +130,15 @@ class VideoSchema(BaseModel):
             ),
         )
 
+class VideoMiniSchema(BaseModel):
+    id: int
+    title: str
+    price: Decimal
+    free: bool = False
+
+    class Config:
+        from_attributes = True
+
 
 class CreateVideoSchema(BaseModel):
     title: str
@@ -188,3 +197,14 @@ class VideoUserDetailsSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Paginated response schemas
+class PaginatedVideoResponseSchema(BaseModel):
+    count: int
+    items: List[VideoSchema]
+
+
+class PaginatedVideoUserResponseSchema(BaseModel):
+    count: int
+    items: List[VideoUserDetailsSchema]
