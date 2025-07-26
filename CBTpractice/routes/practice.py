@@ -166,7 +166,7 @@ class PracticeController:
 
     @route.get(
         "/my-results",
-        response=TestResultListResponseSchema,
+        response=List[TestResultSchema],
         auth=JWTAuth(),
     )
     def get_my_test_results(self, request):
@@ -174,7 +174,7 @@ class PracticeController:
         test_results = TestResult.objects.filter(user=request.user).prefetch_related(
             "tests"
         )
-        return {"test_results": test_results}
+        return test_results
 
     @route.get(
         "/result/{result_id}", response=TestResultSchema, auth=JWTAuth()

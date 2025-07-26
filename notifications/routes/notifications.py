@@ -146,7 +146,7 @@ class NotificationsController:
 
         return notification
 
-    @route.get("/unread/count")
+    @route.get("/unread/count", response=dict[str,int])
     def get_unread_count(self):
         """Get count of unread notifications"""
         count = Notification.objects.filter(viewed=False).count()

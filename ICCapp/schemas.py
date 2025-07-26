@@ -54,6 +54,8 @@ class StaffSchema(ModelSchema):
     def resolve_img_name(obj):
         return obj.img.name if obj.img else None
 
+
+
 class StaffMiniSchema(ModelSchema):
     id: int
     first_name: str

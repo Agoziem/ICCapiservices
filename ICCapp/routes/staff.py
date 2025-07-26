@@ -7,6 +7,7 @@ from ninja_jwt.authentication import JWTAuth
 
 from ..models import Organization, Staff
 from ..schemas import (
+    PaginatedStaffResponseSchema,
     StaffSchema,
     StaffListResponseSchema,
     CreateStaffSchema,
@@ -24,7 +25,7 @@ class StaffPagination(LimitOffsetPagination):
 @api_controller("/staff", tags=["Staff"])
 class StaffController:
 
-    @route.get("/{organization_id}", response={200: List[StaffSchema], 500: ErrorResponseSchema})
+    @route.get("/{organization_id}", response={200: PaginatedStaffResponseSchema, 500: ErrorResponseSchema})
     @paginate(StaffPagination)
     def list_staff(
         self,

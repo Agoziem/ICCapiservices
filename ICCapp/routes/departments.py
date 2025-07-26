@@ -11,6 +11,7 @@ from ..schemas import (
     DepartmentServiceSchema,
     DepartmentServiceListResponseSchema,
     CreateDepartmentSchema,
+    PaginatedDepartmentResponseSchema,
     UpdateDepartmentSchema,
     CreateDepartmentServiceSchema,
     UpdateDepartmentServiceSchema,
@@ -28,7 +29,7 @@ class DepartmentPagination(LimitOffsetPagination):
 @api_controller("/departments", tags=["Departments"])
 class DepartmentsController:
 
-    @route.get("/{organization_id}", response={200: List[DepartmentSchema], 500: ErrorResponseSchema})
+    @route.get("/{organization_id}", response={200: PaginatedDepartmentResponseSchema, 500: ErrorResponseSchema})
     @paginate(DepartmentPagination)
     def list_departments(
         self,

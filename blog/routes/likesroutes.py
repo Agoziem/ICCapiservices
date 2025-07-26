@@ -85,7 +85,7 @@ class LikesController:
             print(e)
             return 500, "Internal server error"
 
-    @http_get("/blog/{blog_id}", response={200: dict, 404: str, 500: str})
+    @http_get("/blog/{blog_id}", response={200: dict[str, int], 404: str, 500: str})
     def get_blog_likes_count(self, blog_id: int):
         """Get the total number of likes for a blog"""
         try:

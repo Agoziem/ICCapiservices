@@ -103,13 +103,13 @@ class UpdateQuestionSchema(Schema):
 class CreateSubjectSchema(Schema):
     subjectname: str
     subjectduration: int = 0
-    questions: List[dict]
+    questions: List[CreateQuestionSchema]
 
 
 class UpdateSubjectSchema(Schema):
     subjectname: Optional[str] = None
     subjectduration: Optional[int] = None
-    questions: List[dict]
+    questions: List[UpdateQuestionSchema]
 
 
 class CreateTestSchema(Schema):

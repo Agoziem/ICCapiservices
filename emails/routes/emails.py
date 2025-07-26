@@ -10,12 +10,13 @@ from ninja_extra.pagination import LimitOffsetPagination
 
 from ..models import Email, EmailResponse, EmailMessage
 from ..schemas import (
+    EmailPaginatedResponseSchema,
     EmailSchema,
-    EmailListResponseSchema,
     CreateEmailSchema,
+    PaginatedEmailMessageResponseSchema,
+    PaginatedEmailResponseSchema,
     UpdateEmailSchema,
     EmailResponseSchema,
-    EmailResponseListSchema,
     CreateEmailResponseSchema,
     UpdateEmailResponseSchema,
     EmailMessageSchema,
@@ -35,17 +36,17 @@ class EmailPagination(LimitOffsetPagination):
 class EmailsController:
 
     @route.get(
-        "/subscriptions/{organization_id}", response=list[EmailListResponseSchema]
+        "/subscriptions/{organization_id}", response=list[EmailSchema]
     )
     def get_subscriptions(self, organization_id: int):
         """Get all email subscriptions for an organization"""
         try:
             subscriptions = Subscription.objects.filter(organization=organization_id)
             return subscriptions
-        except Exception:
-            return []
+        except Exception as e:
+            return {"error": str(e)}
 
-    @route.get("/{organization_id}", response=EmailListResponseSchema)
+    @route.get("/{organization_id}", response={200: PaginatedEmailResponseSchema, 404: str, 500: str}, auth=JWTAuth())
     @paginate(EmailPagination)
     def get_emails(
         self,
@@ -57,8 +58,9 @@ class EmailsController:
                 "-created_at"
             )
             return emails
-        except Exception:
-            return {"count": 0, "next": None, "previous": None, "results": []}
+        except Exception as e:
+            print(f"Error fetching emails: {e}")
+            return {"error": str(e)}
 
     @route.get("/email/{email_id}", response=EmailSchema)
     def get_email(self, email_id: int):
@@ -116,7 +118,8 @@ class EmailsController:
 @api_controller("/email-responses", tags=["Email Responses"])
 class EmailResponsesController:
 
-    @route.get("/{message_id}", response=EmailResponseListSchema)
+    @route.get("/{message_id}", response=EmailPaginatedResponseSchema)
+    @paginate(EmailPagination)
     def get_responses(self, message_id: int):
         """Get all responses for a specific email message"""
         try:
@@ -163,15 +166,15 @@ class EmailResponsesController:
 @api_controller("/email-messages", tags=["Email Messages"])
 class EmailMessagesController:
 
-    @route.get("/", response=EmailMessageListSchema)
+    @route.get("/", response={200: PaginatedEmailMessageResponseSchema, 404: dict, 500: dict})
     @paginate(EmailPagination)
     def get_sent_emails(self):
         """Get all sent email messages"""
         try:
             messages = EmailMessage.objects.all()
             return {"messages": list(messages)}
-        except Exception:
-            return {"messages": []}
+        except Exception as e:
+            return {"messages": str(e)}
 
     @route.post("/", response=EmailMessageSchema)
     def create_email_message(self, payload: CreateEmailMessageSchema):

@@ -32,11 +32,11 @@ User = get_user_model()
 @api_controller("/years", tags=["CBT Years"])
 class YearsController:
 
-    @route.get("/", response=YearListResponseSchema)
+    @route.get("/", response=List[YearSchema])
     def list_years(self):
         """Get all available years"""
         years = Year.objects.all()
-        return {"years": years}
+        return years
 
     @route.post("/", response=YearSchema, auth=JWTAuth())
     def create_year(self, payload: CreateYearSchema):
@@ -72,11 +72,11 @@ class YearsController:
 @api_controller("/test-types", tags=["CBT Test Types"])
 class TestTypesController:
 
-    @route.get("/", response=TestTypeListResponseSchema)
+    @route.get("/", response=List[TestTypeSchema])
     def list_test_types(self):
         """Get all test types"""
         test_types = TestType.objects.all()
-        return {"testtypes": test_types}
+        return test_types
 
     @route.post("/", response=TestTypeSchema, auth=JWTAuth())
     def create_test_type(self, payload: CreateTestTypeSchema):
@@ -114,7 +114,7 @@ class TestTypesController:
 @api_controller("/tests", tags=["CBT Tests"])
 class TestsController:
 
-    @route.get("/", response=TestListResponseSchema)
+    @route.get("/", response=List[TestSchema])
     def list_tests(
         self, year_id: Optional[int] = None, test_type_id: Optional[int] = None
     ):
@@ -128,7 +128,7 @@ class TestsController:
         if test_type_id:
             tests = tests.filter(texttype_id=test_type_id)
 
-        return {"tests": tests}
+        return tests
 
     @route.post("/", response=TestSchema, auth=JWTAuth())
     def create_test(self, payload: CreateTestSchema):

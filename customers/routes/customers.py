@@ -1,5 +1,6 @@
 from typing import Optional
-from ninja_extra import api_controller, route
+from ninja_extra import api_controller, paginate, route
+from ninja_extra.pagination import LimitOffsetPagination
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from ICCapp.models import Organization
@@ -7,26 +8,32 @@ from ninja_jwt.authentication import JWTAuth
 
 from ..models import Customer
 from ..schemas import (
+    CustomerPaginatedResponseSchema,
     CustomerSchema,
-    CustomerListResponseSchema,
     CreateCustomerSchema,
     UpdateCustomerSchema,
     SuccessResponseSchema,
     ErrorResponseSchema,
 )
 
+class CustomersPagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
+
 
 @api_controller("/customers", tags=["Customers"])
 class CustomersController:
 
-    @route.get("/{organization_id}", response=CustomerListResponseSchema)
+    @route.get("/{organization_id}", response={200: CustomerPaginatedResponseSchema, 404: str, 500: str}, auth=JWTAuth())
+    @paginate(CustomersPagination)
     def list_customers(self, organization_id: int):
         """Get all customers for an organization"""
         try:
             customers = Customer.objects.filter(organization=organization_id)
             return {"customers": list(customers)}
         except Exception as e:
-            return {"customers": []}
+            return {"error": str(e)}
 
     @route.get("/customer/{customer_id}", response=CustomerSchema)
     def get_customer(self, customer_id: int):

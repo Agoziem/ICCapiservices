@@ -28,7 +28,7 @@ from ..schemas import (
 @api_controller("/subjects", tags=["CBT Subjects"])
 class SubjectsController:
 
-    @route.get("/", response=SubjectListResponseSchema)
+    @route.get("/", response=List[SubjectSchema])
     def list_subjects(self, include_questions: bool = False):
         """Get all subjects with optional questions"""
         if include_questions:
@@ -119,7 +119,7 @@ class SubjectsController:
 @api_controller("/questions", tags=["CBT Questions"])
 class QuestionsController:
 
-    @route.get("/")
+    @route.get("/", response=List[QuestionSchema])
     def list_questions(self, subject_id: int):
         """Get all questions with optional subject filtering"""
         questions = Question.objects.prefetch_related("answers")

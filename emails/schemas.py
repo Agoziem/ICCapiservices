@@ -65,12 +65,9 @@ class UpdateEmailMessageSchema(Schema):
 
 
 # Response Schemas
-class EmailListResponseSchema(Schema):
-    emails: list[EmailSchema]
 
 
-class EmailResponseListSchema(Schema):
-    responses: list[EmailResponseSchema]
+
 
 
 class EmailMessageListSchema(Schema):
@@ -89,6 +86,11 @@ class ErrorResponseSchema(Schema):
 class PaginatedEmailResponseSchema(Schema):
     count: int
     items: list[EmailSchema]
+
+    
+class EmailPaginatedResponseSchema(Schema):
+    count: int  
+    items: list[EmailResponseSchema]
 
 
 class PaginatedEmailMessageResponseSchema(Schema):

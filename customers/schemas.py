@@ -25,8 +25,9 @@ class UpdateCustomerSchema(Schema):
 
 
 # Response Schemas
-class CustomerListResponseSchema(Schema):
-    customers: list[CustomerSchema]
+class CustomerPaginatedResponseSchema(Schema):
+    count: int
+    items: list[CustomerSchema]
 
 
 class SuccessResponseSchema(Schema):
