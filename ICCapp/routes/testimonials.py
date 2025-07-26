@@ -1,4 +1,5 @@
 from typing import Optional
+from ninja import UploadedFile
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -62,12 +63,14 @@ class TestimonialsController:
 
     @route.post("/{organization_id}", response=TestimonialSchema)
     def create_testimonial(
-        self, organization_id: int, payload: CreateTestimonialSchema
+        self, organization_id: int, payload: CreateTestimonialSchema, img: Optional[UploadedFile] = None
     ):
         """Create a new testimonial"""
         try:
             organization = get_object_or_404(Organization, id=organization_id)
             testimonial_data = payload.model_dump()
+            if img:
+                testimonial_data["img"] = img
 
             testimonial = Testimonial.objects.create(
                 organization=organization, **testimonial_data
@@ -79,15 +82,17 @@ class TestimonialsController:
     @route.put(
         "/{testimonial_id}", response=TestimonialSchema, auth=JWTAuth()
     )
-    def update_testimonial(self, testimonial_id: int, payload: UpdateTestimonialSchema):
+    def update_testimonial(self, testimonial_id: int, payload: UpdateTestimonialSchema, img: Optional[UploadedFile] = None):
         """Update a testimonial"""
         testimonial = get_object_or_404(Testimonial, id=testimonial_id)
 
         testimonial_data = payload.model_dump(exclude_unset=True)
         for attr, value in testimonial_data.items():
             setattr(testimonial, attr, value)
-        testimonial.save()
 
+        if img:
+            testimonial.img = img  # type: ignore
+        testimonial.save()
         return testimonial
 
     @route.delete(

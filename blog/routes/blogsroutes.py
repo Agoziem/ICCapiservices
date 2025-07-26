@@ -1,5 +1,7 @@
+import re
 from typing import List, Optional
-from ninja_extra import api_controller, http_get, http_post, http_put, http_delete
+from ninja_extra import api_controller, http_get, http_post, http_put, http_delete, paginate
+from ninja_extra.pagination import LimitOffsetPagination
 from ninja import File
 from ninja.files import UploadedFile
 from django.shortcuts import get_object_or_404
@@ -27,46 +29,44 @@ from ninja_jwt.authentication import JWTAuth
 User = get_user_model()
 
 
+class BlogPagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
+
+
 @api_controller("/blogs", tags=["Blogs"])
 class BlogsController:
 
     @http_get(
         "/organization/{organization_id}",
-        response={200: List[BlogSchema], 404: str, 500: str},
+        response=List[BlogSchema],
         auth=JWTAuth()
     )
+    @paginate(BlogPagination)
     def get_org_blogs(self, organization_id: int):
         """Get all blogs for a specific organization"""
-        try:
-            organization = get_object_or_404(Organization, id=organization_id)
-            blogs = (
-                Blog.objects.filter(organization=organization)
-                .select_related("author", "category")
-                .prefetch_related("tags", "likes")
-            )
-            return 200, [BlogSchema.model_validate(blog) for blog in blogs]
-        except Http404:
-            return 404, "Organization not found"
-        except Exception as e:
-            print(e)
-            return 500, "Internal server error"
+        organization = get_object_or_404(Organization, id=organization_id)
+        blogs = (
+            Blog.objects.filter(organization=organization)
+            .select_related("author", "category")
+            .prefetch_related("tags", "likes")
+            .order_by("-created_at")
+        )
+        return [BlogSchema.model_validate(blog) for blog in blogs]
 
-    @http_get("/user/{user_id}", response={200: List[BlogSchema], 404: str, 500: str})
-    def get_user_blogs(self, user_id: int):
+    @http_get("/user", response=List[BlogSchema], auth=JWTAuth())
+    @paginate(BlogPagination)
+    def get_user_blogs(self, request):
         """Get all blogs by a specific user"""
-        try:
-            user = get_object_or_404(User, id=user_id)
-            blogs = (
-                Blog.objects.filter(author=user)
-                .select_related("author", "category")
-                .prefetch_related("tags", "likes")
-            )
-            return 200, [BlogSchema.model_validate(blog) for blog in blogs]
-        except Http404:
-            return 404, "User not found"
-        except Exception as e:
-            print(e)
-            return 500, "Internal server error"
+        user = request.user
+        blogs = (
+            Blog.objects.filter(author=user)
+            .select_related("author", "category")
+            .prefetch_related("tags", "likes")
+            .order_by("-created_at")
+        )
+        return [BlogSchema.model_validate(blog) for blog in blogs]
 
     @http_get("/{blog_id}", response={200: BlogWithCommentsSchema, 404: str, 500: str})
     def get_blog(self, blog_id: int):
@@ -105,21 +105,21 @@ class BlogsController:
             return 500, "Internal server error"
 
     @http_post(
-        "/organization/{organization_id}/user/{user_id}",
+        "/organization/{organization_id}/create-blog",
         response={201: BlogSchema, 400: ErrorResponseSchema, 404: str, 500: str},
         auth=JWTAuth()
     )
     def create_blog(
         self,
+        request,
         organization_id: int,
-        user_id: int,
         data: CreateBlogSchema,
         img: Optional[File[UploadedFile]] = None,
     ):
         """Create a new blog post"""
         try:
             organization = get_object_or_404(Organization, id=organization_id)
-            author = get_object_or_404(User, id=user_id)
+            author = request.user  
 
             # Create blog instance
             blog_data = data.model_dump(exclude={"tags"})
@@ -235,14 +235,11 @@ class BlogsController:
             print(e)
             return 500, "Failed to add view"
 
-    @http_get("/", response={200: List[BlogSummarySchema], 500: str})
+    @http_get("/", response=List[BlogSummarySchema])
+    @paginate(BlogPagination)
     def get_all_blogs(self):
         """Get all blogs (summary view)"""
-        try:
-            blogs = Blog.objects.select_related("author", "category").prefetch_related(
-                "likes"
-            )
-            return 200, [BlogSummarySchema.model_validate(blog) for blog in blogs]
-        except Exception as e:
-            print(e)
-            return 500, "Internal server error"
+        blogs = Blog.objects.select_related("author", "category").prefetch_related(
+            "likes"
+        ).order_by("-created_at")
+        return [BlogSummarySchema.model_validate(blog) for blog in blogs]

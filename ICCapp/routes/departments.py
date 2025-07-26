@@ -1,4 +1,5 @@
 from typing import Optional
+from ninja import UploadedFile
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -67,15 +68,16 @@ class DepartmentsController:
     @route.post(
         "/{organization_id}", response=DepartmentSchema, auth=JWTAuth()
     )
-    def create_department(self, organization_id: int, payload: CreateDepartmentSchema):
+    def create_department(self, organization_id: int, payload: CreateDepartmentSchema, img: Optional[UploadedFile] = None):
         """Create a new department"""
         try:
             organization = get_object_or_404(Organization, id=organization_id)
             department_data = payload.model_dump()
-
             # Extract services and staff_in_charge
             services_names = department_data.pop("services", [])
             staff_in_charge_id = department_data.pop("staff_in_charge", None)
+            if img:
+                department_data["img"] = img
 
             # Create department
             department = Department.objects.create(
@@ -102,7 +104,7 @@ class DepartmentsController:
     @route.put(
         "/{department_id}", response=DepartmentSchema, auth=JWTAuth()
     )
-    def update_department(self, department_id: int, payload: UpdateDepartmentSchema):
+    def update_department(self, department_id: int, payload: UpdateDepartmentSchema, img: Optional[UploadedFile] = None):
         """Update a department"""
         department = get_object_or_404(Department, id=department_id)
 
@@ -123,7 +125,8 @@ class DepartmentsController:
                 department.staff_in_charge = staff
             else:
                 department.staff_in_charge = None
-
+        if img:
+            department.img = img  # type: ignore
         department.save()
 
         # Update services

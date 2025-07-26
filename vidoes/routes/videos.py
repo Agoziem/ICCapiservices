@@ -12,16 +12,13 @@ from ninja_jwt.authentication import JWTAuth
 from ..models import Video, Category, SubCategory, Organization
 from ..schemas import (
     VideoSchema,
-    VideoListResponseSchema,
     CreateVideoSchema,
     UpdateVideoSchema,
     VideoFileUploadSchema,
     SuccessResponseSchema,
     ErrorResponseSchema,
     VideoUserDetailsSchema,
-    VideoUserListResponseSchema,
 )
-from utils import normalize_img_field, parse_json_fields
 
 
 class VideoPagination(LimitOffsetPagination):
@@ -83,12 +80,13 @@ class VideosController:
 
         return videos
 
-    @route.get("/user/{organization_id}/{user_id}", response=list[VideoSchema])
+    @route.get("/user/{organization_id}", response=list[VideoSchema])
     @paginate(VideoPagination)
     def get_user_videos(
-        self, organization_id: int, user_id: int, category: Optional[str] = None
+        self, request, organization_id: int, category: Optional[str] = None
     ):
         """Get videos purchased by a specific user in an organization"""
+        user_id = request.user.id
         queryset = (
             Video.objects.filter(
                 organization=organization_id, userIDs_that_bought_this_video__id=user_id
@@ -163,7 +161,8 @@ class VideosController:
     def get_video(self, video_id: int):
         """Get details of a specific video by ID"""
         video = get_object_or_404(
-            Video.objects.select_related("organization", "category", "subcategory"),
+            Video.objects.select_related(
+                "organization", "category", "subcategory"),
             id=video_id,
         )
         return VideoSchema.from_django_model(video)
@@ -172,7 +171,8 @@ class VideosController:
     def get_video_by_token(self, video_token: str):
         """Get details of a specific video by token"""
         video = get_object_or_404(
-            Video.objects.select_related("organization", "category", "subcategory"),
+            Video.objects.select_related(
+                "organization", "category", "subcategory"),
             video_token=video_token,
         )
         return VideoSchema.from_django_model(video)
@@ -184,7 +184,8 @@ class VideosController:
         self,
         organization_id: int,
         payload: CreateVideoSchema,
-        file_data: VideoFileUploadSchema,
+        thumbnail: Optional[UploadedFile] = None,
+        video: Optional[UploadedFile] = None,
     ):
         """Create a new video for an organization"""
         try:
@@ -197,7 +198,8 @@ class VideosController:
 
             # Handle category
             if video_data.get("category"):
-                category = get_object_or_404(Category, id=video_data.pop("category"))
+                category = get_object_or_404(
+                    Category, id=video_data.pop("category"))
                 video_data["category"] = category
 
             # Handle subcategory
@@ -211,17 +213,18 @@ class VideosController:
             video_data.pop("organization", None)
 
             # Create video
-            video = Video.objects.create(organization=organization, **video_data)
+            new_video = Video.objects.create(
+                organization=organization, **video_data)
 
             # Handle file uploads if provided
-            if file_data:
-                if file_data.thumbnail:
-                    video.thumbnail = file_data.thumbnail  # type: ignore
-                if file_data.video:
-                    video.video = file_data.video  # type: ignore
-                video.save()
+            if thumbnail or video:
+                if thumbnail:
+                    new_video.thumbnail = thumbnail  # type: ignore
+                if video:
+                    new_video.video = video  # type: ignore
+                new_video.save()
 
-            return VideoSchema.from_django_model(video)
+            return VideoSchema.from_django_model(new_video)
 
         except Exception as e:
             return {"error": str(e)}
@@ -231,10 +234,11 @@ class VideosController:
         self,
         video_id: int,
         payload: UpdateVideoSchema,
-        file_data: VideoFileUploadSchema,
+        video: Optional[UploadedFile] = None,
+        thumbnail: Optional[UploadedFile] = None,
     ):
         """Update an existing video"""
-        video = get_object_or_404(Video, id=video_id)
+        current_video = get_object_or_404(Video, id=video_id)
 
         try:
             # Update video fields
@@ -245,7 +249,7 @@ class VideosController:
                 organization = get_object_or_404(
                     Organization, id=video_data.pop("organization")
                 )
-                video.organization = organization
+                current_video.organization = organization
 
             # Handle category
             if "category" in video_data:
@@ -253,9 +257,9 @@ class VideosController:
                     category = get_object_or_404(
                         Category, id=video_data.pop("category")
                     )
-                    video.category = category
+                    current_video.category = category
                 else:
-                    video.category = None
+                    current_video.category = None
                     video_data.pop("category")
 
             # Handle subcategory
@@ -264,24 +268,24 @@ class VideosController:
                     subcategory = get_object_or_404(
                         SubCategory, id=video_data.pop("subcategory")
                     )
-                    video.subcategory = subcategory
+                    current_video.subcategory = subcategory
                 else:
-                    video.subcategory = None
+                    current_video.subcategory = None
                     video_data.pop("subcategory")
 
             # Update remaining fields
             for attr, value in video_data.items():
-                setattr(video, attr, value)
+                setattr(current_video, attr, value)
 
             # Handle file uploads if provided
-            if file_data:
-                if file_data.thumbnail:
-                    video.thumbnail = file_data.thumbnail  # type: ignore
-                if file_data.video:
-                    video.video = file_data.video  # type: ignore
+            if video or thumbnail:
+                if thumbnail:
+                    current_video.thumbnail = thumbnail  # type: ignore
+                if video:
+                    current_video.video = video  # type: ignore
 
-            video.save()
-            return VideoSchema.from_django_model(video)
+            current_video.save()
+            return VideoSchema.from_django_model(current_video)
 
         except Exception as e:
             return {"error": str(e)}

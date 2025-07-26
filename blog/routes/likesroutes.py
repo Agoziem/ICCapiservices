@@ -14,18 +14,18 @@ User = get_user_model()
 class LikesController:
 
     @http_post(
-        "/blog/{blog_id}/user/{user_id}",
+        "/blog/{blog_id}",
         response={200: LikeResponseSchema, 404: str, 500: str},
         auth=JWTAuth()
     )
-    def add_like(self, request, blog_id: int, user_id: int):
+    def add_like(self, request, blog_id: int):
         """Add a like to a blog post"""
         try:
             blog = get_object_or_404(Blog, id=blog_id)
-            user = get_object_or_404(User, id=user_id)
+            user = request.user
 
             # Check if already liked
-            if blog.likes.filter(id=user_id).exists():
+            if blog.likes.filter(id=user.id).exists():
                 return 200, {"liked": True, "likes_count": blog.likes.count()}
 
             # Add like
@@ -40,18 +40,18 @@ class LikesController:
             return 500, "Failed to add like"
 
     @http_delete(
-        "/blog/{blog_id}/user/{user_id}",
+        "/blog/{blog_id}",
         response={200: LikeResponseSchema, 404: str, 500: str},
         auth=JWTAuth()
     )
-    def remove_like(self, request, blog_id: int, user_id: int):
+    def remove_like(self, request, blog_id: int):
         """Remove a like from a blog post"""
         try:
             blog = get_object_or_404(Blog, id=blog_id)
-            user = get_object_or_404(User, id=user_id)
+            user = request.user
 
             # Check if actually liked
-            if not blog.likes.filter(id=user_id).exists():
+            if not blog.likes.filter(id=user.id).exists():
                 return 200, {"liked": False, "likes_count": blog.likes.count()}
 
             # Remove like
@@ -66,16 +66,16 @@ class LikesController:
             return 500, "Failed to remove like"
 
     @http_get(
-        "/blog/{blog_id}/user/{user_id}",
+        "/blog/{blog_id}",
         response={200: LikeResponseSchema, 404: str, 500: str},
     )
-    def check_like_status(self, request, blog_id: int, user_id: int):
+    def check_like_status(self, request, blog_id: int):
         """Check if a user has liked a specific blog"""
         try:
             blog = get_object_or_404(Blog, id=blog_id)
-            user = get_object_or_404(User, id=user_id)
+            user = request.user
 
-            liked = blog.likes.filter(id=user_id).exists()
+            liked = blog.likes.filter(id=user.id).exists()
 
             return 200, {"liked": liked, "likes_count": blog.likes.count()}
 
@@ -86,7 +86,7 @@ class LikesController:
             return 500, "Internal server error"
 
     @http_get("/blog/{blog_id}", response={200: dict, 404: str, 500: str})
-    def get_blog_likes_count(self, request, blog_id: int):
+    def get_blog_likes_count(self, blog_id: int):
         """Get the total number of likes for a blog"""
         try:
             blog = get_object_or_404(Blog, id=blog_id)

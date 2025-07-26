@@ -216,7 +216,7 @@ class CreateDepartmentSchema(Schema):
     name: str
     description: str
     staff_in_charge: Optional[int] = None
-    services: Optional[list[str]] = []
+    services: Optional[list[str]] = None
 
 
 class UpdateDepartmentSchema(Schema):

@@ -1,7 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel, Field
-from ninja import Schema, File
-from ninja.files import UploadedFile
+from ninja import Schema
 from decimal import Decimal
 from datetime import datetime
 
@@ -151,32 +150,12 @@ class UpdateServiceSchema(BaseModel):
     organization: Optional[int] = None  # Organization ID
 
 
-# File Upload Schema
-class ServiceFileUploadSchema(Schema):
-    preview: UploadedFile
-
-
-# Response Schemas
-class ServiceListResponseSchema(BaseModel):
-    results: List[ServiceSchema]
-    count: int
-    next: Optional[str] = None
-    previous: Optional[str] = None
-
-
 class CategoryListResponseSchema(BaseModel):
     results: List[CategorySchema]
 
 
 class SubCategoryListResponseSchema(BaseModel):
     results: List[SubCategorySchema]
-
-
-class UserListResponseSchema(BaseModel):
-    results: List[UserSchema]
-    count: int
-    next: Optional[str] = None
-    previous: Optional[str] = None
 
 
 class SuccessResponseSchema(BaseModel):
@@ -199,9 +178,3 @@ class ServiceUserDetailsSchema(BaseModel):
     class Config:
         from_attributes = True
 
-
-class ServiceUserListResponseSchema(BaseModel):
-    results: List[ServiceUserDetailsSchema]
-    count: int
-    next: Optional[str] = None
-    previous: Optional[str] = None

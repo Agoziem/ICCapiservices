@@ -1,6 +1,7 @@
 from typing import Any, Optional, cast
 from django.conf import settings
-from ninja_extra import NinjaExtraAPI, api_controller, http_post, http_get, http_put, http_delete
+from ninja_extra import NinjaExtraAPI, api_controller, http_post, http_get, http_put, http_delete, paginate
+from ninja_extra.pagination import LimitOffsetPagination
 from ninja import Form, File
 from ninja.files import UploadedFile
 from django.contrib.auth import get_user_model
@@ -28,6 +29,12 @@ from ..schemas import (
 from utils import normalize_img_field
 
 User = cast(type[CustomUser], get_user_model())
+
+
+class UserPagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
 
 oauth = DjangoOAuth()
 oauth.register(name='google')
@@ -185,61 +192,38 @@ class AuthenticationController:
     # User management
     # --------------------------------------------------------------
 
-    @http_get('/users/{user_id}', response={200: UserSchema, 404: str, 500: str}, auth=JWTAuth())
-    def get_user(self, user_id: int):
-        """Get user by ID"""
-        try:
-            user = get_object_or_404(User, id=user_id)
-            return 200, UserSchema.model_validate(user)
-        except Http404:
-            return 404, "User not found"
-        except Exception as e:
-            print(e)
-            return 500, "Internal server error"
+    @http_get('/profile', response=UserSchema, auth=JWTAuth())
+    def get_user_profile(self, request):
+        """Get current user profile"""
+        user = request.user
+        return UserSchema.model_validate(user)
 
-    @http_get('/users', response={200: list[UserSchema], 404: str, 500: str}, auth=JWTAuth())
+    @http_get('/users', response=list[UserSchema], auth=JWTAuth())
+    @paginate(UserPagination)
     def get_users(self):
         """Get all users"""
-        try:
-            users = User.objects.all()
-            return 200, [UserSchema.model_validate(user) for user in users]
-        except Exception as e:
-            print(e)
-            return 500, "Internal server error"
+        users = User.objects.all().order_by('-date_joined')
+        return users
 
-    @http_put('/users/{user_id}', response={200: UserSchema, 404: str, 500: str}, auth=JWTAuth())
-    def update_user(self, user_id: int, data: UpdateUserSchema, avatar: Optional[UploadedFile] = None):
-        """Update user information"""
-        try:
-            user = get_object_or_404(User, id=user_id)
+    @http_put('/profile', response=UserSchema, auth=JWTAuth())
+    def update_user_profile(self, request, data: UpdateUserSchema, avatar: Optional[UploadedFile] = None):
+        """Update current user profile"""
+        user = request.user
 
-            # Update user fields
-            for attr, value in data.model_dump(exclude_unset=True).items():
-                if attr == 'avatar' and avatar:
-                    value = normalize_img_field(avatar, "avatar")
-                setattr(user, attr, value)
-            user.save()
-            return 200, UserSchema.model_validate(user)
+        # Update user fields
+        for attr, value in data.model_dump(exclude_unset=True).items():
+            if attr == 'avatar' and avatar:
+                value = normalize_img_field(avatar, "avatar")
+            setattr(user, attr, value)
+        user.save()
+        return UserSchema.model_validate(user)
 
-        except Http404:
-            return 404, "User not found"
-        except Exception as e:
-            print(e)
-            return 500, "Internal server error"
+    @http_delete('/profile', response=dict[str, str], auth=JWTAuth())
+    def delete_user_profile(self, request):
+        """Delete current user profile"""
+        user = request.user
 
-    @http_delete('/users/{user_id}', response={204: None, 404: str, 500: str}, auth=JWTAuth())
-    def delete_user(self, user_id: int):
-        """Delete a user and their token"""
-        try:
-            user = get_object_or_404(User, id=user_id)
-
-            # Clear groups and delete user
-            user.groups.clear()
-            user.delete()
-            return 204, None
-
-        except Http404:
-            return 404, "User not found"
-        except Exception as e:
-            print(e)
-            return 500, "Internal server error"
+        # Clear groups and delete user
+        user.groups.clear()
+        user.delete()
+        return {"message": "User profile deleted successfully"}

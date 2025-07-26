@@ -82,7 +82,7 @@ class WAMessage(models.Model):
             if last_message:
                 # Manually serialize the last message
                 serialized_message = {
-                    "id": last_message.id,
+                    "id": last_message.pk,
                     "message_id": last_message.message_id,
                     "contact": last_message.contact.id,
                     "message_type": last_message.message_type,
@@ -117,7 +117,7 @@ class WAMessage(models.Model):
                 # Send the message to the appropriate WebSocket room
                 room_name = "whatsappapi_messages"
                 channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
+                async_to_sync(channel_layer.group_send)( # type: ignore
                     room_name,
                     {
                         "type": "chat_message",
@@ -129,7 +129,7 @@ class WAMessage(models.Model):
 
                 # Send an update to the general contacts room
                 general_room_name = "whatsappapi_contacts"
-                async_to_sync(channel_layer.group_send)(
+                async_to_sync(channel_layer.group_send)( # type: ignore
                     general_room_name,
                     {
                         "type": "chat_message",
@@ -164,10 +164,7 @@ class Status(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.message.message_id} - {self.status}"
-
-    def __str__(self):
-        return f"{self.contact}: {self.message_type}"
+        return f"{self.message.message_id} - {self.status} at {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
 
 
 class WebhookEvent(models.Model):

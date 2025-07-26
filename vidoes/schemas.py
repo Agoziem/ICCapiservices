@@ -158,11 +158,6 @@ class VideoFileUploadSchema(Schema):
 
 
 # Response Schemas
-class VideoListResponseSchema(BaseModel):
-    results: List[VideoSchema]
-    count: int
-    next: Optional[str] = None
-    previous: Optional[str] = None
 
 
 class CategoryListResponseSchema(BaseModel):
@@ -172,12 +167,6 @@ class CategoryListResponseSchema(BaseModel):
 class SubCategoryListResponseSchema(BaseModel):
     results: List[SubCategorySchema]
 
-
-class UserListResponseSchema(BaseModel):
-    results: List[UserSchema]
-    count: int
-    next: Optional[str] = None
-    previous: Optional[str] = None
 
 
 class SuccessResponseSchema(BaseModel):
@@ -199,10 +188,3 @@ class VideoUserDetailsSchema(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class VideoUserListResponseSchema(BaseModel):
-    results: List[VideoUserDetailsSchema]
-    count: int
-    next: Optional[str] = None
-    previous: Optional[str] = None

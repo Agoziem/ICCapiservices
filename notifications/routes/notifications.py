@@ -1,5 +1,6 @@
 from typing import Optional
-from ninja_extra import api_controller, route
+from ninja_extra import api_controller, route, paginate
+from ninja_extra.pagination import LimitOffsetPagination
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from channels.layers import get_channel_layer
@@ -17,13 +18,20 @@ from ..schemas import (
 )
 
 
+class NotificationPagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
+
+
 @api_controller("/notifications", tags=["Notifications"])
 class NotificationsController:
 
     @route.get("/", response=list[NotificationSchema])
+    @paginate(NotificationPagination)
     def fetch_notifications(self):
         """Get all notifications"""
-        notifications = Notification.objects.all()
+        notifications = Notification.objects.all().order_by('-created_at')
         return notifications
 
     @route.get("/{notification_id}", response=NotificationSchema)

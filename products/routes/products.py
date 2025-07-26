@@ -1,5 +1,6 @@
 from typing import Optional
-from ninja_extra import api_controller, route
+from ninja_extra import api_controller, route, paginate
+from ninja_extra.pagination import LimitOffsetPagination
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
@@ -21,6 +22,12 @@ from ..schemas import (
     SuccessResponseSchema,
     ErrorResponseSchema,
 )
+
+
+class ProductPagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
 
 
 @api_controller("/products", tags=["Products"])
@@ -122,55 +129,32 @@ class ProductsController:
         except Exception:
             return {"count": 0, "next": None, "previous": None, "results": []}
 
-    @route.get(
-        "/user/{organization_id}/{user_id}", response=PaginatedProductResponseSchema
-    )
+    @route.get("/user/{organization_id}", response=list[ProductSchema], auth=JWTAuth())
+    @paginate(ProductPagination) 
     def get_user_products(
         self,
+        request,
         organization_id: int,
-        user_id: int,
         category: Optional[str] = None,
-        page: Optional[int] = 1,
-        page_size: Optional[int] = 10,
     ):
-        """Get products purchased by a specific user"""
-        try:
-            base_query = Product.objects.filter(
-                organization=organization_id,
-                userIDs_that_bought_this_product__id=user_id,
-            )
+        """Get products purchased by authenticated user"""
+        user = request.user
+        base_query = Product.objects.filter(
+            organization=organization_id,
+            userIDs_that_bought_this_product__id=user.id,
+        )
 
-            if category and category != "All":
-                product_category = get_object_or_404(Category, category=category)
-                base_query = base_query.filter(category=product_category)
+        if category and category != "All":
+            product_category = get_object_or_404(Category, category=category)
+            base_query = base_query.filter(category=product_category)
 
-            products = base_query.order_by("-last_updated_date")
+        products = base_query.order_by("-last_updated_date")
 
-            # Optimize queries
-            products = products.select_related(
-                "organization", "category", "subcategory__category"
-            )
-            if not page_size:
-                page_size = 10
-            paginator = Paginator(products, page_size)
-            page_obj = paginator.get_page(page)
-
-            return {
-                "count": paginator.count,
-                "next": (
-                    f"?page={page_obj.next_page_number()}"
-                    if page_obj.has_next()
-                    else None
-                ),
-                "previous": (
-                    f"?page={page_obj.previous_page_number()}"
-                    if page_obj.has_previous()
-                    else None
-                ),
-                "results": list(page_obj.object_list),
-            }
-        except Exception:
-            return {"count": 0, "next": None, "previous": None, "results": []}
+        # Optimize queries
+        products = products.select_related(
+            "organization", "category", "subcategory__category"
+        )
+        return products
 
     @route.get("/product/{product_id}", response=ProductSchema)
     def get_product(self, product_id: int):

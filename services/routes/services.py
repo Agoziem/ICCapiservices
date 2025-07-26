@@ -11,14 +11,11 @@ from ninja_jwt.authentication import JWTAuth
 from ..models import Service, Category, SubCategory, Organization
 from ..schemas import (
     ServiceSchema,
-    ServiceListResponseSchema,
     CreateServiceSchema,
     UpdateServiceSchema,
-    ServiceFileUploadSchema,
     SuccessResponseSchema,
     ErrorResponseSchema,
     ServiceUserDetailsSchema,
-    ServiceUserListResponseSchema,
 )
 from utils import normalize_img_field, parse_json_fields
 
@@ -84,16 +81,16 @@ class ServicesController:
 
         return services
 
-    @route.get("/user/{organization_id}/{user_id}", response=list[ServiceSchema])
+    @route.get("/user/{organization_id}", response=list[ServiceSchema], auth=JWTAuth())
     @paginate(ServicePagination)
     def get_user_services(
-        self, organization_id: int, user_id: int, category: Optional[str] = None
+        self, request, organization_id: int, category: Optional[str] = None
     ):
-        """Get services purchased by a specific user in an organization"""
+        """Get services purchased by the authenticated user in an organization"""
         queryset = (
             Service.objects.filter(
                 organization=organization_id,
-                userIDs_that_bought_this_service__id=user_id,
+                userIDs_that_bought_this_service__id=request.user.id,
             )
             .select_related("organization", "category", "subcategory")
             .order_by("-updated_at")
@@ -138,7 +135,7 @@ class ServicesController:
         self,
         organization_id: int,
         payload: CreateServiceSchema,
-        file_data: Optional[ServiceFileUploadSchema] = None,
+        preview: Optional[UploadedFile] = None,
     ):
         """Create a new service for an organization"""
         try:
@@ -168,8 +165,8 @@ class ServicesController:
             service = Service.objects.create(organization=organization, **service_data)
 
             # Handle file upload if provided
-            if file_data and file_data.preview:
-                service.preview = file_data.preview  # type: ignore
+            if preview:
+                service.preview = preview  # type: ignore
                 service.save()
 
             return ServiceSchema.from_django_model(service)
@@ -184,7 +181,7 @@ class ServicesController:
         self,
         service_id: int,
         payload: UpdateServiceSchema,
-        file_data: Optional[ServiceFileUploadSchema] = None,
+        preview: Optional[UploadedFile] = None,
     ):
         """Update an existing service"""
         service = get_object_or_404(Service, id=service_id)
@@ -227,8 +224,8 @@ class ServicesController:
                 setattr(service, attr, value)
 
             # Handle file upload if provided
-            if file_data and file_data.preview:
-                service.preview = file_data.preview  # type: ignore
+            if preview:
+                service.preview = preview  # type: ignore
 
             service.save()
             return ServiceSchema.from_django_model(service)

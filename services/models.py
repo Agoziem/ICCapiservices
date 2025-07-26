@@ -10,7 +10,7 @@ class Category(models.Model):
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return self.category
+        return self.category if self.category else "Unknown Category"
 
     class Meta:
         verbose_name_plural = "Categories"

@@ -1,4 +1,5 @@
 from typing import Optional
+from ninja import UploadedFile
 from ninja_extra import api_controller, route
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -61,25 +62,29 @@ class StaffController:
     @route.post(
         "/{organization_id}", response=StaffSchema, auth=JWTAuth()
     )
-    def create_staff(self, organization_id: int, payload: CreateStaffSchema):
+    def create_staff(self, organization_id: int, payload: CreateStaffSchema, img: Optional[UploadedFile] = None):
         """Create a new staff member"""
         try:
             organization = get_object_or_404(Organization, id=organization_id)
             staff_data = payload.model_dump()
-
+            if img:
+                staff_data["img"] = img
             staff = Staff.objects.create(organization=organization, **staff_data)
             return staff
         except Exception as e:
             return {"error": str(e)}
 
     @route.put("/{staff_id}", response=StaffSchema, auth=JWTAuth())
-    def update_staff(self, staff_id: int, payload: UpdateStaffSchema):
+    def update_staff(self, staff_id: int, payload: UpdateStaffSchema, img: Optional[UploadedFile] = None):
         """Update a staff member"""
         staff = get_object_or_404(Staff, id=staff_id)
 
         staff_data = payload.model_dump(exclude_unset=True)
         for attr, value in staff_data.items():
             setattr(staff, attr, value)
+
+        if img:
+            staff.img = img  # type: ignore
         staff.save()
 
         return staff

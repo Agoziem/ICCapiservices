@@ -1,5 +1,6 @@
 from typing import List, Any, Optional, cast
-from ninja_extra import api_controller, route
+from ninja_extra import api_controller, route, paginate
+from ninja_extra.pagination import LimitOffsetPagination
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
@@ -25,6 +26,12 @@ from ..schemas import (
 from authentication.models import CustomUser
 
 User = cast(type[CustomUser], get_user_model())
+
+
+class PracticePagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
 
 
 @api_controller("/practice", tags=["CBT Practice"])

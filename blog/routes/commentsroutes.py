@@ -41,17 +41,16 @@ class CommentsController:
             return 500, "Internal server error"
 
     @http_post(
-        "/blog/{blog_id}/user/{user_id}",
+        "/blog/{blog_id}",
         response={201: CommentSchema, 400: ErrorResponseSchema, 404: str, 500: str},
         auth=JWTAuth()
     )
-    def create_comment(self, blog_id: int, user_id: int, data: CreateCommentSchema):
+    def create_comment(self, request, blog_id: int, data: CreateCommentSchema):
         """Create a new comment on a blog"""
         try:
             blog = get_object_or_404(Blog, id=blog_id)
-            user = get_object_or_404(User, id=user_id)
 
-            comment = Comment.objects.create(blog=blog, user=user, comment=data.comment)
+            comment = Comment.objects.create(blog=blog, user=request.user, comment=data.comment)
 
             return 201, CommentSchema.model_validate(comment)
 
@@ -102,14 +101,13 @@ class CommentsController:
             return 500, "Internal server error"
 
     @http_get(
-        "/user/{user_id}", response={200: List[CommentSchema], 404: str, 500: str}
+        "/user", response={200: List[CommentSchema], 404: str, 500: str}, auth=JWTAuth()
     )
-    def get_user_comments(self, user_id: int):
-        """Get all comments by a specific user"""
+    def get_user_comments(self, request):
+        """Get all comments by the authenticated user"""
         try:
-            user = get_object_or_404(User, id=user_id)
             comments = (
-                Comment.objects.filter(user=user)
+                Comment.objects.filter(user=request.user)
                 .select_related("blog")
                 .order_by("-date")
             )

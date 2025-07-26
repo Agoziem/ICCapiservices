@@ -1,5 +1,6 @@
 from typing import Optional
-from ninja_extra import api_controller, route
+from ninja_extra import api_controller, route, paginate
+from ninja_extra.pagination import LimitOffsetPagination
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
@@ -27,26 +28,37 @@ from ..schemas import (
 User = get_user_model()
 
 
+class PaymentPagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
+
+
 @api_controller("/payments", tags=["Payments"])
 class PaymentsController:
 
-    @route.get("/{organization_id}", response=list[OrderSchema])
+    @route.get("/{organization_id}", response=list[OrderSchema], auth=JWTAuth())
+    @paginate(PaymentPagination)
     def get_payments(self, organization_id: int):
         """Get all payments for an organization"""
         orders = (
             Orders.objects.filter(organization=organization_id)
             .select_related("organization", "customer")
             .prefetch_related("services", "products", "videos")
+            .order_by("-created_at")
         )
         return orders
 
-    @route.get("/user/{user_id}", response=list[OrderSchema])
-    def get_payments_by_user(self, user_id: int):
-        """Get all payments by a specific user"""
+    @route.get("/user", response=list[OrderSchema], auth=JWTAuth())
+    @paginate(PaymentPagination)
+    def get_payments_by_user(self, request):
+        """Get all payments by authenticated user"""
+        user = request.user
         orders = (
-            Orders.objects.filter(customer=user_id)
+            Orders.objects.filter(customer=user)
             .select_related("organization", "customer")
             .prefetch_related("services", "products", "videos")
+            .order_by("-created_at")
         )
         return orders
 

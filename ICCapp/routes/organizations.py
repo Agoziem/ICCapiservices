@@ -1,5 +1,6 @@
 from typing import Optional
-from ninja_extra import api_controller, route
+from ninja_extra import api_controller, route, paginate
+from ninja_extra.pagination import LimitOffsetPagination
 from ninja_extra.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from ninja.files import UploadedFile
@@ -15,17 +16,21 @@ from ..schemas import (
 )
 
 
+class OrganizationPagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
+
+
 @api_controller("/organizations", tags=["Organizations"])
 class OrganizationsController:
 
-    @route.get("/", response=OrganizationListResponseSchema)
+    @route.get("/", response=list[OrganizationSchema])
+    @paginate(OrganizationPagination)
     def list_organizations(self):
         """Get all organizations"""
-        try:
-            organizations = Organization.objects.all()
-            return {"organizations": list(organizations)}
-        except Exception:
-            return {"organizations": []}
+        organizations = Organization.objects.all().order_by('-created_at')
+        return organizations
 
     @route.get("/{organization_id}", response=OrganizationSchema)
     def get_organization(self, organization_id: int):
@@ -34,10 +39,12 @@ class OrganizationsController:
         return organization
 
     @route.post("/", response=OrganizationSchema, auth=JWTAuth())
-    def create_organization(self, payload: CreateOrganizationSchema):
+    def create_organization(self, payload: CreateOrganizationSchema, logo: Optional[UploadedFile] = None):
         """Create a new organization"""
         try:
             organization_data = payload.model_dump()
+            if logo:
+                organization_data["logo"] = logo
             organization = Organization.objects.create(**organization_data)
             return organization
         except Exception as e:
@@ -47,7 +54,7 @@ class OrganizationsController:
         "/{organization_id}", response=OrganizationSchema, auth=JWTAuth()
     )
     def update_organization(
-        self, organization_id: int, payload: UpdateOrganizationSchema
+        self, organization_id: int, payload: UpdateOrganizationSchema, logo: Optional[UploadedFile] = None
     ):
         """Update an organization"""
         organization = get_object_or_404(Organization, id=organization_id)
@@ -55,6 +62,9 @@ class OrganizationsController:
         organization_data = payload.model_dump(exclude_unset=True)
         for attr, value in organization_data.items():
             setattr(organization, attr, value)
+
+        if logo:
+            organization.logo = logo  # type: ignore
         organization.save()
 
         return organization
@@ -70,17 +80,3 @@ class OrganizationsController:
         organization.delete()
         return {"message": "Organization deleted successfully"}
 
-    @route.post(
-        "/{organization_id}/upload-logo",
-        response=OrganizationSchema,
-        auth=JWTAuth(),
-    )
-    def upload_organization_logo(
-        self, organization_id: int, logo: Optional[UploadedFile] = None
-    ):
-        """Upload logo for organization"""
-        organization = get_object_or_404(Organization, id=organization_id)
-        organization.logo = logo  # type: ignore
-        # Note: Ensure that the logo field in the Organization model is set to accept InMemoryUploadedFile
-        organization.save()
-        return organization
