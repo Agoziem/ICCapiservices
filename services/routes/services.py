@@ -51,7 +51,7 @@ class ServicesController:
         # Convert to schema using the custom method
         services = []
         for service in queryset:
-            services.append(ServiceSchema.from_django_model(service))
+            services.append(ServiceSchema.model_validate(service))
 
         return services
 
@@ -79,7 +79,7 @@ class ServicesController:
         # Convert to schema using the custom method
         services = []
         for service in queryset:
-            services.append(ServiceSchema.from_django_model(service))
+            services.append(ServiceSchema.model_validate(service))
 
         return services
 
@@ -108,7 +108,7 @@ class ServicesController:
         # Convert to schema using the custom method
         services = []
         for service in queryset:
-            services.append(ServiceSchema.from_django_model(service))
+            services.append(ServiceSchema.model_validate(service))
 
         return services
 
@@ -119,7 +119,7 @@ class ServicesController:
             Service.objects.select_related("organization", "category", "subcategory"),
             id=service_id,
         )
-        return ServiceSchema.from_django_model(service)
+        return ServiceSchema.model_validate(service)
 
     @route.get("/token/{service_token}", response=ServiceSchema)
     def get_service_by_token(self, service_token: str):
@@ -128,7 +128,7 @@ class ServicesController:
             Service.objects.select_related("organization", "category", "subcategory"),
             service_token=service_token,
         )
-        return ServiceSchema.from_django_model(service)
+        return ServiceSchema.model_validate(service)
 
     @route.post(
         "/{organization_id}", response=ServiceSchema, auth=JWTAuth()
@@ -171,7 +171,7 @@ class ServicesController:
                 service.preview = preview  # type: ignore
                 service.save()
 
-            return ServiceSchema.from_django_model(service)
+            return ServiceSchema.model_validate(service)
 
         except Exception as e:
             return {"error": str(e)}
@@ -230,7 +230,7 @@ class ServicesController:
                 service.preview = preview  # type: ignore
 
             service.save()
-            return ServiceSchema.from_django_model(service)
+            return ServiceSchema.model_validate(service)
 
         except Exception as e:
             return {"error": str(e)}

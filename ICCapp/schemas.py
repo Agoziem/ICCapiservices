@@ -13,20 +13,9 @@ from .models import (
 
 # Base Model Schemas
 class OrganizationSchema(ModelSchema):
-    logo: Optional[str] = None
-    logo_name: Optional[str] = None
-
     class Meta:
         model = Organization
         fields = "__all__"
-
-    @staticmethod
-    def resolve_logo(obj):
-        return obj.logo.url if obj.logo else None
-
-    @staticmethod
-    def resolve_logo_name(obj):
-        return obj.logo.name if obj.logo else None
 
 class OrganizationMiniSchema(ModelSchema):
     id: int
@@ -39,20 +28,9 @@ class OrganizationMiniSchema(ModelSchema):
 
 
 class StaffSchema(ModelSchema):
-    img_url: Optional[str] = None
-    img_name: Optional[str] = None
-
     class Meta:
         model = Staff
         fields = "__all__"
-
-    @staticmethod
-    def resolve_img_url(obj):
-        return obj.img.url if obj.img else None
-
-    @staticmethod
-    def resolve_img_name(obj):
-        return obj.img.name if obj.img else None
 
 
 
@@ -67,20 +45,10 @@ class StaffMiniSchema(ModelSchema):
         fields = ["id", "first_name", "last_name", "role", "img"]
 
 class TestimonialSchema(ModelSchema):
-    img_url: Optional[str] = None
-    img_name: Optional[str] = None
 
     class Meta:
         model = Testimonial
         fields = "__all__"
-
-    @staticmethod
-    def resolve_img_url(obj):
-        return obj.img.url if obj.img else None
-
-    @staticmethod
-    def resolve_img_name(obj):
-        return obj.img.name if obj.img else None
 
 
 class SubscriptionSchema(ModelSchema):
@@ -96,8 +64,6 @@ class DepartmentServiceSchema(ModelSchema):
 
 
 class DepartmentSchema(ModelSchema):
-    img_url: Optional[str] = None
-    img_name: Optional[str] = None
     staff_in_charge: Optional[StaffMiniSchema] = None
     organization: Optional[OrganizationMiniSchema] = None
     services: list[DepartmentServiceSchema] = []
@@ -105,14 +71,6 @@ class DepartmentSchema(ModelSchema):
     class Meta:
         model = Department
         fields = "__all__"
-
-    @staticmethod
-    def resolve_img_url(obj):
-        return obj.img.url if obj.img else None
-
-    @staticmethod
-    def resolve_img_name(obj):
-        return obj.img.name if obj.img else None
 
 
 # Input Schemas for Creating/Updating

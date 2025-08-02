@@ -32,20 +32,8 @@ class EmailPagination(LimitOffsetPagination):
     limit_query_param = "page_size"
     max_limit = 1000
 
-@api_controller("/emails", tags=["Emails"])
+@api_controller("/contact-emails", tags=["Contact Emails"])
 class EmailsController:
-
-    @route.get(
-        "/subscriptions/{organization_id}", response=list[EmailSchema]
-    )
-    def get_subscriptions(self, organization_id: int):
-        """Get all email subscriptions for an organization"""
-        try:
-            subscriptions = Subscription.objects.filter(organization=organization_id)
-            return subscriptions
-        except Exception as e:
-            return {"error": str(e)}
-
     @route.get("/{organization_id}", response={200: PaginatedEmailResponseSchema, 404: str, 500: str}, auth=JWTAuth())
     @paginate(EmailPagination)
     def get_emails(

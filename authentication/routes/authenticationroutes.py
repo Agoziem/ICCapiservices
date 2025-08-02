@@ -26,7 +26,6 @@ from ..schemas import (
     UserSchema, RegisterUserResponseSchema, VerifyUserResponseSchema,
     ErrorResponseSchema, SuccessResponseSchema, UserMiniSchema, PaginatedUserResponseSchema
 )
-from utils import normalize_img_field
 
 User = cast(type[CustomUser], get_user_model())
 

@@ -24,33 +24,12 @@ class SubCategorySchema(ModelSchema):
 
 class ProductSchema(ModelSchema):
     organization: Optional[OrganizationMiniSchema] = None
-    img_url: Optional[str] = None
-    img_name: Optional[str] = None
-    product_url: Optional[str] = None
-    product_name: Optional[str] = None
     category: Optional[CategorySchema] = None
     subcategory: Optional[SubCategorySchema] = None
-    buyers_count: Optional[int] = None
 
     class Meta:
         model = Product
         fields = "__all__"
-
-    @staticmethod
-    def resolve_img_url(obj):
-        return obj.preview.url if obj.preview else None
-
-    @staticmethod
-    def resolve_img_name(obj):
-        return obj.preview.name if obj.preview else None
-
-    @staticmethod
-    def resolve_product_url(obj):
-        return obj.product.url if obj.product else None
-
-    @staticmethod
-    def resolve_product_name(obj):
-        return obj.product.name if obj.product else None
 
 
 class ProductMiniSchema(Schema):
@@ -58,6 +37,11 @@ class ProductMiniSchema(Schema):
     name: str
     price: Decimal
 
+class ProductRatingSchema(Schema):
+    product_id: int
+    user_id: int
+    rating: int
+    comment: Optional[str] = None
 
 
 # Input Schemas for Creating/Updating
@@ -101,12 +85,6 @@ class UpdateProductSchema(Schema):
     digital: Optional[bool] = None
     free: Optional[bool] = None
     rating: Optional[int] = None
-
-
-# File Upload Schemas
-class ProductFileUploadSchema(Schema):
-    preview: Optional[UploadedFile] = None
-    product: Optional[UploadedFile] = None
 
 
 # Response Schemas
