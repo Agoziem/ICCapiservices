@@ -8,6 +8,7 @@ from authentication.models import CustomUser
 from typing import cast
 
 from ..schemas import (
+    TokenResponseSchema,
     VerifyTokenSchema,
     ResetPasswordSchema,
     GetVerificationTokenSchema,
@@ -21,24 +22,6 @@ User = cast(type[CustomUser], get_user_model())
 
 @api_controller("/auth/password-reset", tags=["Password Reset"])
 class PasswordResetController:
-
-    @http_post(
-        "/verify-token",
-        response={200: UserSchema, 400: ErrorResponseSchema, 404: ErrorResponseSchema},
-    )
-    def verify_token(self, data: VerifyTokenSchema):
-        """Verify user token for password reset"""
-        try:
-            user = User.objects.get(verificationToken=data.token)
-            if not user.expiryTime or user.expiryTime < timezone.now():
-                return 400, {"error": "Token has expired, please try again"}
-            return 200, UserSchema.model_validate(user)
-
-        except User.DoesNotExist:
-            return 404, {"error": "user with the Reset Password Token not found"}
-        except Exception as e:
-            print(e)
-            return 500, {"error": "Internal server error"}
 
     @http_post(
         "/reset",
@@ -57,7 +40,7 @@ class PasswordResetController:
             if not user.expiryTime or user.expiryTime < timezone.now():
                 return 400, {"error": "Token has expired, please try again"}
 
-            user.set_password(data.password)
+            user.set_password(data.newpassword)
             user.verificationToken = None
             user.expiryTime = None
             user.save()
@@ -71,8 +54,8 @@ class PasswordResetController:
             return 500, "Internal server error"
 
     @http_post(
-        "/get-token",
-        response={200: SuccessResponseSchema, 404: ErrorResponseSchema, 500: str},
+        "/request",
+        response={200: TokenResponseSchema, 404: ErrorResponseSchema, 500: str},
     )
     def get_verification_token_by_email(self, data: GetVerificationTokenSchema):
         """Get verification token by email for password reset"""
@@ -90,7 +73,7 @@ class PasswordResetController:
             user.expiryTime = timezone.now() + timezone.timedelta(hours=2)
             user.save()
 
-            return 200, {"message": "Verification token sent successfully"}
+            return 200, {"token": token}
 
         except User.DoesNotExist:
             return 404, {"error": "User not found"}

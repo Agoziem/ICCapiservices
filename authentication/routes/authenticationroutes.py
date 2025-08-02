@@ -22,7 +22,7 @@ from authlib.integrations.django_client import OAuth as DjangoOAuth
 from django.conf import settings
 
 from ..schemas import (
-    LogoutSchema, RegisterUserSchema, RegisterUserOAuthSchema, VerifyUserSchema, UpdateUserSchema,
+    LogoutSchema, RegisterUserSchema, RegisterUserOAuthSchema, TokenResponseSchema, VerifyUserSchema, UpdateUserSchema,
     UserSchema, RegisterUserResponseSchema, VerifyUserResponseSchema,
     ErrorResponseSchema, SuccessResponseSchema, UserMiniSchema, PaginatedUserResponseSchema
 )
@@ -44,7 +44,7 @@ oauth.register(name='github')
 @api_controller('/auth', tags=['Authentication'])
 class AuthenticationController:
 
-    @http_post('/register', response={201: UserSchema, 400: ErrorResponseSchema, 500: ErrorResponseSchema})
+    @http_post('/register', response={201: TokenResponseSchema, 400: ErrorResponseSchema, 500: ErrorResponseSchema})
     def register_user(self, data: RegisterUserSchema):
         """Register a new user without OAuth"""
         try:
@@ -82,8 +82,7 @@ class AuthenticationController:
                 except Organization.DoesNotExist:
                     pass
 
-            user_data = UserSchema.model_validate(new_user)
-            return 201, user_data
+            return 201, {"token": verification_token}
 
         except Exception as e:
             print(f"Error during user registration: {e}")
@@ -196,6 +195,18 @@ class AuthenticationController:
     def get_user_profile(self, request):
         """Get current user profile"""
         user = request.user
+        return UserSchema.model_validate(user)
+    
+    @http_get('/get_user_by_id/{user_id}', response=UserSchema, auth=JWTAuth())
+    def get_user_by_id(self, user_id: int):
+        """Get user by ID"""
+        user = get_object_or_404(User, id=user_id)
+        return UserSchema.model_validate(user)
+
+    @http_get('/get_user_by_email/{email}', response=UserSchema, auth=JWTAuth())
+    def get_user_by_email(self, email: str):
+        """Get user by email"""
+        user = get_object_or_404(User, email=email)
         return UserSchema.model_validate(user)
 
     @http_get('/users', response=PaginatedUserResponseSchema, auth=JWTAuth())

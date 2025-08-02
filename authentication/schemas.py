@@ -92,7 +92,7 @@ class VerifyTokenSchema(Schema):
 
 class ResetPasswordSchema(Schema):
     token: str
-    password: str
+    newpassword: str
 
 
 class GetVerificationTokenSchema(Schema):

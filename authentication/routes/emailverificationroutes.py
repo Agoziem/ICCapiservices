@@ -2,7 +2,6 @@ from typing import cast
 from ninja_extra import api_controller, http_post
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from django.http import Http404
 from django.shortcuts import get_object_or_404
 import uuid
 
@@ -11,6 +10,7 @@ from authentication.routes.utils import get_tokens_for_user
 
 
 from ..schemas import (
+    TokenResponseSchema,
     VerifyEmailSchema,
     GetUserByEmailSchema,
     UserSchema,
@@ -58,11 +58,11 @@ class EmailVerificationController:
             return 500, "Internal server error"
 
     @http_post(
-        "/get-user",
-        response={200: SuccessResponseSchema, 404: ErrorResponseSchema, 500: str},
+        "/request",
+        response={200: TokenResponseSchema, 404: ErrorResponseSchema, 500: str},
     )
-    def get_user_by_email(self, data: GetUserByEmailSchema):
-        """Get user by email for email verification"""
+    def request_email_verification_token(self, data: GetUserByEmailSchema):
+        """Request a new email verification token if the user exists and email is not verified."""
         try:
             user = User.objects.get(email=data.email)
 
@@ -79,7 +79,7 @@ class EmailVerificationController:
                 user.expiryTime = timezone.now() + timezone.timedelta(hours=2)
                 user.save()
 
-                return 200, {"message": "Verification email sent successfully"}
+                return 200, {"token": token}
             else:
                 return 200, {"message": "Email is already verified"}
 
