@@ -80,9 +80,6 @@ class UpdateUserSchema(Schema):
     phone: Optional[str] = None
     Sex: Optional[str] = None
     address: Optional[str] = None
-    avatar: Optional[str] = (
-        None  # For file uploads, you might need to handle this differently
-    )
 
 
 # Token and Verification Schemas

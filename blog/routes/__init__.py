@@ -1,11 +1,11 @@
 from .blogsroutes import BlogsController
-from .categoriesroutes import CategoriesController
+from .categoriesroutes import BlogCategoriesController
 from .commentsroutes import CommentsController
 from .likesroutes import LikesController
 
 __all__ = [
     "BlogsController",
-    "CategoriesController",
+    "BlogCategoriesController",
     "CommentsController",
     "LikesController",
 ]

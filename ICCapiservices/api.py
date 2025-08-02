@@ -1,7 +1,7 @@
 from ninja_extra import NinjaExtraAPI
 
 from blog.routes.blogsroutes import BlogsController
-from blog.routes.categoriesroutes import CategoriesController
+from blog.routes.categoriesroutes import BlogCategoriesController
 from blog.routes.commentsroutes import CommentsController
 from blog.routes.likesroutes import LikesController
 from authentication.routes import (
@@ -74,7 +74,7 @@ ninja_api.register_controllers(
     EmailVerificationController,
     # Blog
     BlogsController,
-    CategoriesController,
+    BlogCategoriesController,
     CommentsController,
     LikesController,
     # CBT Practice

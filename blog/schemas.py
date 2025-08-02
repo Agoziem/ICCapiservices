@@ -38,8 +38,6 @@ class CommentSchema(ModelSchema):
 
 
 class BlogSchema(ModelSchema):
-    img_url: Optional[str] = None
-    img_name: Optional[str] = None
     author: Optional[UserMiniSchemaTemp] = None
     category: Optional[CategorySchema] = None
     tags: List[TagSchema]
@@ -64,14 +62,6 @@ class BlogSchema(ModelSchema):
             "updated_at",
             "likes",
         ]
-
-    @staticmethod
-    def resolve_img_url(obj):
-        return get_full_image_url(obj.img) if obj.img else None
-
-    @staticmethod
-    def resolve_img_name(obj):
-        return get_image_name(obj.img) if obj.img else None
 
 
 

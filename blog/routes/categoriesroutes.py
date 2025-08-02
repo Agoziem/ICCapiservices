@@ -15,8 +15,8 @@ from ..schemas import (
 )
 
 
-@api_controller("/categories", tags=["Blog Categories"])
-class CategoriesController:
+@api_controller("/blog-categories", tags=["Blog Categories"])
+class BlogCategoriesController:
 
     @http_get("/", response={200: List[CategorySchema], 500: str})
     def get_categories(self):

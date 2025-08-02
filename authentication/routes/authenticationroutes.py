@@ -223,9 +223,9 @@ class AuthenticationController:
 
         # Update user fields
         for attr, value in data.model_dump(exclude_unset=True).items():
-            if attr == 'avatar' and avatar:
-                value = normalize_img_field(avatar, "avatar")
             setattr(user, attr, value)
+        if avatar:
+            user.avatar = avatar
         user.save()
         return UserSchema.model_validate(user)
 
