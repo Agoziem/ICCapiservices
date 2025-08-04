@@ -19,7 +19,7 @@ from ..schemas import (
 )
 
 
-@api_controller("/categories", tags=["Product Categories"])
+@api_controller("/product-categories", tags=["Product Categories"])
 class CategoriesController:
 
     @route.get("/", response=list[CategorySchema])
@@ -66,7 +66,7 @@ class CategoriesController:
         return {"message": "Category deleted successfully"}
 
 
-@api_controller("/subcategories", tags=["Product Subcategories"])
+@api_controller("/product-subcategories", tags=["Product Subcategories"])
 class SubCategoriesController:
 
     @route.get("/{category_id}", response=list[SubCategorySchema])

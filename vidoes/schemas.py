@@ -1,146 +1,68 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field
-from ninja import Schema, File
+from pydantic import Field
+from ninja import Schema, ModelSchema
 from ninja.files import UploadedFile
 from decimal import Decimal
 from datetime import datetime
 
+from ICCapp.schemas import OrganizationMiniSchema
+from services.models import SubCategory
+from vidoes.models import Category, Video
+
 
 # Category Schemas
-class CategorySchema(BaseModel):
-    id: int
-    category: str
-    description: str
+class CategorySchema(ModelSchema):
+    class Meta:
+        model = Category
+        fields = "__all__"
 
-    class Config:
-        from_attributes = True
-
-
-class CreateCategorySchema(BaseModel):
+class CreateCategorySchema(Schema):
     category: str
     description: str
 
 
-class UpdateCategorySchema(BaseModel):
+class UpdateCategorySchema(Schema):
     category: Optional[str] = None
     description: Optional[str] = None
 
 
 # SubCategory Schemas
-class SubCategorySchema(BaseModel):
-    id: int
-    subcategory: str
-    category: CategorySchema
-
-    class Config:
-        from_attributes = True
+class SubCategorySchema(ModelSchema):
+    class Meta:
+        model = SubCategory
+        fields = "__all__"
 
 
-class CreateSubCategorySchema(BaseModel):
+class CreateSubCategorySchema(Schema):
     subcategory: str
     category: int  # Category ID
 
 
-class UpdateSubCategorySchema(BaseModel):
+class UpdateSubCategorySchema(Schema):
     subcategory: Optional[str] = None
     category: Optional[int] = None  # Category ID
 
 
-# Organization Schema (simplified for video relationships)
-class OrganizationSchema(BaseModel):
-    id: int
-    name: str
-
-    class Config:
-        from_attributes = True
-
-
-# User Schema (simplified for video relationships)
-class UserSchema(BaseModel):
-    id: int
-    username: str
-    email: str
-    avatar_url: Optional[str] = None
-    date_joined: datetime
-
-    class Config:
-        from_attributes = True
-
 
 # Video Schemas
-class VideoSchema(BaseModel):
-    id: int
-    title: str
-    description: str
-    price: Decimal
-    video_token: Optional[str] = None
-    number_of_times_bought: Optional[int] = 0
-    created_at: datetime
-    updated_at: datetime
-    free: bool = False
-
-    # Computed fields
-    video_url: Optional[str] = None
-    video_name: Optional[str] = None
-    img_url: Optional[str] = None
-    img_name: Optional[str] = None
-
-    # Relationships
-    organization: Optional[OrganizationSchema] = None
+class VideoSchema(ModelSchema):
+    organization: Optional[OrganizationMiniSchema] = None
     category: Optional[CategorySchema] = None
     subcategory: Optional[SubCategorySchema] = None
 
-    class Config:
-        from_attributes = True
+    class Meta:
+        model = Video
+        fields = "__all__"
+    
 
-    @classmethod
-    def from_django_model(cls, video):
-        from utils import get_full_image_url, get_image_name
-
-        return cls(
-            id=video.id,
-            title=video.title,
-            description=video.description,
-            price=video.price,
-            video_token=video.video_token,
-            number_of_times_bought=video.number_of_times_bought,
-            created_at=video.created_at,
-            updated_at=video.updated_at,
-            free=video.free,
-            video_url=get_full_image_url(video.video),
-            video_name=get_image_name(video.video),
-            img_url=get_full_image_url(video.thumbnail),
-            img_name=get_image_name(video.thumbnail),
-            organization=(
-                OrganizationSchema(
-                    id=video.organization.id, name=video.organization.name
-                )
-                if video.organization
-                else None
-            ),
-            category=(
-                CategorySchema.model_validate(video.category)
-                if video.category
-                else None
-            ),
-            subcategory=(
-                SubCategorySchema.model_validate(video.subcategory)
-                if video.subcategory
-                else None
-            ),
-        )
-
-class VideoMiniSchema(BaseModel):
+class VideoMiniSchema(Schema):
     id: int
     title: str
     price: Decimal
     free: bool = False
 
-    class Config:
-        from_attributes = True
 
-
-class CreateVideoSchema(BaseModel):
+class CreateVideoSchema(Schema):
     title: str
     description: str
     price: Decimal = Field(default=Decimal("0.00"))
@@ -150,7 +72,7 @@ class CreateVideoSchema(BaseModel):
     organization: int  # Organization ID
 
 
-class UpdateVideoSchema(BaseModel):
+class UpdateVideoSchema(Schema):
     title: Optional[str] = None
     description: Optional[str] = None
     price: Optional[Decimal] = None
@@ -160,34 +82,25 @@ class UpdateVideoSchema(BaseModel):
     organization: Optional[int] = None  # Organization ID
 
 
-# File Upload Schema
-class VideoFileUploadSchema(Schema):
-    thumbnail: Optional[UploadedFile] = None
-    video: Optional[UploadedFile] = None
-
-
 # Response Schemas
-
-
-class CategoryListResponseSchema(BaseModel):
+class CategoryListResponseSchema(Schema):
     results: List[CategorySchema]
 
 
-class SubCategoryListResponseSchema(BaseModel):
+class SubCategoryListResponseSchema(Schema):
     results: List[SubCategorySchema]
 
 
-
-class SuccessResponseSchema(BaseModel):
+class SuccessResponseSchema(Schema):
     message: str
 
 
-class ErrorResponseSchema(BaseModel):
+class ErrorResponseSchema(Schema):
     error: str
 
 
 # Video User Details Schemas
-class VideoUserDetailsSchema(BaseModel):
+class VideoUserDetailsSchema(Schema):
     id: int
     username: str
     email: str
@@ -195,16 +108,13 @@ class VideoUserDetailsSchema(BaseModel):
     user_count: int = 1
     date_joined: datetime
 
-    class Config:
-        from_attributes = True
-
 
 # Paginated response schemas
-class PaginatedVideoResponseSchema(BaseModel):
+class PaginatedVideoResponseSchema(Schema):
     count: int
     items: List[VideoSchema]
 
 
-class PaginatedVideoUserResponseSchema(BaseModel):
+class PaginatedVideoUserResponseSchema(Schema):
     count: int
     items: List[VideoUserDetailsSchema]

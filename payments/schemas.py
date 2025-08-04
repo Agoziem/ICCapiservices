@@ -55,18 +55,18 @@ class OrderListResponseSchema(Schema):
     orders: list[OrderSchema]
 
 
-class PaymentStatsSchema(Schema):
-    totalorders: int
-    totalcustomers: int
-    customers: list[dict]
-
-
 class CustomerStatsSchema(Schema):
     customer__id: int
     customer__username: str
     customer__count: int
     amount__sum: Optional[Decimal] = None
     amount__avg: Optional[Decimal] = None
+
+
+class PaymentStatsSchema(Schema):
+    totalorders: int
+    totalcustomers: int
+    customers: list[CustomerStatsSchema]
 
 
 class SuccessResponseSchema(Schema):

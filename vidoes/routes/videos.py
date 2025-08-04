@@ -14,7 +14,6 @@ from ..schemas import (
     VideoSchema,
     CreateVideoSchema,
     UpdateVideoSchema,
-    VideoFileUploadSchema,
     SuccessResponseSchema,
     ErrorResponseSchema,
     VideoUserDetailsSchema,
@@ -49,12 +48,7 @@ class VideosController:
             except Category.DoesNotExist:
                 pass
 
-        # Convert to schema using the custom method
-        videos = []
-        for video in queryset:
-            videos.append(VideoSchema.from_django_model(video))
-
-        return videos
+        return queryset
 
     @route.get("/trending/{organization_id}", response=PaginatedVideoResponseSchema)
     @paginate(VideoPagination)
@@ -75,12 +69,7 @@ class VideosController:
             except Category.DoesNotExist:
                 pass
 
-        # Convert to schema using the custom method
-        videos = []
-        for video in queryset:
-            videos.append(VideoSchema.from_django_model(video))
-
-        return videos
+        return queryset
 
     @route.get("/user/{organization_id}", response=PaginatedVideoResponseSchema)
     @paginate(VideoPagination)
@@ -103,13 +92,8 @@ class VideosController:
                 queryset = queryset.filter(category=video_category)
             except Category.DoesNotExist:
                 pass
+        return queryset
 
-        # Convert to schema using the custom method
-        videos = []
-        for video in queryset:
-            videos.append(VideoSchema.from_django_model(video))
-
-        return videos
 
     @route.get("/free/{organization_id}", response=PaginatedVideoResponseSchema)
     @paginate(VideoPagination)
@@ -128,12 +112,7 @@ class VideosController:
             except Category.DoesNotExist:
                 pass
 
-        # Convert to schema using the custom method
-        videos = []
-        for video in queryset:
-            videos.append(VideoSchema.from_django_model(video))
-
-        return videos
+        return queryset
 
     @route.get("/paid/{organization_id}", response=PaginatedVideoResponseSchema)
     @paginate(VideoPagination)
@@ -152,12 +131,7 @@ class VideosController:
             except Category.DoesNotExist:
                 pass
 
-        # Convert to schema using the custom method
-        videos = []
-        for video in queryset:
-            videos.append(VideoSchema.from_django_model(video))
-
-        return videos
+        return queryset
 
     @route.get("/video/{video_id}", response=VideoSchema)
     def get_video(self, video_id: int):
@@ -167,7 +141,7 @@ class VideosController:
                 "organization", "category", "subcategory"),
             id=video_id,
         )
-        return VideoSchema.from_django_model(video)
+        return video
 
     @route.get("/token/{video_token}", response=VideoSchema)
     def get_video_by_token(self, video_token: str):
@@ -177,7 +151,7 @@ class VideosController:
                 "organization", "category", "subcategory"),
             video_token=video_token,
         )
-        return VideoSchema.from_django_model(video)
+        return video
 
     @route.post(
         "/{organization_id}", response=VideoSchema, auth=JWTAuth()
@@ -226,7 +200,7 @@ class VideosController:
                     new_video.video = video  # type: ignore
                 new_video.save()
 
-            return VideoSchema.from_django_model(new_video)
+            return new_video
 
         except Exception as e:
             return {"error": str(e)}
@@ -287,7 +261,7 @@ class VideosController:
                     current_video.video = video  # type: ignore
 
             current_video.save()
-            return VideoSchema.from_django_model(current_video)
+            return current_video
 
         except Exception as e:
             return {"error": str(e)}

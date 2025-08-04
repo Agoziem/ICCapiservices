@@ -37,17 +37,7 @@ class PaymentPagination(LimitOffsetPagination):
 
 @api_controller("/payments", tags=["Payments"])
 class PaymentsController:
-    @route.get("/{organization_id}", response=PaginatedOrderResponseSchema, auth=JWTAuth())
-    @paginate(PaymentPagination)
-    def get_payments(self, organization_id: int):
-        """Get all payments for an organization"""
-        orders = (
-            Orders.objects.filter(organization=organization_id)
-            .select_related("organization", "customer")
-            .prefetch_related("services", "products", "videos")
-            .order_by("-created_at")
-        )
-        return orders
+    
     @route.get("/user", response=PaginatedOrderResponseSchema, auth=JWTAuth())
     @paginate(PaymentPagination)
     def get_payments_by_user(self, request):
@@ -60,59 +50,7 @@ class PaymentsController:
             .order_by("-created_at")
         )
         return orders
-
-    @route.get("/order/{payment_id}", response=OrderSchema)
-    def get_payment(self, payment_id: int):
-        """Get a specific payment by ID"""
-        order = get_object_or_404(
-            Orders.objects.select_related("organization", "customer").prefetch_related(
-                "services", "products", "videos"
-            ),
-            id=payment_id,
-        )
-        return order
-
-    @route.post(
-        "/{organization_id}", response=OrderSchema, auth=JWTAuth()
-    )
-    def add_payment(self, organization_id: int, payload: CreateOrderSchema):
-        """Create a new payment order"""
-        try:
-            order_data = payload.model_dump()
-            customer_id = order_data.pop("customerid")
-            amount = order_data.pop("total")
-            services_ids = order_data.pop("services", [])
-            products_ids = order_data.pop("products", [])
-            videos_ids = order_data.pop("videos", [])
-
-            # Get related objects
-            organization = get_object_or_404(Organization, id=organization_id)
-            customer = get_object_or_404(User, id=customer_id)
-
-            # Create order
-            order = Orders.objects.create(
-                organization=organization, customer=customer, amount=amount
-            )
-
-            # Add related items
-            if services_ids:
-                services = Service.objects.filter(id__in=services_ids)
-                order.services.add(*services)
-
-            if products_ids:
-                products = Product.objects.filter(id__in=products_ids)
-                order.products.add(*products)
-
-            if videos_ids:
-                videos = Video.objects.filter(id__in=videos_ids)
-                order.videos.add(*videos)
-
-            order.save()
-            return order
-
-        except Exception as e:
-            return {"error": str(e)}
-
+    
     @route.post("/verify", response=PaymentVerificationResponseSchema)
     def verify_payment(self, payload: VerifyPaymentSchema):
         """Verify a payment using Paystack"""
@@ -178,6 +116,71 @@ class PaymentsController:
 
         except Exception as e:
             return {"status": "error", "message": str(e), "order": None}
+    
+    @route.get("/{organization_id}", response=PaginatedOrderResponseSchema, auth=JWTAuth())
+    @paginate(PaymentPagination)
+    def get_payments(self, organization_id: int):
+        """Get all payments for an organization"""
+        orders = (
+            Orders.objects.filter(organization=organization_id)
+            .select_related("organization", "customer")
+            .prefetch_related("services", "products", "videos")
+            .order_by("-created_at")
+        )
+        return orders
+    
+
+    @route.get("/order/{payment_id}", response=OrderSchema)
+    def get_payment(self, payment_id: int):
+        """Get a specific payment by ID"""
+        order = get_object_or_404(
+            Orders.objects.select_related("organization", "customer").prefetch_related(
+                "services", "products", "videos"
+            ),
+            id=payment_id,
+        )
+        return order
+
+    @route.post(
+        "/{organization_id}", response=OrderSchema, auth=JWTAuth()
+    )
+    def add_payment(self, organization_id: int, payload: CreateOrderSchema):
+        """Create a new payment order"""
+        try:
+            order_data = payload.model_dump()
+            customer_id = order_data.pop("customerid")
+            amount = order_data.pop("total")
+            services_ids = order_data.pop("services", [])
+            products_ids = order_data.pop("products", [])
+            videos_ids = order_data.pop("videos", [])
+
+            # Get related objects
+            organization = get_object_or_404(Organization, id=organization_id)
+            customer = get_object_or_404(User, id=customer_id)
+
+            # Create order
+            order = Orders.objects.create(
+                organization=organization, customer=customer, amount=amount
+            )
+
+            # Add related items
+            if services_ids:
+                services = Service.objects.filter(id__in=services_ids)
+                order.services.add(*services)
+
+            if products_ids:
+                products = Product.objects.filter(id__in=products_ids)
+                order.products.add(*products)
+
+            if videos_ids:
+                videos = Video.objects.filter(id__in=videos_ids)
+                order.videos.add(*videos)
+
+            order.save()
+            return order
+
+        except Exception as e:
+            return {"error": str(e)}
 
     @route.put("/{payment_id}", response=OrderSchema, auth=JWTAuth())
     def update_payment(self, payment_id: int, payload: UpdateOrderSchema):
