@@ -3,6 +3,11 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.utils.dateformat import DateFormat
 from django.conf import settings
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from whatsappAPI.schemas import ContactSchema, WAMessageSchema
+
 
 DEBUG_MODE = settings.DEBUG_ENV
 
@@ -81,38 +86,10 @@ class WAMessage(models.Model):
 
             if last_message:
                 # Manually serialize the last message
-                serialized_message = {
-                    "id": last_message.pk,
-                    "message_id": last_message.message_id,
-                    "contact": last_message.contact.id,
-                    "message_type": last_message.message_type,
-                    "body": last_message.body,
-                    "media_id": last_message.media_id,
-                    "mime_type": last_message.mime_type,
-                    "filename": last_message.filename,
-                    "animated": last_message.animated,
-                    "caption": last_message.caption,
-                    "link": last_message.link,
-                    "message_mode": last_message.message_mode,
-                    "seen": last_message.seen,
-                    "status": last_message.status,
-                    "timestamp": DateFormat(last_message.timestamp).format(
-                        "Y-m-d H:i:s"
-                    ),
-                }
+                serialized_message = WAMessageSchema.model_validate(last_message)
 
                 # Manually serialize the contact
-                serialized_contact = {
-                    "id": self.contact.id,
-                    "wa_id": self.contact.wa_id,
-                    "profile_name": self.contact.profile_name,
-                    "last_message": self.get_last_message(
-                        last_message
-                    ),  # Use the last message directly
-                    "unread_message_count": self.get_unread_message_count(self.contact),
-                }
-
-                print("am working now", serialized_contact)
+                serialized_contact = ContactSchema.from_django_model(self.contact)
 
                 # Send the message to the appropriate WebSocket room
                 room_name = "whatsappapi_messages"
@@ -122,8 +99,8 @@ class WAMessage(models.Model):
                     {
                         "type": "chat_message",
                         "operation": "create",
-                        "contact": serialized_contact,
-                        "message": serialized_message,
+                        "contact": serialized_contact.model_dump(),
+                        "message": serialized_message.model_dump(),
                     },
                 )
 

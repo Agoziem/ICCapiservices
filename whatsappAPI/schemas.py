@@ -1,8 +1,11 @@
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
-from ninja import Schema
+from pydantic import Field
+from ninja import Schema, ModelSchema
 from datetime import datetime
 from enum import Enum
+
+from whatsappAPI.admin import WAMessage
+from whatsappAPI.models import Contact, Status, WATemplateSchema, WebhookEvent
 
 
 # Enums for choices
@@ -35,82 +38,25 @@ class TemplateType(str, Enum):
     textwithCTA = "textwithCTA"
 
 
-# Contact Schemas
-class ContactSchema(BaseModel):
-    id: int
-    wa_id: str
-    profile_name: Optional[str] = None
-    last_message: Optional[Dict[str, Any]] = None
-    unread_message_count: int = 0
-
-    class Config:
-        from_attributes = True
-
-    @classmethod
-    def from_django_model(cls, contact):
-        from django.utils.dateformat import DateFormat
-
-        # Get last message
-        last_message = None
-        last_wa_message = contact.messages.order_by("-timestamp").first()
-        if last_wa_message:
-            last_message = {
-                "id": last_wa_message.id,
-                "message_id": last_wa_message.message_id,
-                "message_type": last_wa_message.message_type,
-                "body": last_wa_message.body,
-                "timestamp": DateFormat(last_wa_message.timestamp).format(
-                    "Y-m-d H:i:s"
-                ),
-            }
-
-        # Get unread message count
-        unread_count = contact.messages.filter(
-            message_mode="received", seen=False
-        ).count()
-
-        return cls(
-            id=contact.id,
-            wa_id=contact.wa_id,
-            profile_name=contact.profile_name,
-            last_message=last_message,
-            unread_message_count=unread_count,
-        )
-
-
-class CreateContactSchema(BaseModel):
-    wa_id: str
-    profile_name: Optional[str] = None
-
-
-class UpdateContactSchema(BaseModel):
-    wa_id: Optional[str] = None
-    profile_name: Optional[str] = None
 
 
 # WAMessage Schemas
-class WAMessageSchema(BaseModel):
+class WAMessageSchema(ModelSchema):
+    class Meta:
+        model = WAMessage
+        fields = ["id", "message_id", "contact", "message_type", "body", "media_id", 
+                 "mime_type", "filename", "animated", "caption", "link", "message_mode", 
+                 "seen", "status", "timestamp"]
+        
+class WAMessageMiniSchema(Schema):
     id: int
     message_id: str
-    contact: int  # Contact ID
-    message_type: MessageType = MessageType.text
-    body: str = ""
-    media_id: str = ""
-    mime_type: str = ""
-    filename: str = ""
-    animated: bool = False
-    caption: str = ""
-    link: str = "https://www.example.com"
-    message_mode: MessageMode = MessageMode.received
-    seen: bool = False
-    status: MessageStatus = MessageStatus.pending
-    timestamp: datetime
-
-    class Config:
-        from_attributes = True
+    message_type: MessageType
+    body: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.now)
 
 
-class CreateWAMessageSchema(BaseModel):
+class CreateWAMessageSchema(Schema):
     message_id: str
     contact: int  # Contact ID
     message_type: MessageType = MessageType.text
@@ -126,7 +72,7 @@ class CreateWAMessageSchema(BaseModel):
     status: MessageStatus = MessageStatus.pending
 
 
-class UpdateWAMessageSchema(BaseModel):
+class UpdateWAMessageSchema(Schema):
     message_type: Optional[MessageType] = None
     body: Optional[str] = None
     media_id: Optional[str] = None
@@ -139,61 +85,92 @@ class UpdateWAMessageSchema(BaseModel):
     seen: Optional[bool] = None
     status: Optional[MessageStatus] = None
 
-
 # Status Schemas
-class StatusSchema(BaseModel):
-    id: int
+class StatusSchema(ModelSchema):
+    class Meta:
+        model = Status
+        fields = ["id", "message", "status", "timestamp"]
+
+
+class CreateStatusSchema(Schema):
     message: int  # WAMessage ID
     status: str
-    timestamp: datetime
 
-    class Config:
-        from_attributes = True
+# Contact Schemas
+class ContactSchema(ModelSchema):
+    last_message: Optional[WAMessageMiniSchema] = None
+    unread_message_count: int = 0
+
+    class Meta:
+        model = Contact
+        fields = ["id", "wa_id", "profile_name"]
+
+    @classmethod
+    def from_django_model(cls, contact):
+        from django.utils.dateformat import DateFormat
+
+        # Get last message
+        last_message = None
+        last_wa_message = contact.messages.order_by("-timestamp").first()
+        if last_wa_message:
+            last_message = WAMessageMiniSchema.model_validate(last_wa_message)
+
+        # Get unread message count
+        unread_count = contact.messages.filter(
+            message_mode="received", seen=False
+        ).count()
+
+        # Create a dictionary with all the data
+        data = {
+            "id": contact.id,
+            "wa_id": contact.wa_id,
+            "profile_name": contact.profile_name,
+            "last_message": last_message,
+            "unread_message_count": unread_count,
+        }
+        
+        # Return the schema instance using model_validate
+        return cls.model_validate(data)
 
 
-class CreateStatusSchema(BaseModel):
-    message: int  # WAMessage ID
-    status: str
+class CreateContactSchema(Schema):
+    wa_id: str
+    profile_name: Optional[str] = None
+
+
+class UpdateContactSchema(Schema):
+    wa_id: Optional[str] = None
+    profile_name: Optional[str] = None
+
 
 
 # WebhookEvent Schemas
-class WebhookEventSchema(BaseModel):
-    id: int
-    event_id: str
-    payload: Dict[str, Any]
-    received_at: datetime
-
-    class Config:
-        from_attributes = True
+class WebhookEventSchema(ModelSchema):
+    class Meta:
+        model = WebhookEvent
+        fields = ["id", "event_id", "payload", "received_at"]
 
 
-class CreateWebhookEventSchema(BaseModel):
+class CreateWebhookEventSchema(Schema):
     event_id: str
     payload: Dict[str, Any]
 
 
 # WATemplateSchema Schemas
-class WATemplateSchemaSchema(BaseModel):
-    id: int
-    title: str = "No Title"
-    template: TemplateType = TemplateType.textonly
-    text: Optional[str] = None
-    link: Optional[str] = None
-    status: MessageStatus = MessageStatus.pending
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
+class WATemplateSchemaSchema(ModelSchema):
+    class Meta:
+        model = WATemplateSchema
+        fields = ["id", "title", "template", "text", "link", "status", "created_at"]
 
 
-class CreateWATemplateSchemaSchema(BaseModel):
+class CreateWATemplateSchemaSchema(Schema):
     title: str = "No Title"
     template: TemplateType = TemplateType.textonly
     text: Optional[str] = None
     link: Optional[str] = None
 
 
-class UpdateWATemplateSchemaSchema(BaseModel):
+class UpdateWATemplateSchemaSchema(Schema):
     title: Optional[str] = None
     template: Optional[TemplateType] = None
     text: Optional[str] = None
@@ -202,12 +179,12 @@ class UpdateWATemplateSchemaSchema(BaseModel):
 
 
 # Webhook Payload Schemas
-class WebhookPayloadSchema(BaseModel):
+class WebhookPayloadSchema(Schema):
     entry: List[Dict[str, Any]] = Field(..., description="List of entry objects")
 
 
 # Send Message Schemas
-class SendMessageSchema(BaseModel):
+class SendMessageSchema(Schema):
     message_type: MessageType = MessageType.text
     body: Optional[str] = Field(None, description="Message text body")
     media_id: Optional[str] = Field(
@@ -216,7 +193,7 @@ class SendMessageSchema(BaseModel):
     link: Optional[str] = Field(None, description="URL for media messages")
 
 
-class TemplateMessageSchema(BaseModel):
+class TemplateMessageSchema(Schema):
     to_phone_number: str = Field(
         ..., description="Recipient's phone number with country code"
     )
@@ -225,43 +202,69 @@ class TemplateMessageSchema(BaseModel):
 
 
 # Response Schemas
-class ContactListResponseSchema(BaseModel):
+class ContactListResponseSchema(Schema):
     results: List[ContactSchema]
 
 
-class WAMessageListResponseSchema(BaseModel):
+class WAMessageListResponseSchema(Schema):
     results: List[WAMessageSchema]
 
 
-class WATemplateSchemaListResponseSchema(BaseModel):
+class WATemplateSchemaListResponseSchema(Schema):
     results: List[WATemplateSchemaSchema]
 
 
-class StatusListResponseSchema(BaseModel):
+class StatusListResponseSchema(Schema):
     results: List[StatusSchema]
 
 
-class WebhookEventListResponseSchema(BaseModel):
+class WebhookEventListResponseSchema(Schema):
     results: List[WebhookEventSchema]
 
 
-class SuccessResponseSchema(BaseModel):
+# Paginated Response Schemas
+class PaginatedContactResponseSchema(Schema):
+    count: int
+    items: List[ContactSchema]
+
+
+class PaginatedWAMessageResponseSchema(Schema):
+    count: int
+    items: List[WAMessageSchema]
+
+
+class PaginatedWATemplateSchemaResponseSchema(Schema):
+    count: int
+    items: List[WATemplateSchemaSchema]
+
+
+class PaginatedStatusResponseSchema(Schema):
+    count: int
+    items: List[StatusSchema]
+
+
+class PaginatedWebhookEventResponseSchema(Schema):
+    count: int
+    items: List[WebhookEventSchema]
+
+
+class SuccessResponseSchema(Schema):
     message: str
 
 
-class ErrorResponseSchema(BaseModel):
+class ErrorResponseSchema(Schema):
     error: str
 
 
 # Media Response Schema
-class MediaResponseSchema(BaseModel):
+class MediaResponseSchema(Schema):
     media_url: str
     mime_type: str
     success: bool = True
 
 
 # WebSocket Message Schemas
-class WebSocketMessageSchema(BaseModel):
+class WebSocketMessageSchema(Schema):
     operation: str
     contact: Optional[ContactSchema] = None
     message: Optional[WAMessageSchema] = None

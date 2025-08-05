@@ -119,7 +119,7 @@ class WhatsAppWebhookController:
         except Exception as e:
             return {"error": str(e)}
 
-    @route.post("/send-template", response=Dict[str, Any])
+    @route.post("/send-template-message", response=Dict[str, Any])
     def send_template_message(self, payload: TemplateMessageSchema):
         """Send a template message to a WhatsApp number"""
         try:

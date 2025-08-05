@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import *
+from .models import Contact, WAMessage, Status, WebhookEvent, WATemplateSchema
 
 
 # Register your models here.
@@ -11,7 +11,7 @@ class ContactAdmin(admin.ModelAdmin):
 
 
 @admin.register(WAMessage)
-class WAMessage(admin.ModelAdmin):
+class WAMessageAdmin(admin.ModelAdmin):
     list_display = ("contact", "message_type", "message_mode", "timestamp")
     list_filter = ("contact", "message_type", "message_mode", "timestamp")
     search_fields = ("contact", "message_type", "message_mode", "timestamp")

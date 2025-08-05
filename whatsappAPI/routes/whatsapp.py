@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
-from ninja_extra import api_controller, route
-from ninja_extra.permissions import IsAuthenticated
+from ninja_extra import api_controller, route, paginate
+from ninja_extra.pagination import LimitOffsetPagination
 from django.shortcuts import get_object_or_404
 from django.http import StreamingHttpResponse
 from django.conf import settings
@@ -12,6 +12,10 @@ from ..schemas import (
     ContactSchema,
     ContactListResponseSchema,
     CreateContactSchema,
+    PaginatedContactResponseSchema,
+    PaginatedWAMessageResponseSchema,
+    PaginatedWATemplateSchemaResponseSchema,
+    PaginatedWebhookEventResponseSchema,
     UpdateContactSchema,
     WAMessageSchema,
     WAMessageListResponseSchema,
@@ -30,11 +34,17 @@ from ..schemas import (
     MediaResponseSchema,
 )
 
+class WAPagination(LimitOffsetPagination):
+    default_limit = 10
+    limit_query_param = "page_size"
+    max_limit = 1000
+
 
 @api_controller("/whatsapp", tags=["WhatsApp API"])
 class WhatsAppController:
 
-    @route.get("/contacts", response=list[ContactSchema])
+    @route.get("/contacts", response=PaginatedContactResponseSchema)
+    @paginate(WAPagination)
     def get_contacts(self):
         """Get all WhatsApp contacts with last message and unread count"""
         contacts = Contact.objects.all()
@@ -84,7 +94,8 @@ class WhatsAppController:
         contact.delete()
         return {"message": "Contact deleted successfully"}
 
-    @route.get("/messages/{contact_id}", response=list[WAMessageSchema])
+    @route.get("/messages/{contact_id}", response=PaginatedWAMessageResponseSchema)
+    @paginate(WAPagination)
     def get_contact_messages(self, contact_id: int):
         """Get all WhatsApp messages for a specific contact"""
         contact = get_object_or_404(Contact, id=contact_id)
@@ -165,7 +176,8 @@ class WhatsAppController:
 @api_controller("/whatsapp/templates", tags=["WhatsApp Templates"])
 class WhatsAppTemplateController:
 
-    @route.get("/", response=list[WATemplateSchemaSchema])
+    @route.get("/", response=PaginatedWATemplateSchemaResponseSchema)
+    @paginate(WAPagination)
     def get_templates(self):
         """Get all WhatsApp templates"""
         templates = WATemplateSchema.objects.all().order_by("-created_at")
@@ -262,7 +274,7 @@ class WhatsAppMediaController:
 @api_controller("/whatsapp/webhooks", tags=["WhatsApp Webhooks"])
 class WhatsAppWebhookController:
 
-    @route.get("/events", response=list[WebhookEventSchema])
+    @route.get("/events", response=PaginatedWebhookEventResponseSchema)
     def get_webhook_events(self):
         """Get all webhook events"""
         events = WebhookEvent.objects.all().order_by("-received_at")
