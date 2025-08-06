@@ -82,3 +82,96 @@ class Service(models.Model):
 
 
 # Prebuilt Categories Form
+
+
+# Form Builder Models
+class ServiceForm(models.Model):
+    """Main form associated with a service"""
+    service = models.OneToOneField(
+        Service, 
+        on_delete=models.CASCADE, 
+        related_name="form"
+    )
+    title = models.CharField(max_length=200, default="Service Application Form")
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Form for {self.service.name}"
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+
+class FormField(models.Model):
+    """Individual fields in a form"""
+    FIELD_TYPES = [
+        ('text', 'Text Input'),
+        ('email', 'Email'),
+        ('number', 'Number'),
+        ('tel', 'Phone Number'),
+        ('textarea', 'Text Area'),
+        ('select', 'Select Dropdown'),
+        ('radio', 'Radio Button'),
+        ('checkbox', 'Checkbox'),
+        ('file', 'File Upload'),
+        ('date', 'Date'),
+        ('time', 'Time'),
+        ('datetime', 'Date & Time'),
+        ('url', 'URL'),
+        ('range', 'Range Slider'),
+    ]
+
+    form = models.ForeignKey(
+        ServiceForm, 
+        on_delete=models.CASCADE, 
+        related_name="fields"
+    )
+    field_type = models.CharField(max_length=20, choices=FIELD_TYPES)
+    label = models.CharField(max_length=200)
+    placeholder = models.CharField(max_length=200, blank=True, null=True)
+    help_text = models.TextField(blank=True, null=True)
+    is_required = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    
+    # Field specific options
+    options = models.JSONField(blank=True, null=True)  # For select, radio, checkbox options
+    min_value = models.FloatField(blank=True, null=True)  # For number, range fields
+    max_value = models.FloatField(blank=True, null=True)  # For number, range fields
+    min_length = models.PositiveIntegerField(blank=True, null=True)  # For text fields
+    max_length = models.PositiveIntegerField(blank=True, null=True)  # For text fields
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.label} ({self.field_type})"
+
+    class Meta:
+        ordering = ['order', 'created_at']
+
+
+class FormSubmission(models.Model):
+    """User submissions for service forms"""
+    form = models.ForeignKey(
+        ServiceForm, 
+        on_delete=models.CASCADE, 
+        related_name="submissions"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE,
+        related_name="form_submissions"
+    )
+    submission_data = models.JSONField()  # Store all form field responses
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Submission by {self.user.username} for {self.form.service.name}"
+
+    class Meta:
+        ordering = ["-submitted_at"]
+        unique_together = ['form', 'user']  # One submission per user per form

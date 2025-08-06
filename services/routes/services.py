@@ -7,7 +7,6 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Count
 from collections import Counter
 from ninja_jwt.authentication import JWTAuth
-
 from ..models import Service, Category, SubCategory, Organization
 from ..schemas import (
     ServiceSchema,
@@ -19,7 +18,8 @@ from ..schemas import (
     PaginatedServiceResponseSchema,
     PaginatedServiceUserResponseSchema,
 )
-from utils import normalize_img_field, parse_json_fields
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 
 class ServicePagination(LimitOffsetPagination):
@@ -116,7 +116,8 @@ class ServicesController:
     def get_service(self, service_id: int):
         """Get details of a specific service by ID"""
         service = get_object_or_404(
-            Service.objects.select_related("organization", "category", "subcategory"),
+            Service.objects.select_related(
+                "organization", "category", "subcategory"),
             id=service_id,
         )
         return ServiceSchema.model_validate(service)
@@ -125,7 +126,8 @@ class ServicesController:
     def get_service_by_token(self, service_token: str):
         """Get details of a specific service by token"""
         service = get_object_or_404(
-            Service.objects.select_related("organization", "category", "subcategory"),
+            Service.objects.select_related(
+                "organization", "category", "subcategory"),
             service_token=service_token,
         )
         return ServiceSchema.model_validate(service)
@@ -150,7 +152,8 @@ class ServicesController:
 
             # Handle category
             if service_data.get("category"):
-                category = get_object_or_404(Category, id=service_data.pop("category"))
+                category = get_object_or_404(
+                    Category, id=service_data.pop("category"))
                 service_data["category"] = category
 
             # Handle subcategory
@@ -164,7 +167,8 @@ class ServicesController:
             service_data.pop("organization", None)
 
             # Create service
-            service = Service.objects.create(organization=organization, **service_data)
+            service = Service.objects.create(
+                organization=organization, **service_data)
 
             # Handle file upload if provided
             if preview:
@@ -324,3 +328,50 @@ class ServiceUserController:
             )
 
         return user_data
+
+    @route.post("/{service_id}/{user_id}/add-to-progress", response=SuccessResponseSchema, auth=JWTAuth())
+    def add_user_to_progress(self, service_id: int, user_id: int):
+        """Add a user to the service in-progress list"""
+        try:
+            service = get_object_or_404(Service, id=service_id)
+            user = get_object_or_404(User, id=user_id)
+            service.userIDs_whose_services_is_in_progress.add(user)
+            return {"message": "User added to in-progress list successfully"}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @route.post("/{service_id}/{user_id}/add-to-completed", response=SuccessResponseSchema, auth=JWTAuth())
+    def add_user_to_completed(self, service_id: int, user_id: int):
+        """Add a user to the service completed list"""
+        try:
+            service = get_object_or_404(Service, id=service_id)
+            user = get_object_or_404(User, id=user_id)
+
+            service.userIDs_whose_services_have_been_completed.add(user)
+            return {"message": "User added to completed list successfully"}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @route.post("/{service_id}/{user_id}/remove-from-progress", response=SuccessResponseSchema, auth=JWTAuth())
+    def remove_user_from_progress(self, service_id: int, user_id: int):
+        """Remove a user from the service in-progress list"""
+        try:
+            service = get_object_or_404(Service, id=service_id)
+            user = get_object_or_404(User, id=user_id)
+
+            service.userIDs_whose_services_is_in_progress.remove(user)
+            return {"message": "User removed from in-progress list successfully"}
+        except Exception as e:
+            return {"error": str(e)}
+
+    @route.post("/{service_id}/{user_id}/remove-from-completed", response=SuccessResponseSchema, auth=JWTAuth())
+    def remove_user_from_completed(self, service_id: int, user_id: int):
+        """Remove a user from the service completed list"""
+        try:
+            service = get_object_or_404(Service, id=service_id)
+            user = get_object_or_404(User, id=user_id)
+
+            service.userIDs_whose_services_have_been_completed.remove(user)
+            return {"message": "User removed from completed list successfully"}
+        except Exception as e:
+            return {"error": str(e)}

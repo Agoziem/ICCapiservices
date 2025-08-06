@@ -41,6 +41,7 @@ from products.routes.categories import (
     CategoriesController as ProductCategoriesController,
     SubCategoriesController,
 )
+from services.routes.forms import FormFieldController, FormSubmissionController, ServiceFormController
 from services.routes.services import ServicesController, ServiceUserController
 from services.routes.categories import (
     ServiceCategoriesController,
@@ -111,6 +112,10 @@ ninja_api.register_controllers(
     ServiceUserController,
     ServiceCategoriesController,
     ServiceSubCategoriesController,
+    # Services Form Builder
+    ServiceFormController,
+    FormFieldController,
+    FormSubmissionController,
     # Videos
     VideosController,
     VideoUserController,
