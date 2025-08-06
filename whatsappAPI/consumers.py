@@ -1,5 +1,7 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+from whatsappAPI.schemas import ContactSchema
 from .models import Contact, WAMessage
 from channels.db import database_sync_to_async
 
@@ -94,18 +96,6 @@ class WAContactsConsumer(AsyncWebsocketConsumer):
         WAMessage.objects.filter(contact=contact, seen=False).update(seen=True)
 
     # ----------------------------------------------------------------
-    # Helper: Serialize contact and message information
-    # ----------------------------------------------------------------
-    @database_sync_to_async
-    def serialize_contact(self, contact):
-        from .serializers import (
-            ContactSerializer,
-        )  # Ensure you have this serializer in place
-
-        serializer = ContactSerializer(contact)
-        return serializer.data
-
-    # ----------------------------------------------------------------
     # Functionality: Update Seen Status
     # ----------------------------------------------------------------
     async def update_seen_status(self, data):
@@ -117,7 +107,7 @@ class WAContactsConsumer(AsyncWebsocketConsumer):
             await self.mark_all_messages_as_seen(contact)
 
             # Serialize the updated contact information
-            updated_contact_data = await self.serialize_contact(contact)
+            updated_contact_data =  ContactSchema.from_django_model(contact)
 
             # Notify other WebSocket users about the updated seen status
             await self.channel_layer.group_send(

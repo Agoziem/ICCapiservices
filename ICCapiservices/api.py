@@ -19,7 +19,7 @@ from CBTpractice.routes.subjects import (
     QuestionsController,
     AnswersController,
 )
-from CBTpractice.routes.practice import PracticeController, ComputingController
+from CBTpractice.routes.practice import PracticeController
 from customers.routes.customers import CustomersController
 from emails.routes.emails import (
     EmailsController,
@@ -85,7 +85,6 @@ ninja_api.register_controllers(
     QuestionsController,
     AnswersController,
     PracticeController,
-    ComputingController,
     # Customers
     CustomersController,
     # Emails

@@ -7,19 +7,12 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Sum
 from django.utils import timezone
 from ninja_jwt.authentication import JWTAuth
-
-from ..models import Test, TestResult, Subject, Question, Answer
+from ..models import Test, TestResult, Question, Answer
 from ..schemas import (
-    QuestionSchema,
-    StudentTestSchema,
-    StudentTestDetailSchema,
+    StudentsTestListingSchema,
     StudentTestRequestSchema,
-    SubjectSchema,
     TestSubmissionSchema,
-    SubmitStudentTestSchema,
-    TestScoreResponseSchema,
     TestResultSchema,
-    TestResultListResponseSchema,
     SuccessResponseSchema,
     ErrorResponseSchema,
 )
@@ -37,11 +30,11 @@ class PracticePagination(LimitOffsetPagination):
 @api_controller("/practice", tags=["CBT Practice"])
 class PracticeController:
 
-    @route.get("/available-tests")
+    @route.get("/available-tests", response=List[StudentsTestListingSchema])
     def get_available_tests(
         self, year_id: Optional[int] = None, test_type_id: Optional[int] = None
     ):
-        """Get all available tests for practice"""
+        """Get all available tests for practice in a summarized format"""
         tests = Test.objects.select_related("testYear", "texttype").prefetch_related(
             "testSubject"
         )
@@ -60,8 +53,10 @@ class PracticeController:
 
             for subject in test.testSubject.all():
                 question_count = subject.questions.count()
+                subject_questions = list(subject.questions.prefetch_related("answers").all())
                 marks = (
-                    subject.questions.aggregate(total=Sum("questionMark"))["total"] or 0
+                    subject.questions.aggregate(total=Sum("questionMark"))[
+                        "total"] or 0
                 )
 
                 subjects.append(
@@ -70,6 +65,7 @@ class PracticeController:
                         "subjectname": subject.subjectname,
                         "subjectduration": subject.subjectduration,
                         "questions_count": question_count,
+                        "questions": subject_questions,
                     }
                 )
 
@@ -91,78 +87,100 @@ class PracticeController:
         return test_list
 
     @route.post(
-        "/start-test", response=StudentTestDetailSchema, auth=JWTAuth()
+        "/start-test", response=StudentsTestListingSchema, auth=JWTAuth()
     )
     def start_test(self, payload: StudentTestRequestSchema):
-        """Start a practice test for a student"""
+        """Start a practice test for a student for the subjects he selected"""
         test = get_object_or_404(Test, id=payload.test_id)
-        user = get_object_or_404(User, id=payload.user_id)
-
-        # Create or get existing test result
-        test_result, created = TestResult.objects.get_or_create(
-            user=user, defaults={"started_at": timezone.now()}
-        )
-
-        if test not in test_result.tests.all():
-            test_result.tests.add(test)
 
         # Get all questions for the test
-        questions = []
+        subjects = []
+        total_duration = 0
         total_questions = 0
         total_marks = 0
-        time_limit = 0
 
+        filter_subjects = payload.subject_ids or []
         for subject in test.testSubject.all():
-            subject_questions = subject.questions.prefetch_related("answers").all()
-            questions.extend(subject_questions)
-            total_questions += subject_questions.count()
-            total_marks += sum(q.questionMark for q in subject_questions)
-            time_limit += subject.subjectduration
+            if filter_subjects and subject.id not in filter_subjects:
+                continue
+            
+            # Get questions with their answers for this subject
+            subject_questions = list(subject.questions.prefetch_related("answers").all())
+            question_count = len(subject_questions)
+            subject_marks = sum(q.questionMark for q in subject_questions)
+            
+            subjects.append({
+                "id": subject.id,
+                "subjectname": subject.subjectname,
+                "subjectduration": subject.subjectduration,
+                "questions_count": question_count,
+                "questions": subject_questions,
+            })
+            
+            total_questions += question_count
+            total_marks += subject_marks
+            total_duration += subject.subjectduration
 
         return {
-            "test": test,
-            "questions": questions,
+            "test_id": test.pk,
+            "test_name": f"{test.testYear.year if test.testYear else ''} {test.texttype.testtype if test.texttype else ''} Test",
+            "subjects": subjects,
             "total_questions": total_questions,
             "total_marks": total_marks,
-            "time_limit": time_limit,
+            "duration": total_duration,
         }
 
     @route.post(
-        "/submit-test", response=TestScoreResponseSchema, auth=JWTAuth()
+        "/submit-test", response=TestResultSchema, auth=JWTAuth()
     )
-    def submit_test(self, payload: SubmitStudentTestSchema):
+    def submit_test(self, request, payload: TestSubmissionSchema):
         """Submit test answers and calculate score"""
+
+        test = get_object_or_404(Test, id=payload.student_test_id)
+
+        # Create a new test result instance
+        test_result = TestResult.objects.create(
+            user=request.user,
+            test=test,
+            organization=None,  # For practice tests
+            mark=0,
+        )
+
+        submission_details = {}
         total_score = 0
-        subject_scores = {}
 
-        for submission in payload.submissions:
-            test_result = get_object_or_404(TestResult, id=submission.student_test_id)
+        for question_answer in payload.questions:
+            question = get_object_or_404(
+                Question, id=question_answer.question_id)
 
-            for question_answer in submission.questions:
-                question = get_object_or_404(Question, id=question_answer.question_id)
+            # Get subject (assuming M2M between Question and Subject)
+            subject = question.subject_set.first()  # type: ignore
+            subject_name = subject.subjectname if subject else "Unknown"
 
-                # Find the subject for this question
-                subject = question.subject_set.first()  # type: ignore
-                subject_name = subject.subjectname if subject else "Unknown"
+            if subject_name not in submission_details:
+                submission_details[subject_name] = {
+                    "subject_name": subject_name,
+                    "selected_answers": [],
+                    "subject_score": 0,
+                }
 
-                if subject_name not in subject_scores:
-                    subject_scores[subject_name] = 0
+            if question_answer.selected_answer_id:
+                selected_answer = get_object_or_404(
+                    Answer, id=question_answer.selected_answer_id
+                )
+                submission_details[subject_name]["selected_answers"].append(
+                    selected_answer.pk)
 
-                # Check if answer is correct
-                if question_answer.selected_answer_id:
-                    selected_answer = get_object_or_404(
-                        Answer, id=question_answer.selected_answer_id
-                    )
-                    if selected_answer.isCorrect:
-                        points = question.questionMark
-                        total_score += points
-                        subject_scores[subject_name] += points
+                if selected_answer.isCorrect:
+                    submission_details[subject_name]["subject_score"] += question.questionMark
+                    total_score += question.questionMark
 
-            # Update test result
-            test_result.mark = total_score
-            test_result.save()
+        # Update test result
+        test_result.mark = total_score
+        test_result.test_submission_details = list(submission_details.values())
+        test_result.save()
 
-        return {"Total": total_score, "subject_scores": subject_scores}
+        return test_result
 
     @route.get(
         "/my-results",
@@ -189,60 +207,3 @@ class PracticeController:
             user=request.user,
         )
         return test_result
-
-
-@api_controller("/computing", tags=["CBT Computing"])
-class ComputingController:
-
-    @route.get("/tests", response=List[StudentTestSchema])
-    def get_computed_tests(
-        request, year_id: Optional[int] = None, test_type_id: Optional[int] = None
-    ):
-        """
-        Get all tests filtered by optional year_id and test_type_id.
-        """
-        queryset = Test.objects.all()
-
-        if year_id is not None:
-            queryset = queryset.filter(testYear__id=year_id)
-
-        if test_type_id is not None:
-            queryset = queryset.filter(texttype__id=test_type_id)
-
-        queryset = queryset.select_related("testYear", "texttype").prefetch_related(
-            "testSubject"
-        )
-
-        return [StudentTestSchema.model_validate(test) for test in queryset]
-
-    @route.get("/subjects", response=List[SubjectSchema])
-    def get_computed_subjects(self, subject_name: Optional[str] = None):
-        """Get all computed subjects of subjectname"""
-
-        computing_subjects = Subject.objects.annotate(
-            questions_count=Count("questions")
-        )
-
-        if subject_name:
-            computing_subjects = computing_subjects.filter(
-                subjectname__icontains=subject_name
-            )
-
-        return [
-            {
-                "id": subject.pk,
-                "subjectname": subject.subjectname,
-                "subjectduration": subject.subjectduration,
-                "questions_count": subject.questions_count,  # type: ignore
-            }
-            for subject in computing_subjects
-        ]
-
-    @route.get("/practice-questions", response=List[QuestionSchema])
-    def get_computed_practice_questions(self, limit: Optional[int] = 10):
-        """Get random computing questions for practice"""
-        questions = (
-            Question.objects.all().prefetch_related("answers").order_by("?")[:limit]
-        )
-
-        return [QuestionSchema.model_validate(q) for q in questions]

@@ -62,7 +62,7 @@ class Test(models.Model):
     texttype = models.ForeignKey(
         TestType, on_delete=models.CASCADE, null=True, blank=True
     )
-    testSubject = models.ManyToManyField(Subject)
+    testSubject = models.ManyToManyField(Subject, related_name="tests")
     testYear = models.ForeignKey(Year, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
@@ -77,10 +77,11 @@ class TestResult(models.Model):
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, null=True, blank=True
     )
-    tests = models.ManyToManyField(Test)
+    test = models.OneToOneField(Test, on_delete=models.CASCADE, null=True, blank=True)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True
     )
+    test_submission_details = models.JSONField(default=dict, blank=True)
     mark = models.IntegerField(default=0, blank=True)
     date = models.DateTimeField(auto_now_add=True)
 

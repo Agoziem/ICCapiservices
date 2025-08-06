@@ -10,16 +10,13 @@ from ninja_jwt.authentication import JWTAuth
 from ..models import Year, TestType, Test, Subject, Question, TestResult
 from ..schemas import (
     YearSchema,
-    YearListResponseSchema,
     CreateYearSchema,
     UpdateYearSchema,
     TestTypeSchema,
-    TestTypeListResponseSchema,
     CreateTestTypeSchema,
     UpdateTestTypeSchema,
     TestSchema,
-    TestListResponseSchema,
-    TestSummarySchema,
+    TestMiniSchema,
     CreateTestSchema,
     UpdateTestSchema,
     SuccessResponseSchema,
@@ -41,7 +38,7 @@ class YearsController:
     @route.post("/", response=YearSchema, auth=JWTAuth())
     def create_year(self, payload: CreateYearSchema):
         """Create a new year"""
-        year = Year.objects.create(**payload.dict())
+        year = Year.objects.create(**payload.model_dump())
         return year
 
     @route.get("/{year_id}", response=YearSchema)
@@ -54,7 +51,7 @@ class YearsController:
     def update_year(self, year_id: int, payload: UpdateYearSchema):
         """Update a year"""
         year = get_object_or_404(Year, id=year_id)
-        for attr, value in payload.dict(exclude_unset=True).items():
+        for attr, value in payload.model_dump(exclude_unset=True).items():
             setattr(year, attr, value)
         year.save()
         return year
@@ -81,7 +78,7 @@ class TestTypesController:
     @route.post("/", response=TestTypeSchema, auth=JWTAuth())
     def create_test_type(self, payload: CreateTestTypeSchema):
         """Create a new test type"""
-        test_type = TestType.objects.create(**payload.dict())
+        test_type = TestType.objects.create(**payload.model_dump())
         return test_type
 
     @route.get("/{test_type_id}", response=TestTypeSchema)
@@ -96,7 +93,7 @@ class TestTypesController:
     def update_test_type(self, test_type_id: int, payload: UpdateTestTypeSchema):
         """Update a test type"""
         test_type = get_object_or_404(TestType, id=test_type_id)
-        for attr, value in payload.dict(exclude_unset=True).items():
+        for attr, value in payload.model_dump(exclude_unset=True).items():
             setattr(test_type, attr, value)
         test_type.save()
         return test_type
@@ -133,7 +130,7 @@ class TestsController:
     @route.post("/", response=TestSchema, auth=JWTAuth())
     def create_test(self, payload: CreateTestSchema):
         """Create a new test"""
-        test_data = payload.dict()
+        test_data = payload.model_dump()
         subjects = test_data.pop("testSubject", [])
 
         test = Test.objects.create(**test_data)
@@ -157,7 +154,7 @@ class TestsController:
     def update_test(self, test_id: int, payload: UpdateTestSchema):
         """Update a test"""
         test = get_object_or_404(Test, id=test_id)
-        test_data = payload.dict(exclude_unset=True)
+        test_data = payload.model_dump(exclude_unset=True)
 
         if "testSubject" in test_data:
             subjects = test_data.pop("testSubject")
@@ -178,7 +175,7 @@ class TestsController:
         test.delete()
         return {"message": "Test deleted successfully"}
 
-    @route.get("/{test_id}/summary", response=TestSummarySchema)
+    @route.get("/{test_id}/summary", response=TestMiniSchema)
     def get_test_summary(self, test_id: int):
         """Get test summary without full details"""
         test = get_object_or_404(
