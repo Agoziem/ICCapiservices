@@ -39,7 +39,7 @@ def get_users_that_bought_service(request, service_id):
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
-                "avatar_url": get_full_image_url(user.avatar) ,
+                "avatar_url": get_full_image_url(user.avatar),
                 "user_count": count,
                 "date_joined": user.date_joined
             }
@@ -54,7 +54,9 @@ def get_users_that_bought_service(request, service_id):
         return paginator.get_paginated_response(paginated_data)
 
     except Service.DoesNotExist:
-        return Response({"detail": "Service not found."}, status=404)
+        return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': 'Failed to retrieve users'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @swagger_auto_schema(
     method='get',
@@ -74,7 +76,7 @@ def get_users_whose_service_is_in_progress(request, service_id):
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
-                "avatar_url": get_full_image_url(user.avatar) ,
+                "avatar_url": get_full_image_url(user.avatar),
                 "user_count": count,
                 "date_joined": user.date_joined
             }
@@ -84,7 +86,9 @@ def get_users_whose_service_is_in_progress(request, service_id):
         paginated_data = paginator.paginate_queryset(user_data, request)
         return paginator.get_paginated_response(paginated_data)
     except Service.DoesNotExist:
-        return Response({"detail": "Service not found."}, status=404)
+        return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': 'Failed to retrieve users'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
 @swagger_auto_schema(
@@ -105,7 +109,7 @@ def get_users_whose_service_is_completed(request, service_id):
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
-                "avatar_url": get_full_image_url(user.avatar) ,
+                "avatar_url": get_full_image_url(user.avatar),
                 "user_count": count,
                 "date_joined": user.date_joined
             }
@@ -115,7 +119,9 @@ def get_users_whose_service_is_completed(request, service_id):
         paginated_data = paginator.paginate_queryset(user_data, request)
         return paginator.get_paginated_response(paginated_data)
     except Service.DoesNotExist:
-        return Response({"detail": "Service not found."}, status=404)
+        return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': 'Failed to retrieve users'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @swagger_auto_schema(
@@ -140,14 +146,14 @@ def add_user_to_in_progress(request, service_id, user_id):
         # Check if the user is in the 'completed' list
         if service.userIDs_whose_services_have_been_completed.filter(id=user_id).exists():
             return Response(
-                {"message": f"User {user_id} is already in 'completed' services and cannot be added to 'in-progress'."},
+                {'error': f'User {user_id} is already in completed services and cannot be added to in-progress'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         # Check if the user is already in the 'in-progress' list
         if service.userIDs_whose_services_is_in_progress.filter(id=user_id).exists():
             return Response(
-                {"message": f"User {user_id} is already in 'in-progress' services."},
+                {'message': f'User {user_id} is already in in-progress services'},
                 status=status.HTTP_200_OK
             )
         
@@ -155,20 +161,16 @@ def add_user_to_in_progress(request, service_id, user_id):
         service.userIDs_whose_services_is_in_progress.add(user)
         service.save()
         return Response(
-            {"message": f"User {user_id} added to 'in-progress' services."},
+            {'message': f'User {user_id} added to in-progress services'},
             status=status.HTTP_200_OK
         )
 
     except Service.DoesNotExist:
-        return Response(
-            {"error": "Service not found."},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
     except User.DoesNotExist:
-        return Response(
-            {"error": f"User {user_id} not found."},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({'error': f'User {user_id} not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': 'Failed to add user to in-progress'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @swagger_auto_schema(
@@ -189,32 +191,28 @@ def remove_user_from_in_progress(request, service_id, user_id):
         # Fetch the service by its ID
         service = Service.objects.get(id=service_id)
         user = User.objects.get(id=user_id)
+        
         if service.userIDs_whose_services_is_in_progress.filter(id=user_id).exists():
             # Remove the user from the in-progress field
             service.userIDs_whose_services_is_in_progress.remove(user)
             service.save()
 
             return Response(
-                {"message": f"User {user_id} removed from in-progress services."},
+                {'message': f'User {user_id} removed from in-progress services'},
                 status=status.HTTP_200_OK
             )
         else:
             return Response(
-                {"message": f"User {user_id} not in in-progress services."},
-                status=status.HTTP_400_BAD_REQUEST  # Use 400 if it's a bad request
+                {'error': f'User {user_id} not in in-progress services'},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
     except Service.DoesNotExist:
-        return Response(
-            {"error": "Service not found."},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
+        return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
     except User.DoesNotExist:
-        return Response(
-            {"error": f"User {user_id} not found."},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({'error': f'User {user_id} not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': 'Failed to remove user from in-progress'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -246,15 +244,16 @@ def add_user_to_completed(request, service_id, user_id):
         service.save()  # Ensure the changes are persisted
 
         return Response(
-            {"message": f"User {user_id} moved to completed services."},
+            {'message': f'User {user_id} moved to completed services'},
             status=status.HTTP_200_OK
         )
 
     except Service.DoesNotExist:
-        return Response(
-            {"error": "Service not found."},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
+    except User.DoesNotExist:
+        return Response({'error': f'User {user_id} not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': 'Failed to add user to completed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 @swagger_auto_schema(
     method='post',
@@ -272,19 +271,22 @@ def remove_user_from_completed(request, service_id, user_id):
     try:
         service = Service.objects.get(id=service_id)
         user = User.objects.get(id=user_id)
+        
         if service.userIDs_whose_services_have_been_completed.filter(id=user_id).exists():
             service.userIDs_whose_services_have_been_completed.remove(user)
 
         if not service.userIDs_whose_services_is_in_progress.filter(id=user_id).exists():
             service.userIDs_whose_services_is_in_progress.add(user)
+            
         service.save()
         return Response(
-            {"message": f"User {user_id} removed from completed services."},
+            {'message': f'User {user_id} removed from completed services'},
             status=status.HTTP_200_OK
         )
     
     except Service.DoesNotExist:
-        return Response(
-            {"error": "Service not found."},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
+    except User.DoesNotExist:
+        return Response({'error': f'User {user_id} not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': 'Failed to remove user from completed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

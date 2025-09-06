@@ -100,6 +100,7 @@ class QuestionAnswerSerializer(serializers.Serializer):
     Serializer for question answers in student test submission
     """
     question_id = serializers.IntegerField()
+    answer_id = serializers.IntegerField()
 
 class CreateTestSerializer(serializers.ModelSerializer):
     class Meta:

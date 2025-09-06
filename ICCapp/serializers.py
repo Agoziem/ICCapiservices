@@ -8,9 +8,16 @@ class StaffSerializer(serializers.ModelSerializer):
     img = serializers.ImageField(allow_null=True, required=False)
     img_url = serializers.SerializerMethodField()
     img_name = serializers.SerializerMethodField()
+    
     class Meta:
         model = Staff
         fields = '__all__'
+    
+    def get_img_url(self, obj):
+        return get_full_image_url(obj.img)
+    
+    def get_img_name(self, obj):
+        return get_image_name(obj.img)
         
 class CreateStaffSerializer(serializers.ModelSerializer):
     img = serializers.ImageField(allow_null=True, required=False)
@@ -25,12 +32,6 @@ class UpdateStaffSerializer(serializers.ModelSerializer):
     class Meta:
         model = Staff
         exclude = ['organization']
-
-    def get_img_url(self, obj):
-        return get_full_image_url(obj.img)
-    
-    def get_img_name(self, obj):
-        return get_image_name(obj.img)
 
 class TestimonialSerializer(serializers.ModelSerializer):
     img = serializers.ImageField(allow_null=True, required=False)
@@ -67,6 +68,30 @@ class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
         fields = '__all__'
+    
+    def get_img_url(self, obj):
+        return get_full_image_url(obj.img)
+    
+    def get_img_name(self, obj):
+        return get_image_name(obj.img)
+    
+    def get_organization(self, obj):
+        if obj.organization:
+            return {'id': obj.organization.id, 'name': obj.organization.name}
+        return None
+    
+    def get_staff_in_charge(self, obj):
+        if obj.staff_in_charge:
+            return {
+                'id': obj.staff_in_charge.id, 
+                'name': obj.staff_in_charge.first_name + ' ' + obj.staff_in_charge.last_name, 
+                'img_url': get_full_image_url(obj.staff_in_charge.img) if obj.staff_in_charge.img else None
+            }
+        return None
+    
+    def get_services(self, obj):
+        services = obj.services.all()
+        return [{'id': service.id, 'name': service.name} for service in services]
         
 class CreateDepartmentSerializer(serializers.ModelSerializer):
     img = serializers.ImageField(allow_null=True, required=False)
@@ -85,22 +110,6 @@ class UpdateDepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
         exclude = ['organization']
-
-    def get_organization(self, obj):
-        return {'id': obj.organization.id, 'name': obj.organization.name}
-    
-    def get_staff_in_charge(self, obj):
-        return {'id': obj.staff_in_charge.id, 'name': obj.staff_in_charge.first_name + ' ' + obj.staff_in_charge.last_name, "img_url": get_full_image_url(obj.staff_in_charge.img) if obj.staff_in_charge.img else None}
-    
-    def get_services(self, obj):
-        services = obj.services.all()
-        return [{'id': service.id, 'name': service.name} for service in services]
-    
-    def get_img_url(self, obj):
-        return get_full_image_url(obj.img)
-    
-    def get_img_name(self, obj):
-        return get_image_name(obj.img)
     
 class OrganizationSerializer(serializers.ModelSerializer):
     logo = serializers.ImageField(allow_null=True, required=False)

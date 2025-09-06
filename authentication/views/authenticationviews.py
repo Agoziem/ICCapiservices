@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -13,8 +13,9 @@ import uuid
 from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from utils import normalize_img_field
 
-User = get_user_model()
+User = cast(type[CustomUser], get_user_model())
 
 # -----------------------------------------------
 # register user without Oauth
@@ -79,24 +80,33 @@ def register_user(request):
     responses={
         200: UserSerializer,
         201: UserSerializer,
+        400: ErrorResponseSerializer,
         500: ErrorResponseSerializer
     }
 )
 @api_view(['POST'])
-def register_user_with_oauth(request,provider):
-    username = request.data['name']
-    email = request.data['email']
-    emailverified = request.data.get('email_verified', True)
-    first_name = request.data.get('given_name', '')
-    last_name = request.data.get('family_name', '')
+def register_user_with_oauth(request, provider):
+    # Validate input data using serializer
+    serializer = RegisterUserOauthSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    validated_data = serializer.validated_data
+    
+    username = validated_data['name']
+    email = validated_data['email']
+    emailverified = validated_data.get('email_verified', True)
+    first_name = validated_data.get('given_name', '')
+    last_name = validated_data.get('family_name', '')
+    
     try:
-        user = User.objects.get(email=email,isOauth=True, Oauthprovider=provider)
+        user = User.objects.get(email=email, isOauth=True, Oauthprovider=provider)
         user.username = username
         user.email = email
         user.emailIsVerified = emailverified
         user.first_name = first_name
         user.last_name = last_name
-        user.date_joined=timezone.now()
+        user.date_joined = timezone.now()
         user.save()
         user_serializer = UserSerializer(instance=user)
         return Response(user_serializer.data, status=status.HTTP_200_OK)
@@ -104,20 +114,20 @@ def register_user_with_oauth(request,provider):
         new_user = User.objects.create_user(
             username=username, 
             email=email, 
-            first_name = first_name, 
-            last_name = last_name, 
-            emailIsVerified = emailverified, 
+            first_name=first_name, 
+            last_name=last_name, 
+            emailIsVerified=emailverified, 
             isOauth=True, 
             Oauthprovider=provider,
             date_joined=timezone.now()
-            )
+        )
         new_user.save()
         token = Token.objects.create(user=new_user)
         user_serializer = UserSerializer(instance=new_user)
-        return Response(user_serializer.data, status=status.HTTP_201_CREATED)
+        return Response({'token': token.key, 'user': user_serializer.data}, status=status.HTTP_201_CREATED)
     except Exception as e:
-        print(e)
-        return Response({'error': 'User does not exist'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        print(f"Error during OAuth user registration: {e}")
+        return Response({'error': 'An error occurred during OAuth registration'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # -----------------------------------------------
 # verify user with User Credentials
@@ -135,18 +145,48 @@ def register_user_with_oauth(request,provider):
 )
 @api_view(['POST'])
 def verify_user(request):
+    # Validate input data using serializer
+    serializer = VerifyUserSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    validated_data = serializer.validated_data
+    
     try:
-        user = User.objects.get(email=request.data['email'],isOauth=False)
-        if not user.check_password(request.data['password']):
-            return Response({'error': 'wrong password'}, status=status.HTTP_404_NOT_FOUND)
-        token,created = Token.objects.get_or_create(user=user)
+        user = User.objects.get(email=validated_data['email'], isOauth=False)
+        if not user.check_password(validated_data['password']):
+            return Response({'error': 'Wrong password'}, status=status.HTTP_404_NOT_FOUND)
+        token, created = Token.objects.get_or_create(user=user)
         user_serializer = UserSerializer(instance=user)
         return Response({"token": token.key, "user": user_serializer.data}, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(e)
-        return Response({'error': 'User does not exist'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        print(f"Error during user verification: {e}")
+        return Response({'error': 'An error occurred during verification'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+# ----------------------------------------------
+# logout user by deleting the token
+# -----------------------------------------------
+@swagger_auto_schema(
+    method='post',
+    operation_description="Logout user by deleting the token",
+    responses={
+        204: "No Content",
+        404: "User not found",
+        500: "Internal server error"
+    }
+)
+@api_view(['POST'])
+def logout_user(request):
+    try:
+        token = request.auth
+        if token:
+            token.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except Exception as e:
+        print(f"Error during user logout: {e}")
+        return Response({'error': 'An error occurred during logout'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # -----------------------------------------------
 # get a user by ID
@@ -210,26 +250,39 @@ def get_users(request):
 )
 @api_view(['PUT'])
 def update_user(request, user_id):
-    data = request.data.copy()
+    # Validate input data using serializer
+    serializer = UpdateUserSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    validated_data = serializer.validated_data
+    
     try:
         user = User.objects.get(id=user_id)
-        data = normalize_img_field(data,"avatar")
-        user.first_name = data.get('first_name', user.first_name)
-        user.last_name = data.get('last_name', user.last_name)
-        user.email = data.get('email', user.email)
-        user.phone = data.get('phone', user.phone)
-        user.address = data.get('address', user.address)
+        
+        # Normalize image field for proper handling
+        data = request.data.copy()
+        data = normalize_img_field(data, "avatar")
+        
+        # Update user fields with validated data
+        user.first_name = validated_data.get('first_name', user.first_name)
+        user.last_name = validated_data.get('last_name', user.last_name)
+        user.email = validated_data.get('email', user.email)
+        user.phone = validated_data.get('phone', user.phone)
+        user.address = validated_data.get('address', user.address)
+        
+        # Handle avatar update
         if data.get("avatar"):
-            img = data.get("avatar")
-            user.avatar = img
+            user.avatar = data.get("avatar")
+        
         user.save()
         user_serializer = UserSerializer(instance=user)
         return Response(user_serializer.data, status=status.HTTP_200_OK)
     except User.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(e)
-        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        print(f"Error during user update: {e}")
+        return Response({'error': 'An error occurred during user update'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
 # -----------------------------------------------
@@ -248,13 +301,21 @@ def update_user(request, user_id):
 def delete_user(request, user_id):
     try:
         user = User.objects.get(id=user_id)
-        token = Token.objects.get(user=user)
-        token.delete() 
+        
+        # Try to delete the user's token if it exists
+        try:
+            token = Token.objects.get(user=user)
+            token.delete()
+        except Token.DoesNotExist:
+            # Token doesn't exist, continue with user deletion
+            pass
+        
+        # Clear user groups and delete user
         user.groups.clear()
         user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
     except User.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(e)
-        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        print(f"Error during user deletion: {e}")
+        return Response({'error': 'An error occurred during user deletion'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

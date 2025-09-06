@@ -28,13 +28,22 @@ class TestimonialPagination(PageNumberPagination):
 @api_view(['GET'])
 def get_testimonials(request, organization_id):
     try:
+        # Validate organization exists
+        organization = Organization.objects.get(id=organization_id)
         testimonials = Testimonial.objects.filter(organization=organization_id).order_by('-created_at')
+        
+        if not testimonials.exists():
+            return Response({'error': 'No testimonials found for this organization'}, status=status.HTTP_404_NOT_FOUND)
+            
         paginator = TestimonialPagination()
         result_page = paginator.paginate_queryset(testimonials, request)
         serializer = TestimonialSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
-    except Testimonial.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+    except Organization.DoesNotExist:
+        return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error fetching testimonials: {str(e)}")
+        return Response({'error': 'An error occurred while fetching testimonials'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     
 # get a single testimonial

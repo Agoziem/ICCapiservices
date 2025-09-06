@@ -1,3 +1,4 @@
+from typing import cast
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -13,7 +14,7 @@ from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-User = get_user_model()
+User = cast(type[CustomUser], get_user_model())
 
 # -----------------------------------------------
 #verify email with token
@@ -34,6 +35,8 @@ def verify_email(request):
     try:
         token = request.data.get('token')
         user = User.objects.get(verificationToken=token)
+        if not user.expiryTime:
+            return Response({'error': 'Token has expired, please try again'}, status=status.HTTP_400_BAD_REQUEST)
         if user.expiryTime < timezone.now():
             return Response({'error': 'Token has expired, please try again'}, status=status.HTTP_400_BAD_REQUEST)
         user.emailIsVerified = True

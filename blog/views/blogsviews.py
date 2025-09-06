@@ -1,4 +1,5 @@
 import json
+from typing import cast
 from django.shortcuts import render
 from ..models import *
 from ..serializers import *
@@ -10,8 +11,9 @@ from django.contrib.auth import get_user_model
 from utils import normalize_img_field,parse_json_fields
 from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
+from authentication.models import CustomUser
 
-User = get_user_model()
+User = cast(type[CustomUser], get_user_model())
 
 class BlogPagination(PageNumberPagination):
     page_size = 10
@@ -109,36 +111,43 @@ def get_blog_by_slug(request, slug):
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_blog(request, organization_id, user_id):
+    # Validate input data using serializer
+    serializer = CreateBlogSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     try:
         # Parse and normalize image field
         data = request.data.copy()
-        normalized_data = normalize_img_field(data,"img")
+        normalized_data = normalize_img_field(data, "img")
         parsed_json = parse_json_fields(normalized_data)
-        serializer = BlogSerializer(data=parsed_json)
+        
+        # Validate the parsed data again with the serializer
+        blog_serializer = BlogSerializer(data=parsed_json)
 
-        if serializer.is_valid():
+        if blog_serializer.is_valid():
             # Save the blog instance without relational fields
-            blog = serializer.save()
+            blog = blog_serializer.save()
 
             # Set relational fields manually
             blog.author = User.objects.get(id=parsed_json.get("author"))
             blog.category = Category.objects.get(id=parsed_json.get("category"))
 
             # Handle tags: create missing tags and set them
-            tag_objects = [Tag.objects.get_or_create(tag=name.strip())[0] for name in parsed_json.get("tags",[])]
+            tag_objects = [Tag.objects.get_or_create(tag=name.strip())[0] for name in parsed_json.get("tags", [])]
             blog.tags.set(tag_objects)
 
             # Save the blog with the relational fields
             blog.save()
 
             return Response(BlogSerializer(blog).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(blog_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     except (User.DoesNotExist, Category.DoesNotExist) as e:
-        return Response({"detail": f"Related object not found: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": f"Related object not found: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(str(e))
-        return Response({"detail": f"Related object not found: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        print(f"Error during blog creation: {str(e)}")
+        return Response({"error": f"An error occurred during blog creation: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -154,6 +163,11 @@ def add_blog(request, organization_id, user_id):
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_blog(request, blog_id):
+    # Validate input data using serializer
+    serializer = UpdateBlogSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     try:
         # Parse and normalize the image field
         data = normalize_img_field(request.data.copy(), "img")
@@ -161,11 +175,11 @@ def update_blog(request, blog_id):
 
         # Fetch the existing blog instance
         blog = Blog.objects.get(id=blog_id)
-        serializer = BlogSerializer(blog, data=parsed_json)
+        blog_serializer = BlogSerializer(blog, data=parsed_json)
 
-        if serializer.is_valid():
+        if blog_serializer.is_valid():
             # Save the blog instance without relational fields
-            blog = serializer.save()
+            blog = blog_serializer.save()
 
             # Set relational fields manually
             blog.author = User.objects.get(id=parsed_json.get("author"))
@@ -178,14 +192,16 @@ def update_blog(request, blog_id):
             blog.save()
 
             return Response(BlogSerializer(blog).data, status=status.HTTP_200_OK)
-        print(serializer.errors)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        print(f"Blog serializer errors: {blog_serializer.errors}")
+        return Response(blog_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    except Blog.DoesNotExist:
+        return Response({"error": "Blog not found"}, status=status.HTTP_404_NOT_FOUND)
     except (User.DoesNotExist, Category.DoesNotExist) as e:
-        return Response({"detail": f"Related object not found: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": f"Related object not found: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(str(e))
-        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        print(f"Error during blog update: {str(e)}")
+        return Response({"error": f"An error occurred during blog update: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
     
@@ -202,9 +218,12 @@ def delete_blog(request, blog_id):
     try:
         blog = Blog.objects.get(id=blog_id)
         blog.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': 'Blog deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
     except Blog.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Blog not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error during blog deletion: {str(e)}")
+        return Response({'error': 'An error occurred during blog deletion'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # increase the blog views
 @swagger_auto_schema(
@@ -221,12 +240,12 @@ def add_views(request, blog_id):
         blog = Blog.objects.get(id=blog_id)
         blog.views += 1
         blog.save()
-        return Response(status=status.HTTP_200_OK)
+        return Response({'message': 'View count updated successfully'}, status=status.HTTP_200_OK)
     except Blog.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Blog not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(e)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        print(f"Error during view count update: {str(e)}")
+        return Response({'error': 'An error occurred while updating view count'}, status=status.HTTP_400_BAD_REQUEST)
     
 
 

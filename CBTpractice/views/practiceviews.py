@@ -6,8 +6,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from drf_yasg.utils import swagger_auto_schema
+from typing import cast
+from authentication.models import CustomUser
 
-User = get_user_model()
+User = cast(type[CustomUser], get_user_model())
 
 @swagger_auto_schema(
     method="post",
@@ -21,33 +23,41 @@ User = get_user_model()
 )
 @api_view(['POST'])
 def get_student_tests(request):
+    # Validate input data using serializer
+    serializer = StudentTestRequestSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    validated_data = serializer.validated_data
+    
     try:
-        user_id = request.data.get('user_id')
-        test_id = request.data.get('test_id')
-        subjects = request.data.get('examSubjects', [])
+        user_id = validated_data.get('user_id')
+        test_id = validated_data.get('test_id')
+        subjects = validated_data.get('examSubjects', [])
         subjects_id = [subject.get('id') for subject in subjects]
-    except Exception as e:
-        print(e)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-    try:
+        
+        # Validate user and test existence
         User.objects.get(id=user_id)
         student_test = Test.objects.get(id=test_id)
         Subject.objects.filter(id__in=subjects_id)
-        serializer = TestSerializer(student_test)
-        serialized_data = serializer.data
+        
+        test_serializer = TestSerializer(student_test)
+        serialized_data = test_serializer.data
+        
+        # Filter subjects based on requested subjects
         filtered_subjects = [subj for subj in serialized_data['testSubject'] if subj['id'] in subjects_id]
         serialized_data['testSubject'] = filtered_subjects
+        
         return Response(serialized_data, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
     except Test.DoesNotExist:
         return Response({"error": "Test does not exist"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        print(str(e))
-        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        print(f"Error in get_student_tests: {str(e)}")
+        return Response({"error": "An error occurred while fetching student tests"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-    
 # view to Submit Student Test
 @swagger_auto_schema(
     method="post",
@@ -58,33 +68,72 @@ def get_student_tests(request):
     }
 )
 @api_view(['POST'])
-def submit_student_test(request,organization_id):
+def submit_student_test(request, organization_id):
+    # Validate input data using serializer
+    serializer = SubmitStudentTestSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    validated_data = serializer.validated_data
+    
     try:
-        user_id = request.get('user_id')
-    except:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-    Score = {}
-    Total_test_score = 0
-    test_ids = []
-    if request.data is None or request.data == []:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-    for test in request.data:
-        test_score = 0
-        try:
-            test_id = test.get('student_test_id')
-            student_test = Test.objects.get(id=test_id)
-            test_ids.append(student_test.id)
-            for question in test.get('questions', []):
-                question = Question.objects.get(id=question.get('question_id'))
-                if question.answer.is_correct:
-                    test_score += question.score
-            Score[student_test.testSubject.subjectname] = test_score
-            Total_test_score += test_score
-        except:
-            continue 
-    Score['Total'] = Total_test_score
-    testresult = TestResult.objects.create(organization=organization_id, user=user_id)
-    testresult.tests.add(*test_ids)
-    return Response(Score, status=status.HTTP_200_OK)
+        user_id = request.GET.get('user_id')
+        if not user_id:
+            return Response({'error': 'user_id parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate user exists
+        user = User.objects.get(id=user_id)
+        organization = Organization.objects.get(id=organization_id)
+        
+        Score = {}
+        Total_test_score = 0
+        test_ids = []
+        
+        if not validated_data:
+            return Response({'error': 'Test data is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        for test_data in validated_data:
+            test_score = 0
+            try:
+                test_id = test_data.get('student_test_id')
+                student_test = Test.objects.get(id=test_id)
+                test_ids.append(student_test.pk)
+                
+                for question_data in test_data.get('questions', []):
+                    question = Question.objects.get(id=question_data.get('question_id'))
+                    # get the answer id from question_data and check if it matches the correct answer
+                    answer = Answer.objects.get(id=question_data.get('answer_id'))
+                    if answer.isCorrect:
+                        test_score += question.questionMark
+                
+                # Get subject name for this test
+                if student_test.testSubject.exists():
+                    subject_name = student_test.testSubject.first().subjectname
+                    Score[subject_name] = test_score
+                
+                Total_test_score += test_score
+            except (Test.DoesNotExist, Question.DoesNotExist) as e:
+                print(f"Error processing test/question: {str(e)}")
+                continue
+            except Exception as e:
+                print(f"Error in test processing: {str(e)}")
+                continue
+        
+        Score['Total'] = Total_test_score
+        
+        # Create test result
+        testresult = TestResult.objects.create(organization=organization, user=user)
+        if test_ids:
+            testresult.tests.add(*test_ids)
+        
+        return Response(Score, status=status.HTTP_200_OK)
+    
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Organization.DoesNotExist:
+        return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error in submit_student_test: {str(e)}")
+        return Response({'error': 'An error occurred while submitting test'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     
