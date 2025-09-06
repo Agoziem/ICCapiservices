@@ -18,6 +18,15 @@ class StaffSerializer(serializers.ModelSerializer):
     
     def get_img_name(self, obj):
         return get_image_name(obj.img)
+    
+class PaginatedStaffSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = StaffSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedStaffSerializer"
         
 class CreateStaffSerializer(serializers.ModelSerializer):
     img = serializers.ImageField(allow_null=True, required=False)
@@ -46,11 +55,29 @@ class TestimonialSerializer(serializers.ModelSerializer):
     
     def get_img_name(self, obj):
         return get_image_name(obj.img)
+    
+class PaginatedTestimonialSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = TestimonialSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedTestimonialSerializer"
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = '__all__'
+
+class PaginatedSubscriptionSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = SubscriptionSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedSubscriptionSerializer"
     
 class DepartmentServiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -92,6 +119,15 @@ class DepartmentSerializer(serializers.ModelSerializer):
     def get_services(self, obj):
         services = obj.services.all()
         return [{'id': service.id, 'name': service.name} for service in services]
+    
+class PaginatedDepartmentSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = DepartmentSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedDepartmentSerializer"
         
 class CreateDepartmentSerializer(serializers.ModelSerializer):
     img = serializers.ImageField(allow_null=True, required=False)

@@ -26,6 +26,14 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         ref_name = "BlogComment"
 
+class PaginatedCommentSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = CommentSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedCommentSerializer"
 
 
 class BlogSerializer(serializers.ModelSerializer):
@@ -53,6 +61,16 @@ class BlogSerializer(serializers.ModelSerializer):
     
     def get_img_name(self, obj):
         return get_image_name(obj.img) if obj.img else None
+    
+
+class PaginatedBlogSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = BlogSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedBlogSerializer"
 
 
 class CreateBlogSerializer(serializers.ModelSerializer):

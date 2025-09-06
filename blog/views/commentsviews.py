@@ -18,7 +18,7 @@ class CommentPagination(PageNumberPagination):
     max_page_size = 100
 
 # get all comments for a blog and paginate them
-@swagger_auto_schema(method="get", responses={200: CommentSerializer(many=True), 404: 'Comments Not Found'})
+@swagger_auto_schema(method="get", responses={200: PaginatedCommentSerializer, 404: 'Comments Not Found'})
 @api_view(['GET'])
 def get_comments(request, blog_id):
     try:

@@ -62,6 +62,15 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_product_name(self, obj):
         return get_image_name(obj.product)
+    
+class PaginatedProductSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = ProductSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedProductSerializer"
 
 
 class CreateProductSerializer(serializers.ModelSerializer):

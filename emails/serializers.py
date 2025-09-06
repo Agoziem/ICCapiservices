@@ -7,6 +7,15 @@ class EmailSerializer(serializers.ModelSerializer):
         model = Email
         fields = '__all__'
 
+class PaginatedEmailSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = EmailSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedEmailSerializer"
+
 
 class CreateEmailSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,6 +35,14 @@ class EmailMessageSerializer(serializers.ModelSerializer):
         model = EmailMessage
         fields = '__all__'
 
+class PaginatedEmailMessageSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = EmailMessageSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedEmailMessageSerializer"
 
 class CreateEmailMessageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,6 +55,15 @@ class EmailResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmailResponse
         fields = '__all__'
+
+class PaginatedEmailResponseSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = EmailResponseSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedEmailResponseSerializer"
 
 
 class CreateEmailResponseSerializer(serializers.ModelSerializer):

@@ -8,6 +8,7 @@ from drf_yasg.utils import swagger_auto_schema
 from ICCapp.models import Organization
 
 
+
 # get all customers
 @swagger_auto_schema(
     method="get",

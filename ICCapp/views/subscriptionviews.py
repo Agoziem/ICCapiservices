@@ -16,7 +16,7 @@ class SubscriptionPagination(PageNumberPagination):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: SubscriptionSerializer(many=True),
+        200: PaginatedSubscriptionSerializer,
         404: 'Subscriptions Not Found'
     }
 )

@@ -1,6 +1,6 @@
 from ..models import Category, Video, SubCategory
 from ICCapp.models import Organization
-from ..serializers import VideoSerializer, CategorySerializer, SubCategorySerializer, CreateVideoSerializer, UpdateVideoSerializer
+from ..serializers import PaginatedVideoSerializer, VideoSerializer, CategorySerializer, SubCategorySerializer, CreateVideoSerializer, UpdateVideoSerializer
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -38,7 +38,7 @@ class VideoPagination(PageNumberPagination):
         openapi.Parameter('page_size', openapi.IN_QUERY, description="Number of items per page", type=openapi.TYPE_INTEGER),
     ],
     responses={
-        200: VideoSerializer(many=True),
+        200: PaginatedVideoSerializer,
         404: "Organization not found",
         400: "Bad request"
     }
@@ -88,7 +88,7 @@ def get_videos(request, organization_id):
         openapi.Parameter('page_size', openapi.IN_QUERY, description="Number of items per page", type=openapi.TYPE_INTEGER),
     ],
     responses={
-        200: VideoSerializer(many=True),
+        200: PaginatedVideoSerializer,
         404: "Organization not found",
         400: "Bad request"
     }
@@ -151,7 +151,7 @@ def get_trendingvideos(request, organization_id):
         openapi.Parameter('page_size', openapi.IN_QUERY, description="Number of items per page", type=openapi.TYPE_INTEGER),
     ],
     responses={
-        200: VideoSerializer(many=True),
+        200: PaginatedVideoSerializer,
         404: "Organization or user not found",
         400: "Bad request"
     }
@@ -301,7 +301,7 @@ def add_video(request, organization_id):
             return Response({'error': 'Request body is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         if isinstance(request.data, QueryDict):
-            data = request.data.dict()
+            data = request.data.copy()
         else:
             data = request.data
 
@@ -388,7 +388,7 @@ def update_video(request, video_id):
             return Response({'error': 'Request body is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         if isinstance(request.data, QueryDict):
-            data = request.data.dict()
+            data = request.data.copy()
         else:
             data = request.data
         

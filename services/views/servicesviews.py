@@ -1,5 +1,5 @@
 from ..models import *
-from ..serializers import ServiceSerializer, CategorySerializer, SubCategorySerializer, CreateServiceSerializer, UpdateServiceSerializer
+from ..serializers import PaginatedServiceSerializer, ServiceSerializer, CategorySerializer, SubCategorySerializer, CreateServiceSerializer, UpdateServiceSerializer
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -13,6 +13,7 @@ from collections import Counter
 from django.contrib.auth import get_user_model
 from drf_yasg.utils import swagger_auto_schema
 from ICCapp.models import Organization
+from drf_yasg import openapi
 
 User = get_user_model()
 
@@ -28,8 +29,16 @@ class ServicePagination(PageNumberPagination):
 @swagger_auto_schema(
     method='get',
     operation_description="Get all services for a specific organization, with optional category filtering",
+    manual_parameters=[
+        openapi.Parameter(
+            'category',
+            openapi.IN_QUERY,
+            description="Filter services by category name. Use 'All' to fetch all categories.",
+            type=openapi.TYPE_STRING
+        ),
+    ],
     responses={
-        200: ServiceSerializer(many=True),
+        200: PaginatedServiceSerializer,
         404: "Not found"
     }
 )
@@ -61,8 +70,16 @@ def get_services(request, organization_id):
 @swagger_auto_schema(
     method='get',
     operation_description="Get trending services for a specific organization, sorted by number of buyers",
+    manual_parameters=[
+        openapi.Parameter(
+            'category',
+            openapi.IN_QUERY,
+            description="Filter services by category name. Use 'All' to fetch all categories.",
+            type=openapi.TYPE_STRING
+        ),
+    ],
     responses={
-        200: ServiceSerializer(many=True),
+        200: PaginatedServiceSerializer,
         404: "Not found"
     }
 )
@@ -109,8 +126,16 @@ def get_trendingservices(request, organization_id):
 @swagger_auto_schema(
     method='get',
     operation_description="Get services purchased by a specific user in an organization",
+    manual_parameters=[
+        openapi.Parameter(
+            'category',
+            openapi.IN_QUERY,
+            description="Filter services by category name. Use 'All' to fetch all categories.",
+            type=openapi.TYPE_STRING
+        ),
+    ],
     responses={
-        200: ServiceSerializer(many=True),
+        200: PaginatedServiceSerializer,
         404: "Not found"
     }
 )
@@ -215,7 +240,7 @@ def get_service_token(request, servicetoken):
 def add_service(request, organization_id):
     # Use a mutable version of request.data (without deepcopy)
     if isinstance(request.data, QueryDict):
-        data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        data = request.data.copy()  # Convert QueryDict to a mutable dictionary
     else:
         data = request.data
     
@@ -299,7 +324,7 @@ def add_service(request, organization_id):
 def update_service(request, service_id):
     
     if isinstance(request.data, QueryDict):
-        data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        data = request.data.copy()  # Convert QueryDict to a mutable dictionary
     else:
         data = request.data
     

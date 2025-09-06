@@ -27,7 +27,7 @@ class ProductPagination(PageNumberPagination):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: ProductSerializer(many=True),
+        200: PaginatedProductSerializer,
         404: 'Product Not Found'
     }
 )
@@ -58,7 +58,7 @@ def get_products(request, organization_id):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: ProductSerializer(many=True),
+        200: PaginatedProductSerializer,
         404: 'Product Not Found'
     }
 )
@@ -105,7 +105,7 @@ def get_trendingproducts(request, organization_id):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: ProductSerializer(many=True),
+        200: PaginatedProductSerializer,
         404: 'Product Not Found'
     }
 )
@@ -185,7 +185,7 @@ def get_product(request, product_id):
 @parser_classes([MultiPartParser, FormParser])
 def add_product(request, organization_id):
     if isinstance(request.data, QueryDict):
-        data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        data = request.data.copy()  # Convert QueryDict to a mutable dictionary
     else:
         data = request.data
     
@@ -269,7 +269,7 @@ def add_product(request, organization_id):
 @parser_classes([MultiPartParser, FormParser])
 def update_product(request, product_id):
     if isinstance(request.data, QueryDict):
-        data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        data = request.data.copy()  # Convert QueryDict to a mutable dictionary
     else:
         data = request.data
     

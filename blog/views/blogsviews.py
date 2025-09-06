@@ -1,6 +1,8 @@
 import json
 from typing import cast
-from django.shortcuts import render
+from django.http import QueryDict
+from django.shortcuts import get_object_or_404, render
+from django.core.exceptions import ValidationError
 from ..models import *
 from ..serializers import *
 from rest_framework.decorators import api_view,parser_classes
@@ -11,6 +13,7 @@ from django.contrib.auth import get_user_model
 from utils import normalize_img_field,parse_json_fields
 from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from authentication.models import CustomUser
 
 User = cast(type[CustomUser], get_user_model())
@@ -23,44 +26,91 @@ class BlogPagination(PageNumberPagination):
 # get all blogs by an Organization
 @swagger_auto_schema(
     method="get",
+    manual_parameters=[
+        openapi.Parameter('category', openapi.IN_QUERY, description="Category name filter", type=openapi.TYPE_STRING),
+        openapi.Parameter('page', openapi.IN_QUERY, description="Page number", type=openapi.TYPE_INTEGER),
+        openapi.Parameter('page_size', openapi.IN_QUERY, description="Number of items per page", type=openapi.TYPE_INTEGER),
+    ],
     responses={
-        200: BlogSerializer(many=True),
-        404: 'Not Found'
+        200: PaginatedBlogSerializer,
+        400: 'Bad Request',
+        404: 'Organization or Category Not Found'
     }
 )
 @api_view(['GET'])
-def get_org_blogs(request,organization_id):
+def get_org_blogs(request, organization_id):
     try:
+        # Validate organization_id
+        if not organization_id or not str(organization_id).isdigit():
+            return Response({'error': 'Invalid organization ID'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate organization exists
+        try:
+            organization = Organization.objects.get(id=organization_id)
+        except Organization.DoesNotExist:
+            return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+        
         category = request.GET.get('category', None)
+        
         if category and category != "All":
-            blog_category = Category.objects.get(category=category)
-            blogs = Blog.objects.filter(organization=organization_id, category=blog_category).order_by('-updated_at')
+            # Validate category exists
+            try:
+                blog_category = Category.objects.get(category=category)
+                blogs = Blog.objects.filter(organization=organization_id, category=blog_category).order_by('-updated_at')
+            except Category.DoesNotExist:
+                return Response({'error': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
         else:
             blogs = Blog.objects.filter(organization=organization_id).order_by('-updated_at')
+        
         paginator = BlogPagination()
         result_page = paginator.paginate_queryset(blogs, request)
         serializer = BlogSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
-    except Blog.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        
+    except ValidationError as e:
+        return Response({'error': 'Validation error', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(f"Error retrieving organization blogs: {str(e)}")
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
 # get all blogs by a User
 @swagger_auto_schema(
     method="get",
+    manual_parameters=[
+        openapi.Parameter('page', openapi.IN_QUERY, description="Page number", type=openapi.TYPE_INTEGER),
+        openapi.Parameter('page_size', openapi.IN_QUERY, description="Number of items per page", type=openapi.TYPE_INTEGER),
+    ],
     responses={
-        200: BlogSerializer(many=True),
-        404: 'Blog Not Found'
+        200: PaginatedBlogSerializer,
+        400: 'Bad Request',
+        404: 'User Not Found'
     }
 )
 @api_view(['GET'])
-def get_blogs(request,user_id):
+def get_blogs(request, user_id):
     try:
+        # Validate user_id
+        if not user_id or not str(user_id).isdigit():
+            return Response({'error': 'Invalid user ID'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate user exists
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        
         blogs = Blog.objects.filter(author=user_id).order_by('-updated_at')
-        serializer = BlogSerializer(blogs, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    except Blog.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        paginator = BlogPagination()
+        result_page = paginator.paginate_queryset(blogs, request)
+        serializer = BlogSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+        
+    except ValidationError as e:
+        return Response({'error': 'Validation error', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(f"Error retrieving user blogs: {str(e)}")
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
 # get a single blog
@@ -68,34 +118,56 @@ def get_blogs(request,user_id):
     method="get",
     responses={
         200: BlogSerializer,
+        400: 'Bad Request',
         404: 'Blog Not Found'
     }
 )
 @api_view(['GET'])
 def get_blog(request, blog_id):
     try:
+        # Validate blog_id
+        if not blog_id or not str(blog_id).isdigit():
+            return Response({'error': 'Invalid blog ID'}, status=status.HTTP_400_BAD_REQUEST)
+        
         blog = Blog.objects.get(id=blog_id)
         serializer = BlogSerializer(blog, many=False)
         return Response(serializer.data, status=status.HTTP_200_OK)
+        
     except Blog.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Blog not found'}, status=status.HTTP_404_NOT_FOUND)
+    except ValidationError as e:
+        return Response({'error': 'Validation error', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(f"Error retrieving blog: {str(e)}")
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 # get a single blog by slug
 @swagger_auto_schema(
     method="get",
     responses={
         200: BlogSerializer,
+        400: 'Bad Request',
         404: 'Blog Not Found'
     }
 )
 @api_view(['GET'])
 def get_blog_by_slug(request, slug):
     try:
+        # Validate slug
+        if not slug or not slug.strip():
+            return Response({'error': 'Invalid slug'}, status=status.HTTP_400_BAD_REQUEST)
+        
         blog = Blog.objects.get(slug=slug)
         serializer = BlogSerializer(blog, many=False)
         return Response(serializer.data, status=status.HTTP_200_OK)
+        
     except Blog.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Blog not found'}, status=status.HTTP_404_NOT_FOUND)
+    except ValidationError as e:
+        return Response({'error': 'Validation error', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(f"Error retrieving blog by slug: {str(e)}")
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -105,49 +177,81 @@ def get_blog_by_slug(request, slug):
     responses={
         201: BlogSerializer,
         400: 'Bad Request',
-        404: 'User or Category Not Found'
+        404: 'User, Category, or Organization Not Found'
     }
 )
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_blog(request, organization_id, user_id):
-    # Validate input data using serializer
-    serializer = CreateBlogSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+    """
+    Create a blog post for a given organization and author (user).
+    Validates request data, slug uniqueness, organization, user, category, and tags.
+    """
+
     try:
-        # Parse and normalize image field
-        data = request.data.copy()
+        # ✅ Ensure IDs are valid integers
+        if not str(organization_id).isdigit() or not str(user_id).isdigit():
+            return Response({"error": "Invalid organization or user ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ✅ Ensure body exists
+        if not request.data:
+            return Response({"error": "Request body is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ✅ Make request data mutable
+        data = request.data.copy() if isinstance(request.data, QueryDict) else request.data
+
+        # ✅ Normalize & parse JSON fields (img, tags, etc.)
         normalized_data = normalize_img_field(data, "img")
         parsed_json = parse_json_fields(normalized_data)
-        
-        # Validate the parsed data again with the serializer
-        blog_serializer = BlogSerializer(data=parsed_json)
 
-        if blog_serializer.is_valid():
-            # Save the blog instance without relational fields
-            blog = blog_serializer.save()
+        # ✅ Run serializer validation early
+        serializer = CreateBlogSerializer(data=parsed_json)
+        serializer.is_valid(raise_exception=True)
 
-            # Set relational fields manually
-            blog.author = User.objects.get(id=parsed_json.get("author"))
-            blog.category = Category.objects.get(id=parsed_json.get("category"))
+        # ✅ Required fields
+        if not parsed_json.get("title", "").strip():
+            return Response({"error": "Title is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not parsed_json.get("body", "").strip():
+            return Response({"error": "Body is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Handle tags: create missing tags and set them
-            tag_objects = [Tag.objects.get_or_create(tag=name.strip())[0] for name in parsed_json.get("tags", [])]
-            blog.tags.set(tag_objects)
+        # ✅ Ensure organization & user exist
+        organization = get_object_or_404(Organization, id=organization_id)
+        author = get_object_or_404(User, id=user_id)
 
-            # Save the blog with the relational fields
-            blog.save()
+        # ✅ Category validation (optional)
+        category = None
+        if parsed_json.get("category"):
+            category = get_object_or_404(Category, id=parsed_json["category"])
 
-            return Response(BlogSerializer(blog).data, status=status.HTTP_201_CREATED)
-        return Response(blog_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    except (User.DoesNotExist, Category.DoesNotExist) as e:
-        return Response({"error": f"Related object not found: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
+        # ✅ Slug uniqueness
+        slug = parsed_json.get("slug")
+        if slug and Blog.objects.filter(slug=slug).exists():
+            return Response({"error": "Blog with this slug already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ✅ Create blog instance
+        blog = Blog.objects.create(
+            title=parsed_json.get("title", ""),
+            subtitle=parsed_json.get("subtitle", ""),
+            body=parsed_json.get("body", ""),
+            slug=slug or "",
+            readTime=parsed_json.get("readTime", 0),
+            author=author,
+            category=category,
+            organization=organization,
+            img=parsed_json.get("img") if "img" in parsed_json else None,
+        )
+
+        # ✅ Handle tags (create if missing)
+        tag_names = parsed_json.get("tags", [])
+        if tag_names:
+            tags = [Tag.objects.get_or_create(tag=tag.strip())[0] for tag in tag_names if tag and tag.strip()]
+            blog.tags.set(tags)
+
+        return Response(BlogSerializer(blog).data, status=status.HTTP_201_CREATED)
+
     except Exception as e:
         print(f"Error during blog creation: {str(e)}")
-        return Response({"error": f"An error occurred during blog creation: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -157,51 +261,67 @@ def add_blog(request, organization_id, user_id):
     responses={
         200: BlogSerializer,
         400: 'Bad Request',
-        404: 'User or Category Not Found'
+        404: 'Blog, User, or Category Not Found'
     }
 )
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser])
 def update_blog(request, blog_id):
-    # Validate input data using serializer
-    serializer = UpdateBlogSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+    """
+    Update a blog post with validation for category, author, tags, and unique slug.
+    Handles QueryDict and JSON parsing from request.data.
+    """
     try:
-        # Parse and normalize the image field
-        data = normalize_img_field(request.data.copy(), "img")
+        # ✅ Get the blog or return 404
+        blog = get_object_or_404(Blog, id=blog_id)
+
+        # ✅ Work with a mutable dict instead of QueryDict
+        data = request.data.copy()
+        data = normalize_img_field(data, "img")
         parsed_json = parse_json_fields(data)
 
-        # Fetch the existing blog instance
-        blog = Blog.objects.get(id=blog_id)
-        blog_serializer = BlogSerializer(blog, data=parsed_json)
+        # ✅ Validate category if provided
+        if "category" in parsed_json:
+            category = Category.objects.filter(id=parsed_json["category"]).first()
+            if not category:
+                return Response({"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
+            blog.category = category
 
-        if blog_serializer.is_valid():
-            # Save the blog instance without relational fields
-            blog = blog_serializer.save()
+        # ✅ Validate author if provided
+        if "author" in parsed_json:
+            author = CustomUser.objects.filter(id=parsed_json["author"]).first()
+            if not author:
+                return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
+            blog.author = author
 
-            # Set relational fields manually
-            blog.author = User.objects.get(id=parsed_json.get("author"))
-            blog.category = Category.objects.get(id=parsed_json.get("category"))
+        # ✅ Prevent duplicate slugs
+        if "slug" in parsed_json:
+            slug_exists = Blog.objects.exclude(id=blog_id).filter(slug=parsed_json["slug"]).exists()
+            if slug_exists:
+                return Response({"error": "Slug already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Handle tags: Create missing tags and set them
-            tag_names = parsed_json.get("tags", [])
-            tag_objects = [Tag.objects.get_or_create(tag=name.strip())[0] for name in tag_names]
-            blog.tags.set(tag_objects)
-            blog.save()
+        # ✅ Run serializer validation & update
+        serializer = UpdateBlogSerializer(blog, data=parsed_json, partial=True)
+        serializer.is_valid(raise_exception=True)
+        updated_blog = serializer.save()
 
-            return Response(BlogSerializer(blog).data, status=status.HTTP_200_OK)
-        print(f"Blog serializer errors: {blog_serializer.errors}")
-        return Response(blog_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # ✅ Handle tags (if any)
+        tags = parsed_json.get("tags")
+        if tags:
+            tag_objs = []
+            for tag_name in tags:
+                tag, _ = Tag.objects.get_or_create(name=tag_name)
+                tag_objs.append(tag)
+            updated_blog.tags.set(tag_objs)
 
-    except Blog.DoesNotExist:
-        return Response({"error": "Blog not found"}, status=status.HTTP_404_NOT_FOUND)
-    except (User.DoesNotExist, Category.DoesNotExist) as e:
-        return Response({"error": f"Related object not found: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
+        # ✅ Save once (already updated via serializer + tags)
+        updated_blog.save()
+
+        # ✅ Return final blog response
+        return Response(BlogSerializer(updated_blog).data, status=status.HTTP_200_OK)
+
     except Exception as e:
-        print(f"Error during blog update: {str(e)}")
-        return Response({"error": f"An error occurred during blog update: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
     
@@ -210,20 +330,28 @@ def update_blog(request, blog_id):
     method="delete",
     responses={
         204: 'No Content',
+        400: 'Bad Request',
         404: 'Blog Not Found'
     }
 )
 @api_view(['DELETE'])
 def delete_blog(request, blog_id):
     try:
+        # Validate blog_id
+        if not blog_id or not str(blog_id).isdigit():
+            return Response({'error': 'Invalid blog ID'}, status=status.HTTP_400_BAD_REQUEST)
+        
         blog = Blog.objects.get(id=blog_id)
         blog.delete()
         return Response({'message': 'Blog deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        
     except Blog.DoesNotExist:
         return Response({'error': 'Blog not found'}, status=status.HTTP_404_NOT_FOUND)
+    except ValidationError as e:
+        return Response({'error': 'Validation error', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print(f"Error during blog deletion: {str(e)}")
-        return Response({'error': 'An error occurred during blog deletion'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # increase the blog views
 @swagger_auto_schema(
@@ -237,15 +365,22 @@ def delete_blog(request, blog_id):
 @api_view(['GET'])
 def add_views(request, blog_id):
     try:
+        # Validate blog_id
+        if not blog_id or not str(blog_id).isdigit():
+            return Response({'error': 'Invalid blog ID'}, status=status.HTTP_400_BAD_REQUEST)
+        
         blog = Blog.objects.get(id=blog_id)
         blog.views += 1
         blog.save()
         return Response({'message': 'View count updated successfully'}, status=status.HTTP_200_OK)
+        
     except Blog.DoesNotExist:
         return Response({'error': 'Blog not found'}, status=status.HTTP_404_NOT_FOUND)
+    except ValidationError as e:
+        return Response({'error': 'Validation error', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print(f"Error during view count update: {str(e)}")
-        return Response({'error': 'An error occurred while updating view count'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
 

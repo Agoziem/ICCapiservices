@@ -13,27 +13,8 @@ from ..serializers import WAMessageSerializer, ContactSerializer
 from datetime import datetime
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from rest_framework import serializers
+from ..serializers import WebhookPayloadSerializer, SendMessageSerializer, TemplateMessageSerializer
 
-# Serializer for documenting the webhook payload
-class WebhookPayloadSerializer(serializers.Serializer):
-    entry = serializers.ListField(child=serializers.DictField(), help_text="List of entry objects")
-    
-# Serializer for sending messages
-class SendMessageSerializer(serializers.Serializer):
-    message_type = serializers.ChoiceField(choices=['text', 'image', 'audio', 'document', 'video'], default='text')
-    body = serializers.CharField(required=False, help_text="Message text body")
-    media_id = serializers.CharField(required=False, help_text="ID of media for non-text messages")
-    link = serializers.URLField(required=False, help_text="URL for media messages")
-    caption = serializers.CharField(required=False, help_text="Caption for media messages")
-    message_mode = serializers.CharField(required=False, help_text="Message mode")
-    timestamp = serializers.CharField(required=False, help_text="Message timestamp")
-    
-# Serializer for sending template messages
-class TemplateMessageSerializer(serializers.Serializer):
-    to_phone_number = serializers.CharField(help_text="Recipient's phone number with country code")
-    template_name = serializers.CharField(help_text="Name of the template to use")
-    language_code = serializers.CharField(default="en_US", help_text="Language code for the template")
 
 
 

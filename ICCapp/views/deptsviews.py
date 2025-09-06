@@ -20,7 +20,7 @@ class DepartmentPagination(PageNumberPagination):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: DepartmentSerializer(many=True),
+        200: PaginatedDepartmentSerializer,
         404: 'Departments Not Found'
     }
 )
@@ -35,11 +35,8 @@ def get_org_depts(request, organization_id):
             return Response({'error': 'No departments found for this organization'}, status=status.HTTP_404_NOT_FOUND)
             
         paginator = DepartmentPagination()
-        # Paginate the queryset
         result_page = paginator.paginate_queryset(departments, request)
-        # Serialize the paginated result
         serializer = DepartmentSerializer(result_page, many=True)
-        # Return the paginated response
         return paginator.get_paginated_response(serializer.data)
     except Organization.DoesNotExist:
         return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -66,7 +63,7 @@ def add_dept(request, organization_id):
         
         # Process form data
         if isinstance(request.data, QueryDict):
-            data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+            data = request.data.copy()  # Convert QueryDict to a mutable dictionary
         else:
             data = request.data
             
@@ -129,7 +126,7 @@ def update_dept(request, department_id):
         
         # Process form data
         if isinstance(request.data, QueryDict):
-            data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+            data = request.data.copy()  # Convert QueryDict to a mutable dictionary
         else:
             data = request.data
             

@@ -58,6 +58,15 @@ class VideoSerializer(serializers.ModelSerializer):
     
     def get_video_name(self, obj):
         return get_image_name(obj.video)
+    
+class PaginatedVideoSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = VideoSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedVideoSerializer"
         
 class CreateVideoSerializer(serializers.ModelSerializer):
     thumbnail = serializers.ImageField(allow_null=True, required=False)

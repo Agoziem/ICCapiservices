@@ -239,8 +239,8 @@ def update_payment(request, payment_id):
         order = Orders.objects.get(id=payment_id)
         
         # Extract data with validation
-        organization_id = request.data.get('organizationid', order.organization.id if order.organization else None)
-        customerid = request.data.get('customerid', order.customer.id if order.customer else None)
+        organization_id = request.data.get('organizationid', order.organization.pk if order.organization else None)
+        customerid = request.data.get('customerid', order.customer.pk if order.customer else None)
         amount = request.data.get('amount', order.amount)
         services = request.data.get('services', [])
         products = request.data.get('products', [])

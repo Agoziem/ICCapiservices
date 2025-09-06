@@ -11,16 +11,17 @@ from asgiref.sync import async_to_sync
 from rest_framework.pagination import PageNumberPagination
 from drf_yasg.utils import swagger_auto_schema
 
-class EmailPagination(PageNumberPagination):
+class EmailModulePagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 1000
+
 
 # get all email addresses
 @swagger_auto_schema(
     method="get",
     responses={
-        200: SubscriptionSerializer(many=True),
+        200: PaginatedEmailSerializer,
         404: 'Subscriptions Not Found'
     }
 )
@@ -33,9 +34,11 @@ def get_subscriptions(request, organization_id):
         
         if not emails.exists():
             return Response({'error': 'No subscriptions found for this organization'}, status=status.HTTP_404_NOT_FOUND)
-            
-        serializer = SubscriptionSerializer(emails, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        paginator = EmailModulePagination()
+        result_page = paginator.paginate_queryset(emails, request)
+        serializer = SubscriptionSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     except Organization.DoesNotExist:
         return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
@@ -47,7 +50,7 @@ def get_subscriptions(request, organization_id):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: EmailSerializer(many=True),
+        200: PaginatedEmailSerializer,
         404: 'Emails Not Found'
     }
 )
@@ -60,8 +63,8 @@ def get_emails(request, organization_id):
         
         if not emails.exists():
             return Response({'error': 'No emails found for this organization'}, status=status.HTTP_404_NOT_FOUND)
-            
-        paginator = EmailPagination()
+
+        paginator = EmailModulePagination()
         result_page = paginator.paginate_queryset(emails, request)
         serializer = EmailSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
@@ -197,7 +200,7 @@ def delete_email(request, email_id):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: EmailResponseSerializer(many=True),
+        200: PaginatedEmailResponseSerializer,
         404: 'Email Responses Not Found'
     }
 )
@@ -209,9 +212,11 @@ def get_responses(request, message_id):
         
         if not responses.exists():
             return Response({'error': 'No responses found for this email'}, status=status.HTTP_404_NOT_FOUND)
-            
-        serializer = EmailResponseSerializer(responses, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        paginator = EmailModulePagination()
+        result_page = paginator.paginate_queryset(responses, request)
+        serializer = EmailResponseSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     except Email.DoesNotExist:
         return Response({'error': 'Email not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
@@ -253,7 +258,7 @@ def create_responses(request):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: EmailMessageSerializer(many=True),
+        200: PaginatedEmailMessageSerializer,
         404: 'No Emails Found'
     }
 )
@@ -264,9 +269,10 @@ def getsentemails(request):
         
         if not emails.exists():
             return Response({'error': 'No sent emails found'}, status=status.HTTP_404_NOT_FOUND)
-            
-        serializer = EmailMessageSerializer(emails, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        paginator = EmailModulePagination()
+        result_page = paginator.paginate_queryset(emails, request)
+        serializer = EmailMessageSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     except Exception as e:
         print(f"Error fetching sent emails: {str(e)}")
         return Response({'error': 'An error occurred while fetching sent emails'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -49,7 +49,17 @@ class ServiceSerializer(serializers.ModelSerializer):
     
     def get_img_name(self, obj):
         return get_image_name(obj.preview)
+
+class PaginatedServiceSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = ServiceSerializer(many=True)
     
+    class Meta:
+        ref_name = "PaginatedServiceSerializer"
+        fields = ['count', 'next', 'previous', 'results']
+
 class CreateServiceSerializer(serializers.ModelSerializer):
     preview = serializers.ImageField(allow_null=True, required=False)
     

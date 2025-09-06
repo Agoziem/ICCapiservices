@@ -21,7 +21,7 @@ class TestimonialPagination(PageNumberPagination):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: TestimonialSerializer(many=True),
+        200: PaginatedTestimonialSerializer,
         404: 'Testimonials Not Found'
     }
 )
