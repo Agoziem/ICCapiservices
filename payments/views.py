@@ -4,7 +4,7 @@ from products.models import Product
 from services.models import Service
 from vidoes.models import Video
 from ICCapp.models import Organization
-from .serializers import PaymentSerializer, VerifyPaymentSerializer, PaymentCountStatsSerializer
+from .serializers import PaymentResponseSerializer, PaymentSerializer, VerifyPaymentSerializer, PaymentCountStatsSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -18,7 +18,7 @@ Customer = get_user_model()
 @swagger_auto_schema(
     method="get",
     responses={
-        200: PaymentSerializer(many=True),
+        200: PaymentResponseSerializer(many=True),
         404: 'Payments Not Found'
     }
 )
@@ -32,7 +32,7 @@ def get_payments(request, organization_id):
         if not orders.exists():
             return Response({'error': 'No payments found for this organization'}, status=status.HTTP_404_NOT_FOUND)
             
-        serializer = PaymentSerializer(orders, many=True)
+        serializer = PaymentResponseSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Organization.DoesNotExist:
         return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -44,7 +44,7 @@ def get_payments(request, organization_id):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: PaymentSerializer(many=True),
+        200: PaymentResponseSerializer(many=True),
         404: 'Payments Not Found'
     }
 )
@@ -58,7 +58,7 @@ def get_payments_by_user(request, user_id):
         if not orders.exists():
             return Response({'error': 'No payments found for this user'}, status=status.HTTP_404_NOT_FOUND)
             
-        serializer = PaymentSerializer(orders, many=True)
+        serializer = PaymentResponseSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Customer.DoesNotExist:
         return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -70,7 +70,7 @@ def get_payments_by_user(request, user_id):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: PaymentSerializer(),
+        200: PaymentResponseSerializer(),
         404: 'Payment Not Found'
     }
 )
@@ -78,7 +78,7 @@ def get_payments_by_user(request, user_id):
 def get_payment(request, payment_id):
     try:
         order = Orders.objects.get(id=payment_id)
-        serializer = PaymentSerializer(order, many=False)
+        serializer = PaymentResponseSerializer(order, many=False)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Orders.DoesNotExist:
         return Response({'error': 'Payment not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -91,7 +91,7 @@ def get_payment(request, payment_id):
     method="post",
     request_body=PaymentSerializer,
     responses={
-        201: PaymentSerializer(),
+        201: PaymentResponseSerializer(),
         400: 'Bad Request',
         404: 'Not Found'
     }
@@ -100,13 +100,13 @@ def get_payment(request, payment_id):
 def add_payment(request, organization_id):
     # Validate required fields
     try:
-        customerid = request.data.get('customerid')
+        customer = request.data.get('customer')
         amount = request.data.get('total')
         services = request.data.get('services', [])
         products = request.data.get('products', [])
         videos = request.data.get('videos', [])
         
-        if not customerid:
+        if not customer:
             return Response({'error': 'Customer ID is required'}, status=status.HTTP_400_BAD_REQUEST)
         if not amount:
             return Response({'error': 'Amount is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -118,7 +118,7 @@ def add_payment(request, organization_id):
     try:
         # Validate entities exist
         organization = Organization.objects.get(id=organization_id)
-        customer = Customer.objects.get(id=customerid)
+        customer = Customer.objects.get(id=customer)
         
         # Validate related objects
         services_objs = Service.objects.filter(id__in=services) if services else []
@@ -137,8 +137,8 @@ def add_payment(request, organization_id):
             order.videos.add(*videos_objs)
             
         order.save()
-        
-        serializer = PaymentSerializer(order, many=False)
+
+        serializer = PaymentResponseSerializer(order, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
         
     except Organization.DoesNotExist:
@@ -154,7 +154,7 @@ def add_payment(request, organization_id):
     method="post",
     request_body=VerifyPaymentSerializer,
     responses={
-        200: PaymentSerializer(),
+        200: PaymentResponseSerializer(),
         400: 'Bad Request',
         500: 'Internal Server Error'
     }
@@ -178,7 +178,7 @@ def verify_payment(request):
         payment_status, data = paystack.verify_payment(ref)
         
         # Get order by reference
-        order = Orders.objects.get(reference=ref)
+        order = Orders.objects.prefetch_related('services', 'products', 'videos').get(reference=ref)
         
         if payment_status:
             order.status = 'Completed'
@@ -207,12 +207,12 @@ def verify_payment(request):
                     video.save()
             
             order.save()
-            order_serializer = PaymentSerializer(order)      
+            order_serializer = PaymentResponseSerializer(order)
             return Response(order_serializer.data, status=status.HTTP_200_OK)
         else:
             order.status = 'Failed'
             order.save()
-            order_serializer = PaymentSerializer(order)
+            order_serializer = PaymentResponseSerializer(order)
             return Response({'error': 'Payment verification failed', 'order': order_serializer.data}, status=status.HTTP_400_BAD_REQUEST)
             
     except Customer.DoesNotExist:
@@ -228,7 +228,7 @@ def verify_payment(request):
     method="put",
     request_body=PaymentSerializer,
     responses={
-        200: PaymentSerializer(),
+        200: PaymentResponseSerializer(),
         400: 'Bad Request',
         404: 'Payment Not Found'
     }
@@ -274,8 +274,8 @@ def update_payment(request, payment_id):
             order.videos.add(*videos_objs)
             
         order.save()
-        
-        serializer = PaymentSerializer(order)
+
+        serializer = PaymentResponseSerializer(order)
         return Response(serializer.data, status=status.HTTP_200_OK)
         
     except Orders.DoesNotExist:

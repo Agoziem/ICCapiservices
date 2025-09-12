@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from blog import serializers
@@ -18,6 +18,7 @@ from drf_yasg.utils import swagger_auto_schema
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def fetch_notifications(request):
     notifications = Notification.objects.all()
     serializer = NotificationSerializer(notifications, many=True)
@@ -32,6 +33,7 @@ def fetch_notifications(request):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def fetch_notification_by_id(request, id):
     try:
         notification = Notification.objects.get(id=id)

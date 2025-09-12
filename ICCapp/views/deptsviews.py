@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework.decorators import api_view,parser_classes
+from rest_framework.decorators import api_view,parser_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from ..models import *
@@ -25,6 +25,7 @@ class DepartmentPagination(PageNumberPagination):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_org_depts(request, organization_id):
     try:
         # Validate organization exists
@@ -51,6 +52,7 @@ def get_org_depts(request, organization_id):
     responses={
         201: DepartmentSerializer,
         400: 'Bad Request',
+        404: 'Organization or Staff Not Found',
         500: 'Internal Server Error'
     }
 )
@@ -73,32 +75,37 @@ def add_dept(request, organization_id):
         
         # Validate input data using CreateDepartmentSerializer
         create_serializer = CreateDepartmentSerializer(data=parsed_data)
-        if not create_serializer.is_valid():
-            return Response(create_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        create_serializer.is_valid(raise_exception=True)
+
+        # Set staff in charge if provided
+        staff_in_charge = None
+        if parsed_data.get('staff_in_charge'):
+            try:
+                staff_in_charge = Staff.objects.get(id=parsed_data.get('staff_in_charge'))
+            except Staff.DoesNotExist:
+                return Response({'error': 'Staff member not found'}, status=status.HTTP_404_NOT_FOUND)
         
-        # Create department with validated data
-        serializer = DepartmentSerializer(data=parsed_data)
-        if serializer.is_valid():
-            department = serializer.save(organization=organization)
-            
-            # Set staff in charge if provided
-            if parsed_data.get('staff_in_charge'):
-                try:
-                    staff_in_charge = Staff.objects.get(id=parsed_data.get('staff_in_charge'))
-                    department.staff_in_charge = staff_in_charge
-                except Staff.DoesNotExist:
-                    return Response({'error': 'Staff member not found'}, status=status.HTTP_404_NOT_FOUND)
-            
-            # Parse and add services
-            services_list = parsed_data.get('services', [])
-            for service_name in services_list:
-                if service_name:
-                    service, created = DepartmentService.objects.get_or_create(name=service_name)
-                    department.services.add(service)
-            
-            department.save()
-            return Response(DepartmentSerializer(department).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Parse and add services
+        services = []
+        services_list = parsed_data.get('services', [])
+        for service_name in services_list:
+            if service_name:
+                service, created = DepartmentService.objects.get_or_create(name=service_name)
+                services.append(service)
+
+        # Create department
+        department = Department.objects.create(
+            name=parsed_data['name'],
+            description=parsed_data.get('description', ''),
+            img=parsed_data.get('img', None),
+            staff_in_charge=staff_in_charge,
+            organization=organization
+        )
+
+        # Set services
+        department.services.set(services)
+        
+        return Response(DepartmentSerializer(department).data, status=status.HTTP_201_CREATED)
         
     except Organization.DoesNotExist:
         return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -112,7 +119,7 @@ def add_dept(request, organization_id):
     method="put",
     request_body=UpdateDepartmentSerializer,
     responses={
-        201: DepartmentSerializer,
+        200: DepartmentSerializer,
         400: 'Bad Request',
         404: 'Department Not Found',
         500: 'Internal Server Error'
@@ -135,34 +142,27 @@ def update_dept(request, department_id):
         parsed_data = parse_json_fields(data)
         
         # Validate input data using UpdateDepartmentSerializer
-        update_serializer = UpdateDepartmentSerializer(data=parsed_data)
-        if not update_serializer.is_valid():
-            return Response(update_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Update department with validated data
-        serializer = DepartmentSerializer(department, data=parsed_data)
-        if serializer.is_valid():
-            department = serializer.save()
+        update_serializer = UpdateDepartmentSerializer(instance=department, data=parsed_data)
+        update_serializer.is_valid(raise_exception=True)
 
-            # Set staff in charge if provided
-            if data.get('staff_in_charge'):
-                try:
-                    staff_in_charge = Staff.objects.get(id=parsed_data.get('staff_in_charge'))
-                    department.staff_in_charge = staff_in_charge
-                except Staff.DoesNotExist:
-                    return Response({'error': 'Staff member not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Set staff in charge if provided
+        if parsed_data.get('staff_in_charge'):
+            try:
+                staff_in_charge = Staff.objects.get(id=parsed_data.get('staff_in_charge'))
+                department.staff_in_charge = staff_in_charge
+            except Staff.DoesNotExist:
+                return Response({'error': 'Staff member not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            # Parse and update services
-            services_list = parsed_data.get('services', [])
-            department.services.clear()
-            for service_name in services_list:
-                if service_name:
-                    service, created = DepartmentService.objects.get_or_create(name=service_name)
-                    department.services.add(service)
-            department.save()
-            return Response(DepartmentSerializer(department).data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Parse and update services
+        services_list = parsed_data.get('services', [])
+        department.services.clear()
+        for service_name in services_list:
+            if service_name:
+                service, created = DepartmentService.objects.get_or_create(name=service_name)
+                department.services.add(service)
         
+        update_serializer.save()
+        return Response(DepartmentSerializer(department).data, status=status.HTTP_200_OK)
     except Department.DoesNotExist:
         return Response({'error': 'Department not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

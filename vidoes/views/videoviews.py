@@ -1,7 +1,8 @@
+from django.shortcuts import get_object_or_404
 from ..models import Category, Video, SubCategory
 from ICCapp.models import Organization
 from ..serializers import PaginatedVideoSerializer, VideoSerializer, CategorySerializer, SubCategorySerializer, CreateVideoSerializer, UpdateVideoSerializer
-from rest_framework.decorators import api_view, parser_classes
+from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
@@ -44,6 +45,7 @@ class VideoPagination(PageNumberPagination):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_videos(request, organization_id):
     try:
         # Validate organization_id
@@ -94,6 +96,7 @@ def get_videos(request, organization_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_trendingvideos(request, organization_id):
     try:
         # Validate organization_id
@@ -157,6 +160,7 @@ def get_trendingvideos(request, organization_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_user_videos(request, organization_id, user_id):
     try:
         # Validate organization_id
@@ -219,6 +223,7 @@ def get_user_videos(request, organization_id, user_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_video(request, video_id):
     try:
         # Validate video_id
@@ -250,6 +255,7 @@ def get_video(request, video_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_video_token(request, videotoken):
     try:
         # Validate video token
@@ -315,40 +321,37 @@ def add_video(request, organization_id):
         parsed_json_fields = parse_json_fields(data)
         
         # Validate using serializer
-        serializer = VideoSerializer(data=parsed_json_fields)
-        if not serializer.is_valid():
-            return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        video = serializer.save()
-
-        # Set organization
-        video.organization = organization
+        serializer = CreateVideoSerializer(data=parsed_json_fields)
+        serializer.is_valid(raise_exception=True)
 
         # Validate and set category
         category_data = parsed_json_fields.get('category')
         if not category_data:
             return Response({'error': 'Category is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
         category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
+        category = None
         try:
             category = Category.objects.get(id=category_id)
-            video.category = category
         except Category.DoesNotExist:
             return Response({'error': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
 
         # Handle optional subcategory field
+        subcategory = None
         if 'subcategory' in parsed_json_fields and parsed_json_fields['subcategory']:
             subcategory_data = parsed_json_fields['subcategory']
             subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
             if subcategory_id:
                 try:
                     subcategory = SubCategory.objects.get(id=subcategory_id)
-                    video.subcategory = subcategory
                 except SubCategory.DoesNotExist:
                     return Response({'error': 'Subcategory not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        video.save()
-        return Response(VideoSerializer(video).data, status=status.HTTP_201_CREATED)
+        new_video = serializer.save(
+            organization=organization,
+            category=category,
+            subcategory=subcategory
+        )
+        return Response(VideoSerializer(new_video).data, status=status.HTTP_201_CREATED)
     except ValidationError as e:
         return Response({'error': 'Validation error', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
@@ -378,11 +381,8 @@ def update_video(request, video_id):
             return Response({'error': 'Invalid video ID'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Validate video exists
-        try:
-            video = Video.objects.get(id=video_id)
-        except Video.DoesNotExist:
-            return Response({'error': 'Video not found'}, status=status.HTTP_404_NOT_FOUND)
-        
+        video = get_object_or_404(Video, id=video_id)
+
         # Validate input data
         if not request.data:
             return Response({'error': 'Request body is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -401,11 +401,8 @@ def update_video(request, video_id):
         parsed_json_fields = parse_json_fields(data)
 
         # Validate using serializer
-        serializer = VideoSerializer(video, data=parsed_json_fields)
-        if not serializer.is_valid():
-            return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        video = serializer.save()
+        serializer = UpdateVideoSerializer(video, data=parsed_json_fields)
+        serializer.is_valid(raise_exception=True)
 
         # Validate and set organization if provided
         if 'organization' in parsed_json_fields:
@@ -441,8 +438,8 @@ def update_video(request, video_id):
             else:
                 video.subcategory = None
 
-        video.save()
-        return Response(VideoSerializer(video).data, status=status.HTTP_200_OK)
+        updated_video = serializer.save()
+        return Response(VideoSerializer(updated_video).data, status=status.HTTP_200_OK)
     except ValidationError as e:
         return Response({'error': 'Validation error', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:

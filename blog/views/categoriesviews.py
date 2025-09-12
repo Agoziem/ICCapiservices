@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from ..models import *
 from ..serializers import *
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
@@ -9,6 +9,7 @@ from drf_yasg.utils import swagger_auto_schema
 # get all categories
 @swagger_auto_schema(method="get", responses={200: CategorySerializer(many=True), 404: 'Categories Not Found'})
 @api_view(['GET'])
+@permission_classes([])
 def get_categories(request):
     try:
         categories = Category.objects.all()

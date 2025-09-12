@@ -19,6 +19,13 @@ class UserSerializer(serializers.ModelSerializer):
         useravatar = obj.avatar
         return get_image_name(useravatar)
 
+class UserAuthSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    
+
 
 class UserminiSerializer(serializers.ModelSerializer):
     img = serializers.SerializerMethodField()  # Handle avatar as URL
@@ -43,8 +50,8 @@ class RegisterUserSerializer(serializers.Serializer):
 
 
 class RegisterUserResponseSerializer(serializers.Serializer):
-    token = serializers.CharField()
-    user = UserSerializer()
+    message = serializers.CharField()
+    user = UserAuthSerializer()
 
 
 class RegisterUserOauthSerializer(serializers.Serializer):
@@ -61,8 +68,10 @@ class VerifyUserSerializer(serializers.Serializer):
 
 
 class VerifyUserResponseSerializer(serializers.Serializer):
-    token = serializers.CharField()
-    user = UserSerializer()
+    message = serializers.CharField()
+    access_token = serializers.CharField()
+    refresh_token = serializers.CharField()
+    user = UserAuthSerializer()
 
 
 class UpdateUserSerializer(serializers.Serializer):

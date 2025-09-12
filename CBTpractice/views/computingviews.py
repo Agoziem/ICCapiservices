@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from ..models import *
 from ..serializers import CreateTestSerializer, TestSerializer, TestResultSerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from drf_yasg import openapi
@@ -16,6 +16,7 @@ from drf_yasg.utils import swagger_auto_schema
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_tests(request, organization_id):
     try:
         tests = Test.objects.filter(testorganization=organization_id)
@@ -30,6 +31,7 @@ def get_tests(request, organization_id):
 # view to get a single Test
 @swagger_auto_schema(method="get", responses={200: TestSerializer, 404: 'Not Found'})
 @api_view(['GET'])
+@permission_classes([])
 def get_test(request, test_id):
     try:
         test = Test.objects.get(id=test_id)
@@ -116,6 +118,7 @@ def delete_test(request, test_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_test_results(request, organization_id):
     try:
         testresults = TestResult.objects.filter(organization=organization_id)

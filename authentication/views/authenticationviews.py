@@ -1,10 +1,10 @@
 from typing import Any, cast
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from ..serializers import *
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import Group
 from django.conf import settings
 from rest_framework.authtoken.models import Token
@@ -14,6 +14,7 @@ from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from utils import normalize_img_field
+from ..jwt_utils import create_jwt_response_data
 
 User = cast(type[CustomUser], get_user_model())
 
@@ -31,6 +32,7 @@ User = cast(type[CustomUser], get_user_model())
     }
 )
 @api_view(['POST'])
+@permission_classes([])
 def register_user(request):
     serializer = RegisterUserSerializer(data=request.data)
     if not serializer.is_valid():
@@ -63,9 +65,14 @@ def register_user(request):
                 new_user.groups.add(group)
             except Organization.DoesNotExist:
                 pass
-        
-        user_serializer = UserSerializer(instance=new_user)
-        return Response({'token': token.key, 'user': user_serializer.data}, status=status.HTTP_201_CREATED)
+
+        user_serializer = UserAuthSerializer(instance={
+            'id': new_user.pk,
+            'first_name': new_user.first_name,
+            'last_name': new_user.last_name,
+            'email': new_user.email,
+        })
+        return Response({'message': 'User registered successfully', 'user': user_serializer.data}, status=status.HTTP_201_CREATED)
     except Exception as e:
         print(f"Error during user registration: {e}")
         return Response({'error': 'An error occurred during registration'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -78,56 +85,66 @@ def register_user(request):
     operation_description="Register a new user with OAuth provider",
     request_body=RegisterUserOauthSerializer,
     responses={
-        200: UserSerializer,
-        201: UserSerializer,
+        200: VerifyUserResponseSerializer,
+        201: VerifyUserResponseSerializer,
         400: ErrorResponseSerializer,
         500: ErrorResponseSerializer
     }
 )
 @api_view(['POST'])
+@permission_classes([])
 def register_user_with_oauth(request, provider):
-    # Validate input data using serializer
-    serializer = RegisterUserOauthSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    validated_data = serializer.validated_data
-    
-    username = validated_data['name']
-    email = validated_data['email']
-    emailverified = validated_data.get('email_verified', True)
-    first_name = validated_data.get('given_name', '')
-    last_name = validated_data.get('family_name', '')
-    
+    """
+    Register or login user with OAuth provider and return JWT tokens
+    """
     try:
-        user = User.objects.get(email=email, isOauth=True, Oauthprovider=provider)
-        user.username = username
-        user.email = email
-        user.emailIsVerified = emailverified
-        user.first_name = first_name
-        user.last_name = last_name
-        user.date_joined = timezone.now()
-        user.save()
-        user_serializer = UserSerializer(instance=user)
-        return Response(user_serializer.data, status=status.HTTP_200_OK)
-    except User.DoesNotExist:
-        new_user = User.objects.create_user(
-            username=username, 
-            email=email, 
-            first_name=first_name, 
-            last_name=last_name, 
-            emailIsVerified=emailverified, 
-            isOauth=True, 
-            Oauthprovider=provider,
-            date_joined=timezone.now()
-        )
-        new_user.save()
-        token = Token.objects.create(user=new_user)
-        user_serializer = UserSerializer(instance=new_user)
-        return Response({'token': token.key, 'user': user_serializer.data}, status=status.HTTP_201_CREATED)
+        # Validate input data using serializer
+        serializer = RegisterUserOauthSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'error': 'Invalid input data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        validated_data = serializer.validated_data
+        username = validated_data['name']
+        email = validated_data['email']
+        emailverified = validated_data.get('email_verified', True)
+        first_name = validated_data.get('given_name', '')
+        last_name = validated_data.get('family_name', '')
+        
+        try:
+            # User exists, update their information
+            user = User.objects.get(email=email, isOauth=True, Oauthprovider=provider)
+            user.username = username
+            user.email = email
+            user.emailIsVerified = emailverified
+            user.first_name = first_name
+            user.last_name = last_name
+            user.date_joined = timezone.now()
+            user.save()
+            
+            # Generate JWT tokens and create response
+            response_data = create_jwt_response_data(user, "OAuth login successful")
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            # Create new OAuth user
+            new_user = User.objects.create_user(
+                username=username, 
+                email=email, 
+                first_name=first_name, 
+                last_name=last_name, 
+                emailIsVerified=emailverified, 
+                isOauth=True, 
+                Oauthprovider=provider,
+                date_joined=timezone.now()
+            )
+            
+            # Generate JWT tokens and create response
+            response_data = create_jwt_response_data(new_user, "OAuth registration successful")
+            return Response(response_data, status=status.HTTP_201_CREATED)
+            
     except Exception as e:
         print(f"Error during OAuth user registration: {e}")
-        return Response({'error': 'An error occurred during OAuth registration'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # -----------------------------------------------
 # verify user with User Credentials
@@ -144,26 +161,42 @@ def register_user_with_oauth(request, provider):
     }
 )
 @api_view(['POST'])
+@permission_classes([])
 def verify_user(request):
-    # Validate input data using serializer
-    serializer = VerifyUserSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    validated_data = serializer.validated_data
-    
+    """
+    Authenticate user with email and password, return JWT tokens
+    """
     try:
-        user = User.objects.get(email=validated_data['email'], isOauth=False)
-        if not user.check_password(validated_data['password']):
-            return Response({'error': 'Wrong password'}, status=status.HTTP_404_NOT_FOUND)
-        token, created = Token.objects.get_or_create(user=user)
-        user_serializer = UserSerializer(instance=user)
-        return Response({"token": token.key, "user": user_serializer.data}, status=status.HTTP_200_OK)
-    except User.DoesNotExist:
-        return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        # Validate input data using serializer
+        serializer = VerifyUserSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({'error': 'Invalid input data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        validated_data = serializer.validated_data
+        email = validated_data['email']
+        password = validated_data['password']
+        
+        # Check if user exists
+        try:
+            user = User.objects.get(email=email, isOauth=False)
+        except User.DoesNotExist:
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Verify password
+        if not user.check_password(password):
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if user is active
+        if not user.is_active:
+            return Response({'error': 'User account is deactivated'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Generate JWT tokens and create response
+        response_data = create_jwt_response_data(user, "Login successful")
+        return Response(response_data, status=status.HTTP_200_OK)
+        
     except Exception as e:
         print(f"Error during user verification: {e}")
-        return Response({'error': 'An error occurred during verification'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 # ----------------------------------------------
 # logout user by deleting the token
@@ -178,8 +211,10 @@ def verify_user(request):
     }
 )
 @api_view(['POST'])
+@permission_classes([])
 def logout_user(request):
     try:
+        # backlist the token
         token = request.auth
         if token:
             token.delete()
@@ -201,7 +236,8 @@ def logout_user(request):
     }
 )
 @api_view(['GET'])
-def get_user(request, user_id):
+def get_user(request):
+    user_id = request.user.id
     try:
         user = User.objects.get(id=user_id)
         user_serializer = UserSerializer(instance=user)

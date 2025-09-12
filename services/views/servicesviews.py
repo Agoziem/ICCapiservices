@@ -1,6 +1,7 @@
+from re import sub
 from ..models import *
 from ..serializers import PaginatedServiceSerializer, ServiceSerializer, CategorySerializer, SubCategorySerializer, CreateServiceSerializer, UpdateServiceSerializer
-from rest_framework.decorators import api_view, parser_classes
+from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
@@ -43,6 +44,7 @@ class ServicePagination(PageNumberPagination):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_services(request, organization_id):
     try:
         # Validate organization exists
@@ -84,6 +86,7 @@ def get_services(request, organization_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_trendingservices(request, organization_id):
     try:
         # Validate organization exists
@@ -140,6 +143,7 @@ def get_trendingservices(request, organization_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_user_services(request, organization_id, user_id):
     try:
         # Validate organization exists
@@ -190,6 +194,7 @@ def get_user_services(request, organization_id, user_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_service(request, service_id):
     try:
         service = Service.objects.get(id=service_id)
@@ -212,6 +217,7 @@ def get_service(request, service_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_service_token(request, servicetoken):
     try:
         service = Service.objects.get(service_token=servicetoken)
@@ -259,43 +265,28 @@ def add_service(request, organization_id):
         # Add organization to parsed fields
         parsed_json_fields['organization'] = organization_id
 
-        # Validate required fields
-        if 'name' not in parsed_json_fields or not parsed_json_fields['name']:
-            return Response({'error': 'Service name is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if 'description' not in parsed_json_fields or not parsed_json_fields['description']:
-            return Response({'error': 'Service description is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if 'price' not in parsed_json_fields or not parsed_json_fields['price']:
-            return Response({'error': 'Service price is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if 'category' not in parsed_json_fields or not parsed_json_fields['category']:
-            return Response({'error': 'Service category is required'}, status=status.HTTP_400_BAD_REQUEST)
-
         # serialize the field
-        serializer = ServiceSerializer(data=parsed_json_fields)
-        if serializer.is_valid():
-            service = serializer.save()
+        serializer = CreateServiceSerializer(data=parsed_json_fields)
+        serializer.is_valid(raise_exception=True)
+    
+        # Retrieve the category object
+        category_data = parsed_json_fields['category']
+        category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
+        category = Category.objects.get(id=category_id)
 
-            # Set the organization
-            service.organization = organization
-            
-            # Retrieve the category object
-            category_data = parsed_json_fields['category']
-            category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
-            category = Category.objects.get(id=category_id)
-            service.category = category
+        # Handle subcategory field if it exist and its not empty (optional fields)
+        subcategory = None
+        if 'subcategory' in parsed_json_fields and parsed_json_fields['subcategory']:
+            subcategory_data = parsed_json_fields['subcategory']
+            subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
+            subcategory = SubCategory.objects.get(id=subcategory_id)
 
-            # Handle subcategory field if it exist and its not empty (optional fields)
-            if 'subcategory' in parsed_json_fields and parsed_json_fields['subcategory']:
-                subcategory_data = parsed_json_fields['subcategory']
-                subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
-                subcategory = SubCategory.objects.get(id=subcategory_id)
-                service.subcategory = subcategory
-
-            service.save()
-            return Response(ServiceSerializer(service).data, status=status.HTTP_201_CREATED)
-        return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        new_service = serializer.save(
+            organization=organization,
+            category=category, 
+            subcategory=subcategory
+            )
+        return Response(ServiceSerializer(new_service).data, status=status.HTTP_201_CREATED)
     except Organization.DoesNotExist:
         return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
     except Category.DoesNotExist:
@@ -345,43 +336,41 @@ def update_service(request, service_id):
                 return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
 
         # serialize the field
-        serializer = ServiceSerializer(service, data=parsed_json_fields, partial=True)
-        if serializer.is_valid():
-            service = serializer.save()
+        serializer = UpdateServiceSerializer(service, data=parsed_json_fields, partial=True)
+        serializer.is_valid(raise_exception=True)
 
-            # Update organization if provided
-            if 'organization' in parsed_json_fields:
-                organization = Organization.objects.get(id=parsed_json_fields['organization'])
-                service.organization = organization
+        # Update organization if provided
+        if 'organization' in parsed_json_fields:
+            organization = Organization.objects.get(id=parsed_json_fields['organization'])
+            service.organization = organization
+        
+        # Update category field
+        if 'category' in parsed_json_fields and parsed_json_fields['category']:
+            category_data = parsed_json_fields['category']
+            category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
+            if category_id:
+                try:
+                    category = Category.objects.get(id=category_id)
+                    service.category = category
+                except Category.DoesNotExist:
+                    return Response({'error': 'Category not found'}, status=status.HTTP_400_BAD_REQUEST)
             
-            # Update category field
-            if 'category' in parsed_json_fields and parsed_json_fields['category']:
-                category_data = parsed_json_fields['category']
-                category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
-                if category_id:
+        # Update subcategory field (optional fields)
+        if 'subcategory' in parsed_json_fields:
+            if parsed_json_fields['subcategory']:
+                subcategory_data = parsed_json_fields['subcategory']
+                subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
+                if subcategory_id:
                     try:
-                        category = Category.objects.get(id=category_id)
-                        service.category = category
-                    except Category.DoesNotExist:
-                        return Response({'error': 'Category not found'}, status=status.HTTP_400_BAD_REQUEST)
-                
-            # Update subcategory field (optional fields)
-            if 'subcategory' in parsed_json_fields:
-                if parsed_json_fields['subcategory']:
-                    subcategory_data = parsed_json_fields['subcategory']
-                    subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
-                    if subcategory_id:
-                        try:
-                            subcategory = SubCategory.objects.get(id=subcategory_id)
-                            service.subcategory = subcategory
-                        except SubCategory.DoesNotExist:
-                            return Response({'error': 'Subcategory not found'}, status=status.HTTP_400_BAD_REQUEST)
-                else:
-                    service.subcategory = None
+                        subcategory = SubCategory.objects.get(id=subcategory_id)
+                        service.subcategory = subcategory
+                    except SubCategory.DoesNotExist:
+                        return Response({'error': 'Subcategory not found'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                service.subcategory = None
 
-            service.save()
-            return Response(ServiceSerializer(service).data, status=status.HTTP_200_OK)
-        return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        updated_service = serializer.save()
+        return Response(ServiceSerializer(updated_service).data, status=status.HTTP_200_OK)
     except Service.DoesNotExist:
         return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

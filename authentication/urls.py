@@ -6,7 +6,7 @@ urlpatterns = [
     path('register_oauth/<str:provider>/', authenticationviews.register_user_with_oauth, name='register_user_with_oauth'),
     path('verifyuser/', authenticationviews.verify_user, name='verify_user'),
     path('getUsers/', authenticationviews.get_users, name='get_users'),
-    path('getuser/<int:user_id>/', authenticationviews.get_user, name='get_user'),
+    path('getuser/', authenticationviews.get_user, name='get_user'),
     path('update/<int:user_id>/', authenticationviews.update_user, name='update_user'),
     path('delete/<int:user_id>/', authenticationviews.delete_user, name='delete_user'),
     

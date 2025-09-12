@@ -1,6 +1,6 @@
 from ..models import Category
 from ..serializers import CategorySerializer, CreateCategorySerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.exceptions import ValidationError
@@ -16,6 +16,7 @@ from drf_yasg.utils import swagger_auto_schema
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_categories(request):
     try:
         categories = Category.objects.all()

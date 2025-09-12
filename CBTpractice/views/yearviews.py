@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from ..models import Year
 from ..serializers import YearsSerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from drf_yasg import openapi
@@ -10,6 +10,7 @@ from drf_yasg.utils import swagger_auto_schema
 # view to get all the years
 @swagger_auto_schema(method="get", responses={200: YearsSerializer(many=True), 404: 'Years Not Found'})
 @api_view(['GET'])
+@permission_classes([])
 def get_years(request):
     try:
         years = Year.objects.all()
@@ -24,6 +25,7 @@ def get_years(request):
 # view to get a single year
 @swagger_auto_schema(method="get", responses={200: YearsSerializer, 404: 'Year Not Found'})
 @api_view(['GET'])
+@permission_classes([])
 def get_year(request, year_id):
     try:
         year = Year.objects.get(id=year_id)

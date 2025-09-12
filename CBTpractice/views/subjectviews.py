@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from ..models import *
 from ..serializers import SubjectSerializer, QuestionSerializer, CreateSubjectSerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from drf_yasg import openapi
@@ -10,6 +10,7 @@ from drf_yasg.utils import swagger_auto_schema
 # view to get all the subjects
 @swagger_auto_schema(method="get", responses={200: SubjectSerializer(many=True), 404: 'Test Not Found'})
 @api_view(['GET'])
+@permission_classes([])
 def get_subjects(request, test_id):
     try:
         test = Test.objects.get(id=test_id)
@@ -26,6 +27,7 @@ def get_subjects(request, test_id):
 # view to get a single subject
 @swagger_auto_schema(method="get", responses={200: SubjectSerializer, 404: 'Subject Not Found'})
 @api_view(['GET'])
+@permission_classes([])
 def get_subject(request, subject_id):
     try:
         subject = Subject.objects.get(id=subject_id)

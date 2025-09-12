@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from ..models import *
 from ..serializers import *
-from rest_framework.decorators import api_view,parser_classes
+from rest_framework.decorators import api_view,parser_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -26,6 +26,7 @@ class TestimonialPagination(PageNumberPagination):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_testimonials(request, organization_id):
     try:
         # Validate organization exists
@@ -55,6 +56,7 @@ def get_testimonials(request, organization_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_testimonial(request, testimonial_id):
     try:
         testimonial = Testimonial.objects.get(id=testimonial_id)
@@ -66,7 +68,7 @@ def get_testimonial(request, testimonial_id):
 # Add a testimonial view
 @swagger_auto_schema(
     method="post",
-    request_body=TestimonialSerializer,
+    request_body=CreateTestimonialSerializer,
     responses={
         201: TestimonialSerializer(),
         400: 'Bad Request',
@@ -78,17 +80,16 @@ def get_testimonial(request, testimonial_id):
 def add_testimonial(request, organization_id):
     try:
         if isinstance(request.data, QueryDict):
-            data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+            data = request.data.copy()  # Convert QueryDict to a mutable dictionary
         else:
             data = request.data
         organization = Organization.objects.get(id=organization_id)
         data = normalize_img_field(data,"img")
-        
-        serializer = TestimonialSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save(organization=organization)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = CreateTestimonialSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        new_testimonial = serializer.save(organization=organization)
+        return Response(TestimonialSerializer(new_testimonial).data, status=status.HTTP_201_CREATED)
     except Organization.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
@@ -98,7 +99,7 @@ def add_testimonial(request, organization_id):
 # update a testimonial view
 @swagger_auto_schema(
     method="put",
-    request_body=TestimonialSerializer,
+    request_body=UpdateTestimonialSerializer,
     responses={
         200: TestimonialSerializer(),
         400: 'Bad Request',
@@ -111,15 +112,14 @@ def update_testimonial(request, testimonial_id):
     try:
         testimonial = Testimonial.objects.get(id=testimonial_id)
         if isinstance(request.data, QueryDict):
-            data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+            data = request.data.copy()  # Convert QueryDict to a mutable dictionary
         else:
             data = request.data
         data = normalize_img_field(data,"img")
-        serializer = TestimonialSerializer(instance=testimonial, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = UpdateTestimonialSerializer(instance=testimonial, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        updated_testimonial = serializer.save()
+        return Response(TestimonialSerializer(updated_testimonial).data, status=status.HTTP_200_OK)
     except Testimonial.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

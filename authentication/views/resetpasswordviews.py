@@ -1,6 +1,6 @@
 from typing import cast
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from ..serializers import *
@@ -31,6 +31,7 @@ User = cast(type[CustomUser], get_user_model())
     }
 )
 @api_view(['POST'])
+@permission_classes([])
 def verify_token(request):
     try:
         token = request.data.get('token')
@@ -62,6 +63,7 @@ def verify_token(request):
     }
 )
 @api_view(['POST'])
+@permission_classes([])
 def reset_password(request):
     try:
         token = request.data.get('token')
@@ -97,6 +99,7 @@ def reset_password(request):
     }
 )
 @api_view(['POST'])
+@permission_classes([])
 def get_verification_token_by_email(request):
     try:
         email = request.data.get('email')

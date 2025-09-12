@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from ..models import *
 from ..serializers import *
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from drf_yasg import openapi
@@ -10,6 +10,7 @@ from drf_yasg.utils import swagger_auto_schema
 # view to get all Testtype
 @swagger_auto_schema(method="get", responses={200: TestTypeSerializer(many=True), 404: 'TestTypes Not Found'})
 @api_view(['GET'])
+@permission_classes([])
 def get_testtypes(request):
     try:
         testtypes = TestType.objects.all()
@@ -24,6 +25,7 @@ def get_testtypes(request):
 # view to get a single Testtype
 @swagger_auto_schema(method="get", responses={200: TestTypeSerializer, 404: 'TestType Not Found'})
 @api_view(['GET'])
+@permission_classes([])
 def get_testtype(request, testtype_id):
     try:
         testtype = TestType.objects.get(id=testtype_id)

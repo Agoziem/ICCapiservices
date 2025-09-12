@@ -2,7 +2,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import render
 from ..models import *
 from ..serializers import *
-from rest_framework.decorators import api_view,parser_classes
+from rest_framework.decorators import api_view,parser_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from utils import normalize_img_field, parse_json_fields
@@ -24,6 +24,7 @@ class StaffPagination(PageNumberPagination):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_staffs(request, organization_id):
     try:
         # Validate organization exists
@@ -53,6 +54,7 @@ def get_staffs(request, organization_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_staff(request, staff_id):
     try:
         staff = Staff.objects.get(id=staff_id)
@@ -67,7 +69,7 @@ def get_staff(request, staff_id):
 # Add a staff view
 @swagger_auto_schema(
     method="post",
-    request_body=StaffSerializer,
+    request_body=CreateStaffSerializer,
     responses={
         201: StaffSerializer,
         400: 'Bad Request',
@@ -91,14 +93,11 @@ def add_staff(request, organization_id):
         data = normalize_img_field(data, "img")
         
         # Validate input data using serializer
-        serializer = StaffSerializer(data=data)
-        if not serializer.is_valid():
-            print(f"Staff serializer errors: {serializer.errors}")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
-        serializer.save(organization=organization)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
+        serializer = CreateStaffSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        new_staff = serializer.save(organization=organization)
+        return Response(StaffSerializer(new_staff).data, status=status.HTTP_201_CREATED)
+
     except Organization.DoesNotExist:
         return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
@@ -108,7 +107,7 @@ def add_staff(request, organization_id):
 # update a staff view
 @swagger_auto_schema(
     method="put",
-    request_body=StaffSerializer,
+    request_body=UpdateStaffSerializer,
     responses={
         200: StaffSerializer,
         400: 'Bad Request',
@@ -131,14 +130,11 @@ def update_staff(request, staff_id):
         data = normalize_img_field(data, "img")
         
         # Validate input data using serializer
-        serializer = StaffSerializer(instance=staff, data=data)
-        if not serializer.is_valid():
-            print(f"Staff update serializer errors: {serializer.errors}")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
-        
+        serializer = UpdateStaffSerializer(instance=staff, data=data)
+        serializer.is_valid(raise_exception=True)
+        update_staff = serializer.save()
+        return Response(StaffSerializer(update_staff).data, status=status.HTTP_200_OK)
+
     except Staff.DoesNotExist:
         return Response({'error': 'Staff member not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

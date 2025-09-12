@@ -1,6 +1,6 @@
 from ..models import *
 from ..serializers import SubCategorySerializer, CategorySerializer, CreateSubCategorySerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
@@ -15,6 +15,7 @@ from drf_yasg.utils import swagger_auto_schema
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_subcategories(request, category_id):
     try:
         category = Category.objects.get(id=category_id)
@@ -36,6 +37,7 @@ def get_subcategories(request, category_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_subcategory(request, subcategory_id):
     try:
         subcategory = SubCategory.objects.get(id=subcategory_id)

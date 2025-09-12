@@ -1,6 +1,6 @@
 from ..models import *
 from ..serializers import *
-from rest_framework.decorators import api_view,parser_classes
+from rest_framework.decorators import api_view,parser_classes,permission_classes
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
@@ -32,6 +32,7 @@ class ProductPagination(PageNumberPagination):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_products(request, organization_id):
     try:
         # Validate organization exists
@@ -63,6 +64,7 @@ def get_products(request, organization_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_trendingproducts(request, organization_id):
     try:
         # Validate organization exists
@@ -110,6 +112,7 @@ def get_trendingproducts(request, organization_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_user_products(request, organization_id, user_id):
     try:
         # Validate organization exists
@@ -159,6 +162,7 @@ def get_user_products(request, organization_id, user_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_product(request, product_id):
     try:
         product = Product.objects.get(id=product_id)
@@ -204,45 +208,30 @@ def add_product(request, organization_id):
         # Add organization to parsed fields
         parsed_json_fields['organization'] = organization_id
 
-        # Validate required fields
-        if 'name' not in parsed_json_fields or not parsed_json_fields['name']:
-            return Response({'error': 'Product name is required'}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = CreateProductSerializer(data=parsed_json_fields)
+        serializer.is_valid(raise_exception=True)
         
-        if 'description' not in parsed_json_fields or not parsed_json_fields['description']:
-            return Response({'error': 'Product description is required'}, status=status.HTTP_400_BAD_REQUEST)
+        # Retrieve the category object
+        category_data = parsed_json_fields['category']
+        category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
+        category = Category.objects.get(id=category_id)
         
-        if 'price' not in parsed_json_fields or not parsed_json_fields['price']:
-            return Response({'error': 'Product price is required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        if 'category' not in parsed_json_fields or not parsed_json_fields['category']:
-            return Response({'error': 'Product category is required'}, status=status.HTTP_400_BAD_REQUEST)
-    
-        serializer = ProductSerializer(data=parsed_json_fields)
+        # Handle subcategory field if it exist and its not empty (optional fields)
+        subcategory = None
+        if 'subcategory' in parsed_json_fields and parsed_json_fields['subcategory']:
+            subcategory_data = parsed_json_fields['subcategory']
+            subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
+            subcategory = SubCategory.objects.get(id=subcategory_id)
 
-        if serializer.is_valid():
-            product = serializer.save()
+        # Save the product with the relational fields
+        new_product = serializer.save(
+            organization=organization,
+            category=category,
+            subcategory=subcategory if subcategory else None
+        )
 
-            # Set the organization
-            product.organization = organization
-            
-            # Retrieve the category object
-            category_data = parsed_json_fields['category']
-            category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
-            category = Category.objects.get(id=category_id)
-            product.category = category
-            
-            # Handle subcategory field if it exist and its not empty (optional fields)
-            if 'subcategory' in parsed_json_fields and parsed_json_fields['subcategory']:
-                subcategory_data = parsed_json_fields['subcategory']
-                subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
-                subcategory = SubCategory.objects.get(id=subcategory_id)
-                product.subcategory = subcategory
-
-            # Save the product with the relational fields
-            product.save()
-
-            return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
-        return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(ProductSerializer(new_product).data, status=status.HTTP_201_CREATED)
     except Organization.DoesNotExist:
         return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
     except Category.DoesNotExist:
@@ -290,44 +279,41 @@ def update_product(request, product_id):
                 return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
 
         # Update product fields
-        serializer = ProductSerializer(product, data=parsed_json_fields, partial=True)
+        serializer = UpdateProductSerializer(product, data=parsed_json_fields, partial=True)
+        serializer.is_valid(raise_exception=True)
 
-        if serializer.is_valid():
-            product = serializer.save()
-            
-            # Update organization if provided
-            if 'organization' in parsed_json_fields:
-                organization = Organization.objects.get(id=parsed_json_fields['organization'])
-                product.organization = organization
+        # Update organization if provided
+        if 'organization' in parsed_json_fields:
+            organization = Organization.objects.get(id=parsed_json_fields['organization'])
+            product.organization = organization
 
-            # Update category field
-            if 'category' in parsed_json_fields and parsed_json_fields['category']:
-                category_data = parsed_json_fields['category']
-                category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
-                if category_id:
+        # Update category field
+        if 'category' in parsed_json_fields and parsed_json_fields['category']:
+            category_data = parsed_json_fields['category']
+            category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
+            if category_id:
+                try:
+                    category = Category.objects.get(id=category_id)
+                    product.category = category
+                except Category.DoesNotExist:
+                    return Response({'error': 'Category not found'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update subcategory field (optional fields)
+        if 'subcategory' in parsed_json_fields:
+            if parsed_json_fields['subcategory']:
+                subcategory_data = parsed_json_fields['subcategory']
+                subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
+                if subcategory_id:
                     try:
-                        category = Category.objects.get(id=category_id)
-                        product.category = category
-                    except Category.DoesNotExist:
-                        return Response({'error': 'Category not found'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Update subcategory field (optional fields)
-            if 'subcategory' in parsed_json_fields:
-                if parsed_json_fields['subcategory']:
-                    subcategory_data = parsed_json_fields['subcategory']
-                    subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
-                    if subcategory_id:
-                        try:
-                            subcategory = SubCategory.objects.get(id=subcategory_id)
-                            product.subcategory = subcategory
-                        except SubCategory.DoesNotExist:
-                            return Response({'error': 'Subcategory not found'}, status=status.HTTP_400_BAD_REQUEST)
-                else:
-                    product.subcategory = None
-                    
-            product.save()
-            return Response(ProductSerializer(product).data, status=status.HTTP_200_OK)
-        return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                        subcategory = SubCategory.objects.get(id=subcategory_id)
+                        product.subcategory = subcategory
+                    except SubCategory.DoesNotExist:
+                        return Response({'error': 'Subcategory not found'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                product.subcategory = None
+                
+        product = serializer.save()
+        return Response(ProductSerializer(product).data, status=status.HTTP_200_OK)
     except Product.DoesNotExist:
         return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

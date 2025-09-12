@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Customer
@@ -18,6 +18,7 @@ from ICCapp.models import Organization
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def getCustomers(request, organization_id):
     try:
         # Validate organization exists
@@ -44,6 +45,7 @@ def getCustomers(request, organization_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def getCustomer(request, customer_id):
     try:
         customer = Customer.objects.get(id=customer_id)

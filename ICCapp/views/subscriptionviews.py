@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from ..models import *
 from ..serializers import *
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
@@ -21,6 +21,7 @@ class SubscriptionPagination(PageNumberPagination):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_subscriptions(request, organization_id):
     try:
         # Validate organization exists
@@ -50,6 +51,7 @@ def get_subscriptions(request, organization_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_subscription(request, subscription_id):
     try:
         subscription = Subscription.objects.get(id=subscription_id)
@@ -79,9 +81,7 @@ def add_subscription(request, organization_id):
         
         # Validate input data using serializer
         serializer = SubscriptionSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
+        serializer.is_valid(raise_exception=True)
         serializer.save(organization=organization)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
         
@@ -108,9 +108,7 @@ def update_subscription(request, subscription_id):
         
         # Validate input data using serializer
         serializer = SubscriptionSerializer(instance=subscription, data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
         

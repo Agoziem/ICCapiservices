@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from ..models import *
 from ..serializers import *
-from rest_framework.decorators import api_view,parser_classes
+from rest_framework.decorators import api_view,parser_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -18,6 +18,7 @@ from drf_yasg.utils import swagger_auto_schema
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_organizations(request):
     try:
         organizations = Organization.objects.all()
@@ -40,6 +41,7 @@ def get_organizations(request):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_organization(request, organization_id):
     try:
         organization = Organization.objects.get(id=organization_id)
@@ -55,7 +57,7 @@ def get_organization(request, organization_id):
 # Add an organization view
 @swagger_auto_schema(
     method="post",
-    request_body=OrganizationSerializer,
+    request_body=CreateOrganizationSerializer,
     responses={
         201: OrganizationSerializer(),
         400: 'Bad Request'
@@ -66,7 +68,7 @@ def get_organization(request, organization_id):
 def add_organization(request):
     # Process form data
     if isinstance(request.data, QueryDict):
-        data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        data = request.data.copy()  # Convert QueryDict to a mutable dictionary
     else:
         data = request.data
         
@@ -75,13 +77,11 @@ def add_organization(request):
         data = normalize_img_field(data, "logo")
         
         # Validate input data using serializer
-        serializer = OrganizationSerializer(data=data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
+        serializer = CreateOrganizationSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        new_organization = serializer.save()
+        return Response(OrganizationSerializer(new_organization).data, status=status.HTTP_201_CREATED)
+
     except Exception as e:
         print(f"Error creating organization: {str(e)}")
         return Response({'error': 'An error occurred during organization creation'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -89,7 +89,7 @@ def add_organization(request):
 # update an organization view
 @swagger_auto_schema(
     method="put",
-    request_body=OrganizationSerializer,
+    request_body=CreateOrganizationSerializer,
     responses={
         200: OrganizationSerializer(),
         400: 'Bad Request',
@@ -101,7 +101,7 @@ def add_organization(request):
 def update_organization(request, organization_id):
     # Process form data
     if isinstance(request.data, QueryDict):
-        data = request.data.dict()  # Convert QueryDict to a mutable dictionary
+        data = request.data.copy()  # Convert QueryDict to a mutable dictionary
     else:
         data = request.data
         
@@ -112,13 +112,11 @@ def update_organization(request, organization_id):
         data = normalize_img_field(data, "logo")
         
         # Validate input data using serializer
-        organization_serializer = OrganizationSerializer(instance=organization, data=data)
-        if not organization_serializer.is_valid():
-            return Response(organization_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
-        organization_serializer.save()
-        return Response(organization_serializer.data, status=status.HTTP_200_OK)
-        
+        organization_serializer = CreateOrganizationSerializer(instance=organization, data=data, partial=True)
+        organization_serializer.is_valid(raise_exception=True)
+        updated_organization = organization_serializer.save()
+        return Response(OrganizationSerializer(updated_organization).data, status=status.HTTP_200_OK)
+
     except Organization.DoesNotExist:
         return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
@@ -180,7 +178,7 @@ def edit_privacy_policy(request, organization_id):
 # edit the Organization Terms of Use
 @swagger_auto_schema(
     method="put",
-    request_body=OrganizationSerializer,
+    request_body=CreateOrganizationSerializer,
     responses={
         200: OrganizationSerializer(),
         404: 'Organization Not Found'
