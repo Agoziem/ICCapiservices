@@ -279,18 +279,20 @@ def update_product(request, product_id):
                 return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
 
         # Update product fields
+        removed_category = parsed_json_fields.pop("category", None)
+        removed_subcategory = parsed_json_fields.pop("subcategory", None)
+        removed_organization = parsed_json_fields.pop("organization", None)
         serializer = UpdateProductSerializer(product, data=parsed_json_fields, partial=True)
         serializer.is_valid(raise_exception=True)
 
         # Update organization if provided
-        if 'organization' in parsed_json_fields:
-            organization = Organization.objects.get(id=parsed_json_fields['organization'])
+        if removed_organization is not None:
+            organization = Organization.objects.get(id=removed_organization)
             product.organization = organization
 
         # Update category field
-        if 'category' in parsed_json_fields and parsed_json_fields['category']:
-            category_data = parsed_json_fields['category']
-            category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
+        if removed_category is not None:
+            category_id = removed_category.get('id') if isinstance(removed_category, dict) else removed_category
             if category_id:
                 try:
                     category = Category.objects.get(id=category_id)
@@ -299,20 +301,18 @@ def update_product(request, product_id):
                     return Response({'error': 'Category not found'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Update subcategory field (optional fields)
-        if 'subcategory' in parsed_json_fields:
-            if parsed_json_fields['subcategory']:
-                subcategory_data = parsed_json_fields['subcategory']
-                subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
-                if subcategory_id:
-                    try:
-                        subcategory = SubCategory.objects.get(id=subcategory_id)
-                        product.subcategory = subcategory
-                    except SubCategory.DoesNotExist:
-                        return Response({'error': 'Subcategory not found'}, status=status.HTTP_400_BAD_REQUEST)
+        if removed_subcategory is not None:
+            subcategory_id = removed_subcategory.get('id') if isinstance(removed_subcategory, dict) else removed_subcategory
+            if subcategory_id:
+                try:
+                    subcategory = SubCategory.objects.get(id=subcategory_id)
+                    product.subcategory = subcategory
+                except SubCategory.DoesNotExist:
+                    return Response({'error': 'Subcategory not found'}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 product.subcategory = None
                 
-        product = serializer.save()
+        serializer.save()
         return Response(ProductSerializer(product).data, status=status.HTTP_200_OK)
     except Product.DoesNotExist:
         return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)

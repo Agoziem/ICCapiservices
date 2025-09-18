@@ -318,7 +318,6 @@ def update_service(request, service_id):
         data = request.data.copy()  # Convert QueryDict to a mutable dictionary
     else:
         data = request.data
-    
     try:
         service = Service.objects.get(id=service_id)
 
@@ -336,18 +335,20 @@ def update_service(request, service_id):
                 return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
 
         # serialize the field
+        removed_organization = parsed_json_fields.pop('organization', None)
+        removed_category = parsed_json_fields.pop('category', None)
+        removed_subcategory = parsed_json_fields.pop('subcategory', None)
         serializer = UpdateServiceSerializer(service, data=parsed_json_fields, partial=True)
         serializer.is_valid(raise_exception=True)
 
         # Update organization if provided
-        if 'organization' in parsed_json_fields:
-            organization = Organization.objects.get(id=parsed_json_fields['organization'])
+        if removed_organization:
+            organization = Organization.objects.get(id=removed_organization)
             service.organization = organization
         
         # Update category field
-        if 'category' in parsed_json_fields and parsed_json_fields['category']:
-            category_data = parsed_json_fields['category']
-            category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
+        if removed_category:
+            category_id = removed_category.get('id') if isinstance(removed_category, dict) else removed_category
             if category_id:
                 try:
                     category = Category.objects.get(id=category_id)
@@ -356,21 +357,21 @@ def update_service(request, service_id):
                     return Response({'error': 'Category not found'}, status=status.HTTP_400_BAD_REQUEST)
             
         # Update subcategory field (optional fields)
-        if 'subcategory' in parsed_json_fields:
-            if parsed_json_fields['subcategory']:
-                subcategory_data = parsed_json_fields['subcategory']
-                subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
-                if subcategory_id:
-                    try:
-                        subcategory = SubCategory.objects.get(id=subcategory_id)
-                        service.subcategory = subcategory
-                    except SubCategory.DoesNotExist:
-                        return Response({'error': 'Subcategory not found'}, status=status.HTTP_400_BAD_REQUEST)
+        if removed_subcategory:
+            subcategory_id = removed_subcategory.get('id') if isinstance(removed_subcategory, dict) else removed_subcategory
+            if subcategory_id:
+                try:
+                    subcategory = SubCategory.objects.get(id=subcategory_id)
+                    service.subcategory = subcategory
+                except SubCategory.DoesNotExist:
+                    return Response({'error': 'Subcategory not found'}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 service.subcategory = None
 
-        updated_service = serializer.save()
-        return Response(ServiceSerializer(updated_service).data, status=status.HTTP_200_OK)
+        # Save the serializer data first, then save manual changes
+        serializer.save()
+        
+        return Response(ServiceSerializer(service).data, status=status.HTTP_200_OK)
     except Service.DoesNotExist:
         return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

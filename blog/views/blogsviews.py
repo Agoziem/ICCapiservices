@@ -205,6 +205,9 @@ def add_blog(request, organization_id, user_id):
         normalized_data = normalize_img_field(data, "img")
         parsed_json = parse_json_fields(normalized_data)
 
+        # Remove fields that need special handling
+        removed_tags = parsed_json.pop("tags", [])
+        
         serializer = CreateBlogSerializer(data=parsed_json)
         serializer.is_valid(raise_exception=True)
 
@@ -234,11 +237,10 @@ def add_blog(request, organization_id, user_id):
         )
 
         # Tags (create if not exist)
-        tag_names = parsed_json.get("tags", [])
-        if tag_names:
+        if removed_tags:
             tags = [
-                Tag.objects.get_or_create(name=tag.strip())[0]
-                for tag in tag_names
+                Tag.objects.get_or_create(tag=tag.strip())[0]
+                for tag in removed_tags
                 if tag and tag.strip()
             ]
             new_blog.tags.set(tags) # type: ignore
@@ -269,33 +271,39 @@ def update_blog(request, blog_id):
     data = normalize_img_field(data, "img")
     parsed_json = parse_json_fields(data)
 
+    removed_category = parsed_json.pop("category", None)
+    removed_tags = parsed_json.pop("tags", None)
+    removed_author = parsed_json.pop("author", None)
+    removed_slug = parsed_json.pop("slug", None)
     serializer = UpdateBlogSerializer(blog, data=parsed_json, partial=True)
     serializer.is_valid(raise_exception=True)
 
     # Validate & assign related fields
-    if category_id := parsed_json.get("category"):
-        category = Category.objects.filter(id=category_id).first()
+    if removed_category is not None:
+        category = Category.objects.filter(id=removed_category).first()
         if not category:
             return Response({"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
         blog.category = category
 
-    if author_id := parsed_json.get("author"):
-        author = CustomUser.objects.filter(id=author_id).first()
+    if removed_author is not None:
+        author = CustomUser.objects.filter(id=removed_author).first()
         if not author:
             return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
         blog.author = author
 
-    if slug := parsed_json.get("slug"):
-        if Blog.objects.exclude(id=blog_id).filter(slug=slug).exists():
+    if removed_slug is not None:
+        if Blog.objects.exclude(id=blog_id).filter(slug=removed_slug).exists():
             return Response({"error": "Slug already exists"}, status=status.HTTP_400_BAD_REQUEST)
-        blog.slug = slug  # 🔑 explicitly assign slug if passed
+        blog.slug = removed_slug  # 🔑 explicitly assign slug if passed
 
     # Save basic fields via serializer (title, content, img, etc.)
     updated_blog = serializer.save()
 
     # Handle tags after saving
-    if tags := parsed_json.get("tags"):
-        tag_objs = [Tag.objects.get_or_create(name=tag_name)[0] for tag_name in tags]
+    if removed_tags is not None:
+        blog.tags.clear()
+        tags = removed_tags
+        tag_objs = [Tag.objects.get_or_create(tag=tag_name)[0] for tag_name in tags]
         updated_blog.tags.set(tag_objs) # type: ignore
 
     return Response(BlogSerializer(updated_blog).data, status=status.HTTP_200_OK)

@@ -24,6 +24,9 @@ class UserAuthSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150)
     email = serializers.EmailField()
+    emailIsVerified = serializers.BooleanField()
+    verificationToken = serializers.CharField(allow_null=True, required=False)
+    expiryTime = serializers.DateTimeField(allow_null=True, required=False)
     
 
 
@@ -81,6 +84,7 @@ class UpdateUserSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=20, required=False)
     address = serializers.CharField(max_length=255, required=False)
     avatar = serializers.ImageField(required=False)
+    Sex = serializers.CharField(max_length=255, required=False)
 
 
 class VerifyTokenSerializer(serializers.Serializer):

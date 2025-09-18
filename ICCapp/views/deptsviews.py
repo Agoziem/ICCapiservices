@@ -2,6 +2,8 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view,parser_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
+
+import services
 from ..models import *
 from ..serializers import *
 from utils import normalize_img_field, parse_json_fields
@@ -140,28 +142,39 @@ def update_dept(request, department_id):
         # Normalize and parse data
         data = normalize_img_field(data, "img")
         parsed_data = parse_json_fields(data)
-        
+
+        # Handle staff_in_charge separately to avoid serializer conflicts
+        staff_in_charge_id = parsed_data.pop('staff_in_charge', None)
+        services = parsed_data.pop('services', None)
         # Validate input data using UpdateDepartmentSerializer
-        update_serializer = UpdateDepartmentSerializer(instance=department, data=parsed_data)
+        update_serializer = UpdateDepartmentSerializer(instance=department, data=parsed_data, partial=True)
         update_serializer.is_valid(raise_exception=True)
 
         # Set staff in charge if provided
-        if parsed_data.get('staff_in_charge'):
+        if staff_in_charge_id:
             try:
-                staff_in_charge = Staff.objects.get(id=parsed_data.get('staff_in_charge'))
+                staff_in_charge = Staff.objects.get(id=staff_in_charge_id)
                 department.staff_in_charge = staff_in_charge
             except Staff.DoesNotExist:
                 return Response({'error': 'Staff member not found'}, status=status.HTTP_404_NOT_FOUND)
+        elif staff_in_charge_id is None and 'staff_in_charge' in request.data:
+            # If staff_in_charge is explicitly set to null, clear it
+            department.staff_in_charge = None
 
         # Parse and update services
-        services_list = parsed_data.get('services', [])
-        department.services.clear()
-        for service_name in services_list:
-            if service_name:
-                service, created = DepartmentService.objects.get_or_create(name=service_name)
-                department.services.add(service)
+        if services is not None:  # Only update services if provided
+            department.services.clear()
+            for service_name in services:
+                if service_name:
+                    service, created = DepartmentService.objects.get_or_create(name=service_name)
+                    department.services.add(service)
         
+        # Save the serializer data first
         update_serializer.save()
+        
+        # Save the department to update staff_in_charge
+        department.save()
+        
         return Response(DepartmentSerializer(department).data, status=status.HTTP_200_OK)
     except Department.DoesNotExist:
         return Response({'error': 'Department not found'}, status=status.HTTP_404_NOT_FOUND)

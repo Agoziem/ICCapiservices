@@ -64,7 +64,7 @@ class Test(models.Model):
 
 
 # Test Result model
-class TestResult(models.Model):
+class TestResultSubmissions(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     tests = models.ManyToManyField(Test)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)

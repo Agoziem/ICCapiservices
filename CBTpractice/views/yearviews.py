@@ -77,6 +77,7 @@ def update_year(request, year_id):
 def delete_year(request, year_id):
     try:
         year = Year.objects.get(id=year_id)
+        print(year)
         year.delete()
         return Response({'message': 'Year deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
     except Year.DoesNotExist:

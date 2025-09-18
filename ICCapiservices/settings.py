@@ -86,11 +86,6 @@ SWAGGER_SETTINGS = {
 
 
 
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
-    "REFRESH_TOKEN_LIFETIME": timedelta(weeks=4),
-}
-
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -281,12 +276,10 @@ WHATSAPP_FROM_PHONE_NUMBER_ID = config('WHATSAPP_PHONENUMBER_ID')
 WHATSAPP_VERSION = config('WHATSAPP_VERSION')
 WHATSAPP_WEBHOOK_TOKEN = config('TOKEN')
 
-# JWT Settings
-from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Access token valid for 1 hour
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Refresh token valid for 7 days
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),      # Access token valid for 7 days
+    'REFRESH_TOKEN_LIFETIME': timedelta(weeks=4),    # Refresh token valid for 4 weeks
     'ROTATE_REFRESH_TOKENS': True,                   # Generate new refresh token on refresh
     'BLACKLIST_AFTER_ROTATION': True,               # Blacklist old refresh tokens
     'ALGORITHM': 'HS256',

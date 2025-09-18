@@ -1,6 +1,6 @@
 from typing import Any, cast
-from django.shortcuts import render
-from rest_framework.decorators import api_view,permission_classes
+from django.shortcuts import get_object_or_404, render
+from rest_framework.decorators import api_view,permission_classes,parser_classes
 from rest_framework.response import Response
 from rest_framework import status
 from ..serializers import *
@@ -15,6 +15,9 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from utils import normalize_img_field
 from ..jwt_utils import create_jwt_response_data
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework.parsers import MultiPartParser, FormParser
 
 User = cast(type[CustomUser], get_user_model())
 
@@ -51,8 +54,6 @@ def register_user(request):
             password=data['password'],
             date_joined=timezone.now()
         )
-        
-        token = Token.objects.create(user=new_user)
         new_user.verificationToken = uuid.uuid4().hex
         new_user.expiryTime = timezone.now() + timezone.timedelta(hours=2)
         new_user.save()
@@ -71,6 +72,9 @@ def register_user(request):
             'first_name': new_user.first_name,
             'last_name': new_user.last_name,
             'email': new_user.email,
+            'emailIsVerified': new_user.emailIsVerified,
+            'verificationToken': new_user.verificationToken,
+            'expiryTime': new_user.expiryTime
         })
         return Response({'message': 'User registered successfully', 'user': user_serializer.data}, status=status.HTTP_201_CREATED)
     except Exception as e:
@@ -189,7 +193,26 @@ def verify_user(request):
         # Check if user is active
         if not user.is_active:
             return Response({'error': 'User account is deactivated'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
+        # Check if email is verified
+        if not user.emailIsVerified:
+            if user.verificationToken is not None:
+                user.verificationToken = None
+                user.expiryTime = None
+            token = uuid.uuid4().hex
+            user.verificationToken = token
+            user.expiryTime = timezone.now() + timezone.timedelta(hours=2)
+            user.save()
+            user_serializer = UserAuthSerializer(instance={
+                'id': user.pk,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'emailIsVerified': user.emailIsVerified,
+                'verificationToken': user.verificationToken,
+                'expiryTime': user.expiryTime
+            })
+            return Response({'message': 'Verification email sent to your inbox', 'user': user_serializer.data}, status=status.HTTP_200_OK)
         # Generate JWT tokens and create response
         response_data = create_jwt_response_data(user, "Login successful")
         return Response(response_data, status=status.HTTP_200_OK)
@@ -202,27 +225,66 @@ def verify_user(request):
 # logout user by deleting the token
 # -----------------------------------------------
 @swagger_auto_schema(
-    method='post',
-    operation_description="Logout user by deleting the token",
+    method="post",
+    operation_description="Logout user by blacklisting the refresh token",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            "refresh": openapi.Schema(type=openapi.TYPE_STRING, description="Refresh token"),
+        },
+        required=["refresh"],
+    ),
     responses={
-        204: "No Content",
+        205: "Reset Content",
+        400: "Bad Request",
+        401: "Unauthorized",
+        500: "Internal Server Error",
+    },
+)
+@api_view(["POST"])
+def logout_user(request):
+    try:
+        refresh_token = request.data.get("refresh")
+        if not refresh_token:
+            return Response({"error": "Refresh token required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+
+        return Response(status=status.HTTP_205_RESET_CONTENT)
+
+    except TokenError as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(f"Error during logout: {e}")
+        return Response({"error": "An error occurred during logout"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# -----------------------------------------------
+# get a user by ID
+# -----------------------------------------------
+@swagger_auto_schema(
+    method='get',
+    operation_description="Get current user Profile",
+    responses={
+        200: UserSerializer,
         404: "User not found",
         500: "Internal server error"
     }
 )
-@api_view(['POST'])
+@api_view(['GET'])
 @permission_classes([])
-def logout_user(request):
+def get_user(request):
+    user_id = request.user.id
     try:
-        # backlist the token
-        token = request.auth
-        if token:
-            token.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        user = User.objects.get(id=user_id) 
+        user_serializer = UserSerializer(instance=user)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response(None, status=status.HTTP_200_OK) 
     except Exception as e:
-        print(f"Error during user logout: {e}")
-        return Response({'error': 'An error occurred during logout'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        print(e)
+        return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 # -----------------------------------------------
 # get a user by ID
 # -----------------------------------------------
@@ -236,10 +298,9 @@ def logout_user(request):
     }
 )
 @api_view(['GET'])
-def get_user(request):
-    user_id = request.user.id
+def get_user_by_id(request, user_id):
     try:
-        user = User.objects.get(id=user_id)
+        user = get_object_or_404(User, id=user_id)
         user_serializer = UserSerializer(instance=user)
         return Response(user_serializer.data, status=status.HTTP_200_OK)
     except User.DoesNotExist:
@@ -273,7 +334,6 @@ def get_users(request):
 # -----------------------------------------------
 # view to update a user
 # -----------------------------------------------
-
 @swagger_auto_schema(
     method='put',
     operation_description="Update user information",
@@ -285,20 +345,19 @@ def get_users(request):
     }
 )
 @api_view(['PUT'])
+@parser_classes([MultiPartParser, FormParser])
 def update_user(request, user_id):
     # Validate input data using serializer
-    serializer = UpdateUserSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    validated_data = serializer.validated_data
     
     try:
         user = User.objects.get(id=user_id)
-        
-        # Normalize image field for proper handling
         data = request.data.copy()
+        # Normalize image field for proper handling
         data = normalize_img_field(data, "avatar")
+
+        serializer = UpdateUserSerializer(instance=user, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
         
         # Update user fields with validated data
         user.first_name = validated_data.get('first_name', user.first_name)
@@ -306,6 +365,7 @@ def update_user(request, user_id):
         user.email = validated_data.get('email', user.email)
         user.phone = validated_data.get('phone', user.phone)
         user.address = validated_data.get('address', user.address)
+        user.Sex = validated_data.get('Sex', user.Sex)
         
         # Handle avatar update
         if data.get("avatar"):

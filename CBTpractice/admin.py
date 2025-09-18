@@ -44,8 +44,8 @@ class TestAdmin(admin.ModelAdmin):
     list_filter = ('testYear','texttype','testorganization')
     search_fields = ('testYear','texttype','testorganization')
 
-@admin.register(TestResult)
-class TestResultAdmin(admin.ModelAdmin):
+@admin.register(TestResultSubmissions)
+class TestResultSubmissionsAdmin(admin.ModelAdmin):
     list_display = ('user','mark','date')
     list_filter = ('user','date')
     search_fields = ('user','mark')

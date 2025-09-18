@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from ..models import *
 from ..serializers import *
 from rest_framework.decorators import api_view
@@ -23,39 +23,42 @@ User = cast(type[CustomUser], get_user_model())
 )
 @api_view(['POST'])
 def get_student_tests(request):
-    # Validate input data using serializer
     serializer = StudentTestRequestSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+    serializer.is_valid(raise_exception=True)
     validated_data = serializer.validated_data
-    
+
     try:
-        user_id = validated_data.get('user_id')
-        test_id = validated_data.get('test_id')
-        subjects = validated_data.get('examSubjects', [])
-        subjects_id = [subject.get('id') for subject in subjects]
-        
-        # Validate user and test existence
-        User.objects.get(id=user_id)
-        student_test = Test.objects.get(id=test_id)
-        Subject.objects.filter(id__in=subjects_id)
-        
+        user_id = validated_data['user_id']
+        test_id = validated_data['test_id']
+        subjects_id = [subject['id'] for subject in validated_data.get('examSubjects', [])]
+
+        # Ensure user and test exist
+        user = get_object_or_404(User, id=user_id)
+        student_test = get_object_or_404(Test, id=test_id)
+
+        # Serialize test
         test_serializer = TestSerializer(student_test)
         serialized_data = test_serializer.data
-        
-        # Filter subjects based on requested subjects
-        filtered_subjects = [subj for subj in serialized_data['testSubject'] if subj['id'] in subjects_id]
-        serialized_data['testSubject'] = filtered_subjects
-        
+
+        # Optionally validate subject IDs exist
+        if subjects_id:
+            valid_subjects = set(
+                Subject.objects.filter(id__in=subjects_id).values_list('id', flat=True)
+            )
+            serialized_data['testSubject'] = [
+                subj for subj in serialized_data['testSubject']
+                if subj['id'] in valid_subjects
+            ]
+
         return Response(serialized_data, status=status.HTTP_200_OK)
-    except User.DoesNotExist:
-        return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
-    except Test.DoesNotExist:
-        return Response({"error": "Test does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
     except Exception as e:
         print(f"Error in get_student_tests: {str(e)}")
-        return Response({"error": "An error occurred while fetching student tests"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(
+            {"error": "An error occurred while fetching student tests"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
 
 
 # view to Submit Student Test
@@ -122,7 +125,7 @@ def submit_student_test(request, organization_id):
         Score['Total'] = Total_test_score
         
         # Create test result
-        testresult = TestResult.objects.create(organization=organization, user=user)
+        testresult = TestResultSubmissions.objects.create(organization=organization, user=user)
         if test_ids:
             testresult.tests.add(*test_ids)
         

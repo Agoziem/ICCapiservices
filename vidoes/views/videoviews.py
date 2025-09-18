@@ -381,7 +381,9 @@ def update_video(request, video_id):
             return Response({'error': 'Invalid video ID'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Validate video exists
-        video = get_object_or_404(Video, id=video_id)
+        video = Video.objects.filter(id=video_id).first()
+        if not video:
+            return Response({'error': 'Video not found'}, status=status.HTTP_404_NOT_FOUND)
 
         # Validate input data
         if not request.data:
@@ -401,21 +403,23 @@ def update_video(request, video_id):
         parsed_json_fields = parse_json_fields(data)
 
         # Validate using serializer
+        removed_organization = parsed_json_fields.pop('organization', None)
+        removed_category = parsed_json_fields.pop('category', None)
+        removed_subcategory = parsed_json_fields.pop('subcategory', None)
         serializer = UpdateVideoSerializer(video, data=parsed_json_fields)
         serializer.is_valid(raise_exception=True)
 
         # Validate and set organization if provided
-        if 'organization' in parsed_json_fields:
-            organization_id = parsed_json_fields['organization']
+        if removed_organization is not None:
             try:
-                organization = Organization.objects.get(id=organization_id)
+                organization = Organization.objects.get(id=removed_organization)
                 video.organization = organization
             except Organization.DoesNotExist:
                 return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
 
         # Update category field if provided
-        if 'category' in parsed_json_fields:
-            category_data = parsed_json_fields['category']
+        if removed_category is not None:
+            category_data = removed_category
             category_id = category_data.get('id') if isinstance(category_data, dict) else category_data
             if category_id:
                 try:
@@ -425,9 +429,9 @@ def update_video(request, video_id):
                     return Response({'error': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
                 
         # Update subcategory field (optional)
-        if 'subcategory' in parsed_json_fields:
-            if parsed_json_fields['subcategory']:
-                subcategory_data = parsed_json_fields['subcategory']
+        if removed_subcategory is not None:
+            if removed_subcategory:
+                subcategory_data = removed_subcategory
                 subcategory_id = subcategory_data.get('id') if isinstance(subcategory_data, dict) else subcategory_data
                 if subcategory_id:
                     try:

@@ -1,8 +1,8 @@
 from django.contrib import admin
 
-from .models import Notification
+from .models import NotificationModified
 
-@admin.register(Notification)
+@admin.register(NotificationModified)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ['title', 'message', 'viewed']
     search_fields = ['title', 'message']

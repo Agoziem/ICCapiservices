@@ -1,6 +1,6 @@
 from ..models import Category, SubCategory
 from ..serializers import SubCategorySerializer, CreateSubCategorySerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.exceptions import ValidationError
@@ -18,6 +18,7 @@ from drf_yasg.utils import swagger_auto_schema
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_subcategories(request, category_id):
     try:
         # Validate category_id
@@ -49,6 +50,7 @@ def get_subcategories(request, category_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_subcategory(request, subcategory_id):
     try:
         # Validate subcategory_id

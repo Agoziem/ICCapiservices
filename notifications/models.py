@@ -1,7 +1,7 @@
 from django.db import models
 
 # Create your models here.
-class Notification(models.Model):
+class NotificationModified(models.Model):
     title = models.CharField(max_length=255)
     message = models.TextField()
     viewed = models.BooleanField(default=False)

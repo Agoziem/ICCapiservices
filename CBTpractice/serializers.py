@@ -40,10 +40,10 @@ class TestSerializer(serializers.ModelSerializer):
         model = Test
         fields = '__all__'
 
-class TestResultSerializer(serializers.ModelSerializer):
+class TestResultSubmissionSerializer(serializers.ModelSerializer):
     tests = TestSerializer(many=True)
     class Meta:
-        model = TestResult
+        model = TestResultSubmissions
         fields = '__all__'
 
 
@@ -83,16 +83,14 @@ class CreateSubjectSerializer(serializers.ModelSerializer):
         fields = ['subjectname', 'subjectduration', 'questions']
 
 
+class SubjectRequestSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    subjectname = serializers.CharField()
+
 class StudentTestRequestSerializer(serializers.Serializer):
-    """ 
-    Serializer for student test request
-    """
     user_id = serializers.IntegerField()
     test_id = serializers.IntegerField()
-    examSubjects = serializers.ListField(
-        child=serializers.DictField(child=serializers.IntegerField()),
-        allow_empty=True
-    )
+    examSubjects = SubjectRequestSerializer(many=True, allow_empty=True)
 
 
 class QuestionAnswerSerializer(serializers.Serializer):
@@ -110,19 +108,30 @@ class CreateTestSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'testYear': {'required': True},
             'texttype': {'required': True},
-            'testSubject': {'required': True}
+            'testSubject': {'required': False},  # mark as optional
         }
 
-        def create(self, validated_data):
-            test = Test.objects.create(**validated_data)
-            return test
+    def create(self, validated_data):
+        # pop out testSubject if present, handle separately
+        test_subjects = validated_data.pop('testSubject', [])
+        test = Test.objects.create(**validated_data)
 
-        def update(self, instance, validated_data):
-            instance.testYear = validated_data.get('testYear', instance.testYear)
-            instance.texttype = validated_data.get('texttype', instance.texttype)
-            instance.testSubject.set(validated_data.get('testSubject', instance.testSubject))
-            instance.save()
-            return instance
+        if test_subjects:  # only set if provided
+            test.testSubject.set(test_subjects)
+
+        return test
+
+    def update(self, instance, validated_data):
+        instance.testYear = validated_data.get('testYear', instance.testYear)
+        instance.texttype = validated_data.get('texttype', instance.texttype)
+
+        # update subjects only if explicitly provided
+        if 'testSubject' in validated_data:
+            instance.testSubject.set(validated_data['testSubject'])
+
+        instance.save()
+        return instance
+
 
 
 class TestSubmissionSerializer(serializers.Serializer):

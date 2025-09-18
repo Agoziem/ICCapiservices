@@ -28,5 +28,8 @@ def create_jwt_response_data(user, message="Authentication successful"):
             'first_name': user.first_name,
             'last_name': user.last_name,
             'email': user.email,
+            'emailIsVerified': user.emailIsVerified,
+            'verificationToken': user.verificationToken,
+            'expiryTime': user.expiryTime
         }
     }

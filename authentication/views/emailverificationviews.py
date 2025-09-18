@@ -81,7 +81,7 @@ def verify_email(request):
     operation_description="Get user by email for email verification",
     request_body=GetUserByEmailSerializer,
     responses={
-        200: SuccessResponseSerializer,
+        200: UserSerializer,
         404: ErrorResponseSerializer,
         500: "Internal server error"
     }

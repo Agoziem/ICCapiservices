@@ -1,6 +1,6 @@
 from ..models import *
 from ..serializers import ServiceSerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from utils import get_full_image_url
@@ -25,6 +25,7 @@ class ServicePagination(PageNumberPagination):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_users_that_bought_service(request, service_id):
     try:
         # Get the service instance
@@ -67,6 +68,7 @@ def get_users_that_bought_service(request, service_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_users_whose_service_is_in_progress(request, service_id):
     try:
         service = Service.objects.get(id=service_id)
@@ -100,6 +102,7 @@ def get_users_whose_service_is_in_progress(request, service_id):
     }
 )
 @api_view(['GET'])
+@permission_classes([])
 def get_users_whose_service_is_completed(request, service_id):
     try:
         service = Service.objects.get(id=service_id)

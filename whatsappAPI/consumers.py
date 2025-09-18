@@ -3,6 +3,8 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import Contact, WAMessage
 from channels.db import database_sync_to_async
+from .serializers import ContactSerializer  # Ensure you have this serializer in place
+
 
 
 class WAMessagesConsumer(AsyncWebsocketConsumer):
@@ -115,7 +117,6 @@ class WAContactsConsumer(AsyncWebsocketConsumer):
     # ----------------------------------------------------------------
     @database_sync_to_async
     def serialize_contact(self, contact):
-        from .serializers import ContactSerializer  # Ensure you have this serializer in place
         serializer = ContactSerializer(contact)
         return serializer.data
 

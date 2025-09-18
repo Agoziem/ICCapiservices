@@ -30,8 +30,8 @@ def get_payments(request, organization_id):
         orders = Orders.objects.filter(organization=organization_id)
         
         if not orders.exists():
-            return Response({'error': 'No payments found for this organization'}, status=status.HTTP_404_NOT_FOUND)
-            
+            return Response([], status=status.HTTP_200_OK)
+
         serializer = PaymentResponseSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Organization.DoesNotExist:
@@ -56,8 +56,8 @@ def get_payments_by_user(request, user_id):
         orders = Orders.objects.filter(customer=user_id)
         
         if not orders.exists():
-            return Response({'error': 'No payments found for this user'}, status=status.HTTP_404_NOT_FOUND)
-            
+            return Response([], status=status.HTTP_200_OK)
+
         serializer = PaymentResponseSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Customer.DoesNotExist:
@@ -326,7 +326,11 @@ def get_payment_count(request, organization_id):
         orders = Orders.objects.filter(organization=organization_id)
         
         if not orders.exists():
-            return Response({'error': 'No payments found for this organization'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                'totalorders': 0, 
+                'totalcustomers': 0,
+                'customers': []
+            }, status=status.HTTP_200_OK)
             
         customers = orders.values('customer__id','customer__username').annotate(Count('customer'), Sum('amount'), Avg('amount'))
         totalorders = orders.count()

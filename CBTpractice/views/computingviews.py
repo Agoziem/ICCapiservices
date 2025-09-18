@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from ..models import *
-from ..serializers import CreateTestSerializer, TestSerializer, TestResultSerializer
+from ..serializers import CreateTestSerializer, TestResultSubmissionSerializer, TestSerializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -60,6 +60,7 @@ def add_test(request, organization_id):
     except Exception as e:
         print(f"Error creating test: {str(e)}")
         return Response({'error': 'An error occurred during test creation'}, status=status.HTTP_400_BAD_REQUEST)
+    
 # view to update a Test
 @swagger_auto_schema(
     method="put",
@@ -113,7 +114,7 @@ def delete_test(request, test_id):
 @swagger_auto_schema(
     method="get",
     responses={
-        200: TestResultSerializer(many=True),
+        200: TestResultSubmissionSerializer(many=True),
         404: 'TestResults Not Found'
     }
 )
@@ -121,10 +122,10 @@ def delete_test(request, test_id):
 @permission_classes([])
 def get_test_results(request, organization_id):
     try:
-        testresults = TestResult.objects.filter(organization=organization_id)
-        serializer = TestResultSerializer(testresults, many=True)
+        testresults = TestResultSubmissions.objects.filter(organization=organization_id)
+        serializer = TestResultSubmissionSerializer(testresults, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    except TestResult.DoesNotExist:
+    except TestResultSubmissions.DoesNotExist:
         return Response({'error': 'Test results not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         print(f"Error fetching test results: {str(e)}")
