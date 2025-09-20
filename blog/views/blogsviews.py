@@ -350,13 +350,13 @@ def delete_blog(request, blog_id):
 )
 @api_view(['GET'])
 @permission_classes([])
-def add_views(request, blog_id):
+def add_views(request, blog_slug):
     try:
-        # Validate blog_id
-        if not blog_id or not str(blog_id).isdigit():
-            return Response({'error': 'Invalid blog ID'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        blog = Blog.objects.get(id=blog_id)
+        # Validate blog_slug
+        if not blog_slug:
+            return Response({'error': 'Invalid blog slug'}, status=status.HTTP_400_BAD_REQUEST)
+
+        blog = Blog.objects.get(slug=blog_slug)
         blog.views += 1
         blog.save()
         return Response({'message': 'View count updated successfully'}, status=status.HTTP_200_OK)

@@ -298,3 +298,18 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',
 }
 
+
+ # Firebase Settings
+FIREBASE_TYPE = config("FIREBASE_TYPE", "service_account")
+FIREBASE_PROJECT_ID = config("FIREBASE_PROJECT_ID", "your-project-id")
+FIREBASE_PRIVATE_KEY_ID = config("FIREBASE_PRIVATE_KEY_ID", "your-private-key-id")
+# Fix private key formatting by replacing literal \n with actual newlines
+_firebase_private_key = config("FIREBASE_PRIVATE_KEY", "your-private-key")
+FIREBASE_PRIVATE_KEY = _firebase_private_key.replace('\\n', '\n') if isinstance(_firebase_private_key, str) else _firebase_private_key
+FIREBASE_CLIENT_EMAIL = config("FIREBASE_CLIENT_EMAIL", "your-client-email")
+FIREBASE_CLIENT_ID = config("FIREBASE_CLIENT_ID", "your-client-id")
+FIREBASE_AUTH_URI = config("FIREBASE_AUTH_URI", "https://accounts.google.com/o/oauth2/auth")
+FIREBASE_TOKEN_URI = config("FIREBASE_TOKEN_URI", "https://oauth2.googleapis.com/token")
+FIREBASE_AUTH_PROVIDER_X509_CERT_URL = config("FIREBASE_AUTH_PROVIDER_X509_CERT_URL", "https://www.googleapis.com/oauth2/v1/certs")
+FIREBASE_CLIENT_X509_CERT_URL = config("FIREBASE_CLIENT_X509_CERT_URL", "your-client-cert-url")
+FIREBASE_UNIVERSE_DOMAIN = config("FIREBASE_UNIVERSE_DOMAIN", "googleapis.com")

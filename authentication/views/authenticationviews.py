@@ -1,3 +1,4 @@
+from email import message
 from typing import Any, cast
 from django.shortcuts import get_object_or_404, render
 from rest_framework.decorators import api_view,permission_classes,parser_classes
@@ -389,7 +390,38 @@ def update_user(request, user_id):
     except Exception as e:
         print(f"Error during user update: {e}")
         return Response({'error': 'An error occurred during user update'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
+
+# -----------------------------------------------
+# update FCM token
+# -----------------------------------------------
+@swagger_auto_schema(
+    method='put',
+    operation_description="Update user FCM token",
+    request_body=UpdateUserFCMTokenSerializer,
+    responses={
+        200: SuccessResponseSerializer,
+        404: "User not found",
+        500: "Internal server error"
+    }
+)
+@api_view(['PUT'])
+def update_user_fcm_token(request):
+    try:
+        user_id = request.user.id
+        user = User.objects.get(id=user_id)
+        serializer = UpdateUserFCMTokenSerializer(instance=user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        user.fcmToken = validated_data.get('fcmToken', user.fcmToken)
+        user.save()
+        return Response({'message': 'FCM token updated successfully'}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error during FCM token update: {e}")
+        return Response({'error': 'An error occurred during FCM token update'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # -----------------------------------------------
 # remove a user and the token

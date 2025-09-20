@@ -15,6 +15,7 @@ urlpatterns = [
     path('getUserbyEmail/', emailverificationviews.get_user_by_email, name='get_user_by_email'),
     path('getUsers/', authenticationviews.get_users, name='get_users'),
     path('getuser/', authenticationviews.get_user, name='get_user'),
+    path('updatefcm/', authenticationviews.update_user_fcm_token, name='update_user_fcm_token'),
     path('getuserbyid/<int:user_id>/', authenticationviews.get_user_by_id, name='get_user_by_id'),
     path('update/<int:user_id>/', authenticationviews.update_user, name='update_user'),
     path('delete/<int:user_id>/', authenticationviews.delete_user, name='delete_user'),

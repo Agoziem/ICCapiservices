@@ -12,7 +12,7 @@ urlpatterns = [
     path('addblog/<int:organization_id>/<int:user_id>/', add_blog),
     path('updateblog/<int:blog_id>/', update_blog),
     path('deleteblog/<int:blog_id>/', delete_blog),
-    path('addviews/<int:blog_id>/', add_views),
+    path('addviews/<slug:blog_slug>/', add_views),
 
     path('getCategories/', get_categories),
     path('addCategory/', add_category),

@@ -30,11 +30,7 @@ def get_subscriptions(request, organization_id):
     try:
         # Validate organization exists
         organization = Organization.objects.get(id=organization_id)
-        emails = Subscription.objects.filter(organization=organization_id)
-        
-        if not emails.exists():
-            return Response({'error': 'No subscriptions found for this organization'}, status=status.HTTP_404_NOT_FOUND)
-
+        emails = Subscription.objects.filter(organization=organization).order_by("-created_at")
         paginator = EmailModulePagination()
         result_page = paginator.paginate_queryset(emails, request)
         serializer = SubscriptionSerializer(result_page, many=True)
@@ -59,11 +55,7 @@ def get_emails(request, organization_id):
     try:
         # Validate organization exists
         organization = Organization.objects.get(id=organization_id)
-        emails = Email.objects.filter(organization=organization_id).order_by("-created_at")
-        
-        if not emails.exists():
-            return Response({'error': 'No emails found for this organization'}, status=status.HTTP_404_NOT_FOUND)
-
+        emails = Email.objects.filter(organization=organization).order_by("-created_at")
         paginator = EmailModulePagination()
         result_page = paginator.paginate_queryset(emails, request)
         serializer = EmailSerializer(result_page, many=True)
@@ -208,11 +200,7 @@ def delete_email(request, email_id):
 def get_responses(request, message_id):
     try:
         email = Email.objects.get(id=message_id)
-        responses = EmailResponse.objects.filter(message=email)
-        
-        if not responses.exists():
-            return Response({'error': 'No responses found for this email'}, status=status.HTTP_404_NOT_FOUND)
-
+        responses = EmailResponse.objects.filter(message=email).order_by("-created_at")
         paginator = EmailModulePagination()
         result_page = paginator.paginate_queryset(responses, request)
         serializer = EmailResponseSerializer(result_page, many=True)
@@ -265,10 +253,7 @@ def create_responses(request):
 @api_view(['GET'])
 def getsentemails(request):
     try:
-        emails = EmailMessage.objects.all()
-        
-        if not emails.exists():
-            return Response({'error': 'No sent emails found'}, status=status.HTTP_404_NOT_FOUND)
+        emails = EmailMessage.objects.all().order_by("-created_at")
         paginator = EmailModulePagination()
         result_page = paginator.paginate_queryset(emails, request)
         serializer = EmailMessageSerializer(result_page, many=True)

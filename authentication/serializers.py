@@ -86,6 +86,9 @@ class UpdateUserSerializer(serializers.Serializer):
     avatar = serializers.ImageField(required=False)
     Sex = serializers.CharField(max_length=255, required=False)
 
+class UpdateUserFCMTokenSerializer(serializers.Serializer):
+    fcmToken = serializers.CharField(required=False)
+
 
 class VerifyTokenSerializer(serializers.Serializer):
     token = serializers.CharField()
