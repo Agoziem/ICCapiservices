@@ -1,114 +1,145 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from ..models import Question, Answer, Subject
-from ..serializers import QuestionSerializer, AnswerSerializer
+from ..serializers import CreateQuestionSerializer, QuestionSerializer, AnswerSerializer
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
-
-@api_view(['POST'])
-def create_question(request, subject_id):
-    data = request.data
-    correct_answer = None
+@swagger_auto_schema(method="get", responses={200: QuestionSerializer(many=True), 404: 'Not Found'})
+@api_view(['GET'])
+@permission_classes([])
+def get_questions(request, subject_id):
     try:
         subject = Subject.objects.get(id=subject_id)
-        questiontext = data.get('questiontext', None)
-        questionMark = data.get('questionMark', 0)
-        correctAnswerdescription = data.get('correctAnswerdescription', None)
-        question, created = Question.objects.get_or_create(
+        questions = subject.questions.all()
+        serializer = QuestionSerializer(questions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Subject.DoesNotExist:
+        return Response({'error': 'Subject not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error fetching questions: {str(e)}")
+        return Response({'error': 'An error occurred while fetching questions'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@swagger_auto_schema(method="get", responses={200: QuestionSerializer, 404: 'Not Found'})
+@api_view(['GET'])
+@permission_classes([])
+def get_question(request, question_id):
+    try:
+        question = Question.objects.get(id=question_id)
+        serializer = QuestionSerializer(question, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Question.DoesNotExist:
+        return Response({'error': 'Question not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error fetching question: {str(e)}")
+        return Response({'error': 'An error occurred while fetching question'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@swagger_auto_schema(method="post", request_body=CreateQuestionSerializer, responses={201: QuestionSerializer, 400: 'Bad Request', 404: 'Subject Not Found'})
+@api_view(['POST'])
+def create_question(request, subject_id):
+    # Validate input data using serializer
+    serializer = CreateQuestionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    validated_data = serializer.validated_data
+    
+    try:
+        subject = Subject.objects.get(id=subject_id)
+        
+        questiontext = validated_data.get('questiontext')
+        questionMark = validated_data.get('questionMark', 0)
+        correctAnswerdescription = validated_data.get('correctAnswerdescription', '')
+        
+        # Check if question already exists
+        existing_question = Question.objects.filter(
+            questiontext=questiontext,
+            questionMark=questionMark,
+            correctAnswerdescription=correctAnswerdescription
+        ).first()
+        
+        if existing_question:
+            return Response({'error': 'Question already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create new question
+        question = Question.objects.create(
             questiontext=questiontext,
             questionMark=questionMark,
             correctAnswerdescription=correctAnswerdescription
         )
-        if created:
-            for answer_data in data.get('answers', []):
-                answertext = answer_data.get('answertext', None)
-                isCorrect = answer_data.get('isCorrect', False)
-                answer, _ = Answer.objects.get_or_create(answertext=answertext)
-                question.answers.add(answer)
-                if isCorrect:
-                    correct_answer = answer
-
-            if correct_answer:
-                question.correctAnswer = correct_answer
-            question.save()
-            subject.questions.add(question)
-            question_serializer = QuestionSerializer(question)
-            return Response(question_serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response({'error': 'Question already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Add answers to the question
+        for answer_data in validated_data.get('answers', []):
+            answertext = answer_data.get('answertext')
+            isCorrect = answer_data.get('isCorrect', False)
+            answer, _ = Answer.objects.get_or_create(answertext=answertext, isCorrect=isCorrect)
+            question.answers.add(answer)
+        
+        question.save()
+        subject.questions.add(question)
+        
+        question_serializer = QuestionSerializer(question)
+        return Response(question_serializer.data, status=status.HTTP_201_CREATED)
 
     except Subject.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Subject not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error creating question: {str(e)}")
+        return Response({'error': 'An error occurred during question creation'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # Update Question View
+@swagger_auto_schema(method="put", request_body=CreateQuestionSerializer, responses={200: QuestionSerializer, 404: 'Question Not Found'})
 @api_view(['PUT'])
 def update_question(request, question_id):
+    # Validate input data using serializer
+    serializer = CreateQuestionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    validated_data = serializer.validated_data
+    
     try:
         question = Question.objects.get(id=question_id)
-        data = request.data
-        correctanswer = ""
-        questiontext = data.get('questiontext', question.questiontext)
-        questionMark = data.get('questionMark', question.questionMark)
-        correctAnswerdescription = data.get('correctAnswerdescription', question.correctAnswerdescription)
-        question.questiontext = questiontext
-        question.questionMark = questionMark
-        question.correctAnswerdescription = correctAnswerdescription
+        
+        # Update question fields
+        question.questiontext = validated_data.get('questiontext', question.questiontext)
+        question.questionMark = validated_data.get('questionMark', question.questionMark)
+        question.correctAnswerdescription = validated_data.get('correctAnswerdescription', question.correctAnswerdescription)
+        
+        # Clear existing answers and add new ones
         question.answers.clear()
         question.save()
-        for answer in data.get('answers', question.answers.all()):
-            answertext = answer.get('answertext', None)
-            isCorrect = answer.get('isCorrect', False)
-            answer,created = Answer.objects.get_or_create(answertext=answertext)
+        
+        for answer_data in validated_data.get('answers', []):
+            answertext = answer_data.get('answertext')
+            isCorrect = answer_data.get('isCorrect', False)
+            answer, created = Answer.objects.get_or_create(
+                answertext=answertext, 
+                isCorrect=isCorrect
+            )
             question.answers.add(answer)
-            if isCorrect:
-                correctanswer = answer
-        question.correctAnswer = correctanswer
+        
         question.save()
         question_serializer = QuestionSerializer(question)
         return Response(question_serializer.data, status=status.HTTP_200_OK)
+        
     except Question.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-    except Answer.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Question not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error updating question: {str(e)}")
+        return Response({'error': 'An error occurred during question update'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@swagger_auto_schema(method="delete", responses={204: 'Question deleted successfully', 404: 'Question Not Found'})
 @api_view(['DELETE'])
 def delete_question(request, question_id):
     try:
         question = Question.objects.get(id=question_id)
         question.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': 'Question deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
     except Question.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Question not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error deleting question: {str(e)}")
+        return Response({'error': 'An error occurred during question deletion'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# Create Question View
-# //   {
-# //     "id": 8,
-# //     "answers": [
-# //         {
-# //             "id": 14,
-# //             "answertext": "True"
-# //         },
-# //         {
-# //             "id": 15,
-# //             "answertext": "False"
-# //         }
-# //     ],
-# //     "correctAnswer": null,
-# //     "questiontext": "The Lord is Good",
-# //     "questionMark": 2,
-# //     "required": true,
-# //     "correctAnswerdescription": "The Lord is indeed Good"
-# // } from the database
-
-# // {
-# //   id: "",
-# //   questiontext: "",
-# //   questionMark: "",
-# //   answers: [
-# //     {
-# //       answertext: "",
-# //       isCorrect: false,
-# //     },
-# //   ],
-# //   correctAnswerdescription: "",
-# // } for the form

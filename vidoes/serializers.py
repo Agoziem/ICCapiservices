@@ -6,13 +6,27 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
+        ref_name = "VideoCategory"
 
+class CreateCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['category']
+        ref_name = "VideoCreateCategory"
+        
 class SubCategorySerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     
     class Meta:
         model = SubCategory
         fields = '__all__'
+        ref_name = "VideoSubCategory"
+        
+class CreateSubCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubCategory
+        fields = ['subcategory', 'category']
+        ref_name = "VideoCreateSubCategory"
 
 class VideoSerializer(serializers.ModelSerializer):
     organization = serializers.SerializerMethodField()
@@ -28,6 +42,7 @@ class VideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Video
         fields = '__all__'
+        ref_name = "VideoSerializer"
 
     def get_organization(self, obj):
         return {'id': obj.organization.id, 'name': obj.organization.name}
@@ -43,6 +58,33 @@ class VideoSerializer(serializers.ModelSerializer):
     
     def get_video_name(self, obj):
         return get_image_name(obj.video)
+    
+class PaginatedVideoSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = VideoSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedVideoSerializer"
+        
+class CreateVideoSerializer(serializers.ModelSerializer):
+    thumbnail = serializers.ImageField(allow_null=True, required=False)
+    video = serializers.FileField(allow_null=True, required=False)
+    
+    class Meta:
+        model = Video
+        fields = ['title', 'description', 'price', 'thumbnail', 'video', 'category', 'subcategory', 'organization']
+        ref_name = "CreateVideoSerializer"
+        
+class UpdateVideoSerializer(serializers.ModelSerializer):
+    thumbnail = serializers.ImageField(allow_null=True, required=False)
+    video = serializers.FileField(allow_null=True, required=False)
+    
+    class Meta:
+        model = Video
+        fields = ['title', 'description', 'price', 'thumbnail', 'video', 'category', 'subcategory']
+        ref_name = "UpdateVideoSerializer"
     
 
 

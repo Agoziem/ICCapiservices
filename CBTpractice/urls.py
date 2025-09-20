@@ -13,6 +13,8 @@ urlpatterns = [
     path('updateyear/<int:year_id>/', update_year),
     path('deleteyear/<int:year_id>/', delete_year),
 
+    path('questions/<int:subject_id>/', get_questions),
+    path('question/<int:question_id>/', get_question),
     path('addQuestion/<int:subject_id>/', create_question),
     path('updateQuestion/<int:question_id>/', update_question),
     path('deleteQuestion/<int:question_id>/', delete_question),

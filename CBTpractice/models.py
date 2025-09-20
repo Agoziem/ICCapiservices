@@ -21,6 +21,7 @@ class TestType(models.Model):
 # Answer model
 class Answer(models.Model):
     answertext = models.CharField(max_length=255,default="None",blank=False)
+    isCorrect = models.BooleanField(default=False,blank=True)
 
     def __str__(self):
         return f"{self.answertext}"
@@ -31,7 +32,6 @@ class Question(models.Model):
     questionMark = models.IntegerField(default=0,blank=True)
     required=models.BooleanField(default=True)
     answers = models.ManyToManyField(Answer)
-    correctAnswer = models.ForeignKey(Answer, on_delete=models.CASCADE, related_name="correct_answer", null=True, blank=True)
     correctAnswerdescription = RichTextField(default="None",blank=True,null=True)
 
     def __str__(self):
@@ -64,7 +64,7 @@ class Test(models.Model):
 
 
 # Test Result model
-class TestResult(models.Model):
+class TestResultSubmissions(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     tests = models.ManyToManyField(Test)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)

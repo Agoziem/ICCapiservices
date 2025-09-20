@@ -2,6 +2,7 @@
 from pathlib import Path
 import os
 from decouple import config
+from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -40,7 +41,6 @@ INSTALLED_APPS = [
     'ICCapp',
     'authentication',
     'whatsappAPI',
-    'chatroom',
     'notifications',
     'customers',
     'blog',
@@ -49,8 +49,9 @@ INSTALLED_APPS = [
     'vidoes',
 
     'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
-    'rest_framework.authtoken',
     'corsheaders',
     'ckeditor',
 ]
@@ -68,10 +69,23 @@ MIDDLEWARE = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication', 
-        'rest_framework.authentication.TokenAuthentication', 
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
 }
+
+SWAGGER_SETTINGS = {
+    "USE_SESSION_AUTH": False,
+    "relative_paths": False,
+    "DISPLAY_OPERATION_ID": False,
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"},
+    },
+}
+
+
 
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
@@ -263,3 +277,39 @@ WHATSAPP_FROM_PHONE_NUMBER_ID = config('WHATSAPP_PHONENUMBER_ID')
 WHATSAPP_VERSION = config('WHATSAPP_VERSION')
 WHATSAPP_WEBHOOK_TOKEN = config('TOKEN')
 
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),      # Access token valid for 7 days
+    'REFRESH_TOKEN_LIFETIME': timedelta(weeks=4),    # Refresh token valid for 4 weeks
+    'ROTATE_REFRESH_TOKENS': True,                   # Generate new refresh token on refresh
+    'BLACKLIST_AFTER_ROTATION': True,               # Blacklist old refresh tokens
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'JTI_CLAIM': 'jti',
+}
+
+
+ # Firebase Settings
+FIREBASE_TYPE = config("FIREBASE_TYPE", "service_account")
+FIREBASE_PROJECT_ID = config("FIREBASE_PROJECT_ID", "your-project-id")
+FIREBASE_PRIVATE_KEY_ID = config("FIREBASE_PRIVATE_KEY_ID", "your-private-key-id")
+# Fix private key formatting by replacing literal \n with actual newlines
+_firebase_private_key = config("FIREBASE_PRIVATE_KEY", "your-private-key")
+FIREBASE_PRIVATE_KEY = _firebase_private_key.replace('\\n', '\n') if isinstance(_firebase_private_key, str) else _firebase_private_key
+FIREBASE_CLIENT_EMAIL = config("FIREBASE_CLIENT_EMAIL", "your-client-email")
+FIREBASE_CLIENT_ID = config("FIREBASE_CLIENT_ID", "your-client-id")
+FIREBASE_AUTH_URI = config("FIREBASE_AUTH_URI", "https://accounts.google.com/o/oauth2/auth")
+FIREBASE_TOKEN_URI = config("FIREBASE_TOKEN_URI", "https://oauth2.googleapis.com/token")
+FIREBASE_AUTH_PROVIDER_X509_CERT_URL = config("FIREBASE_AUTH_PROVIDER_X509_CERT_URL", "https://www.googleapis.com/oauth2/v1/certs")
+FIREBASE_CLIENT_X509_CERT_URL = config("FIREBASE_CLIENT_X509_CERT_URL", "your-client-cert-url")
+FIREBASE_UNIVERSE_DOMAIN = config("FIREBASE_UNIVERSE_DOMAIN", "googleapis.com")

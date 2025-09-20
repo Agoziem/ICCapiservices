@@ -6,6 +6,13 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
+        ref_name = "ServiceCategory"
+        
+class CreateCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['category']
+        ref_name = "ServiceCreateCategory"
 
 class SubCategorySerializer(serializers.ModelSerializer):
     category = CategorySerializer()
@@ -13,6 +20,13 @@ class SubCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SubCategory
         fields = '__all__'
+        ref_name = "ServiceSubCategory"
+        
+class CreateSubCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubCategory
+        fields = ['subcategory', 'category']
+        ref_name = "ServiceCreateSubCategory"
 # 
 class ServiceSerializer(serializers.ModelSerializer):
     organization = serializers.SerializerMethodField()
@@ -25,7 +39,8 @@ class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
         fields = '__all__'
-
+        ref_name = "ServiceSerializer"
+        
     def get_organization(self, obj):
         return {'id': obj.organization.id, 'name': obj.organization.name}
     
@@ -34,6 +49,32 @@ class ServiceSerializer(serializers.ModelSerializer):
     
     def get_img_name(self, obj):
         return get_image_name(obj.preview)
+
+class PaginatedServiceSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True, required=False)
+    previous = serializers.URLField(allow_null=True, required=False)
+    results = ServiceSerializer(many=True)
+    
+    class Meta:
+        ref_name = "PaginatedServiceSerializer"
+        fields = ['count', 'next', 'previous', 'results']
+
+class CreateServiceSerializer(serializers.ModelSerializer):
+    preview = serializers.ImageField(allow_null=True, required=False)
+    
+    class Meta:
+        model = Service
+        fields = ['name', 'description', 'price', 'preview', 'category', 'subcategory', 'organization']
+        ref_name = "CreateServiceSerializer"
+        
+class UpdateServiceSerializer(serializers.ModelSerializer):
+    preview = serializers.ImageField(allow_null=True, required=False)
+    
+    class Meta:
+        model = Service
+        fields = ['name', 'description', 'price', 'preview', 'category', 'subcategory']
+        ref_name = "UpdateServiceSerializer"
     
 
 

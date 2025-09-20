@@ -12,6 +12,7 @@ class CustomUser(AbstractUser):
     address = models.CharField(max_length=100, null=True, blank=True)
     Sex = models.CharField(max_length=10, null=True, blank=True)
     phone = models.CharField(max_length=15, null=True, blank=True)
+    fcmToken = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.username

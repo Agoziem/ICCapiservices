@@ -26,7 +26,7 @@ class AnswerAdmin(admin.ModelAdmin):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('truncated_questiontext','questionMark','required','correctAnswer')
+    list_display = ('truncated_questiontext','questionMark','required')
     search_fields = ('questiontext',)
     list_filter = ('required',)
 
@@ -44,8 +44,8 @@ class TestAdmin(admin.ModelAdmin):
     list_filter = ('testYear','texttype','testorganization')
     search_fields = ('testYear','texttype','testorganization')
 
-@admin.register(TestResult)
-class TestResultAdmin(admin.ModelAdmin):
+@admin.register(TestResultSubmissions)
+class TestResultSubmissionsAdmin(admin.ModelAdmin):
     list_display = ('user','mark','date')
     list_filter = ('user','date')
     search_fields = ('user','mark')
