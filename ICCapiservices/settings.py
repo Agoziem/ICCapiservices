@@ -3,6 +3,9 @@ from pathlib import Path
 import os
 from decouple import config
 from datetime import timedelta
+
+# Jazzmin settings
+from django.conf import settings
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,8 +23,18 @@ DEBUG_ENV = config('DEBUG_ENV', default=False, cast=bool)
 
 if DEBUG_ENV:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']
+    CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8000', 'http://127.0.0.1:8000']
 else:
     ALLOWED_HOSTS = ['web-production-7d611.up.railway.app',"innovationscybercafe.com", "www.innovationscybercafe.com"]
+    CSRF_TRUSTED_ORIGINS = [
+        'https://web-production-7d611.up.railway.app',
+        'https://innovationscybercafe.com',
+        'https://www.innovationscybercafe.com'
+    ]
+    # Production security settings for Railway
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = False  # Railway handles SSL termination
+    USE_TZ = True
 
 # Application definition
 
@@ -90,6 +103,7 @@ SWAGGER_SETTINGS = {
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
 CORS_ALLOW_ALL_ORIGINS = True
+
 
 ROOT_URLCONF = 'ICCapiservices.urls'
 
@@ -218,8 +232,6 @@ else:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Jazzmin settings
-from django.conf import settings
 
 JAZZMIN_SETTINGS = {
     "site_title": "Innovation CyberCafe",
