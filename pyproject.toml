@@ -19,7 +19,7 @@ dependencies = [
     "daphne==3.0.2",
     "channels-redis==3.4.1",
     "redis==6.2.0",
-    "celery",  # optional, add if you need background tasks
+    "celery", # optional, add if you need background tasks
     "psycopg2-binary==2.9.9", # PostgreSQL driver
     "gunicorn==20.1.0",
     "pydantic==2.11.7",
@@ -31,4 +31,7 @@ dependencies = [
     "google-cloud-storage==3.4.0",
     "google-cloud-firestore==2.21.0",
     "httpx==0.28.1",
+    "python-decouple>=3.8",
+    "dj-database-url>=3.0.1",
+    "djangorestframework-simplejwt>=5.5.1",
 ]
