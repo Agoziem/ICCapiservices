@@ -226,6 +226,7 @@ else:
     AWS_LOCATION = 'static'
     STATICFILES_DIRS = [os.path.join(BASE_DIR, "assets"),]
     STATIC_URL='https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN,AWS_LOCATION)
+    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
