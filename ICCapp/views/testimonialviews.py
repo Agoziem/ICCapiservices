@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from ..models import *
 from ..serializers import *
 from rest_framework.decorators import api_view,parser_classes, permission_classes
@@ -30,12 +30,8 @@ class TestimonialPagination(PageNumberPagination):
 def get_testimonials(request, organization_id):
     try:
         # Validate organization exists
-        organization = Organization.objects.get(id=organization_id)
-        testimonials = Testimonial.objects.filter(organization=organization_id).order_by('-created_at')
-        
-        if not testimonials.exists():
-            return Response({'error': 'No testimonials found for this organization'}, status=status.HTTP_404_NOT_FOUND)
-            
+        organization = get_object_or_404(Organization, id=organization_id)
+        testimonials = Testimonial.objects.filter(organization=organization).order_by('-created_at')          
         paginator = TestimonialPagination()
         result_page = paginator.paginate_queryset(testimonials, request)
         serializer = TestimonialSerializer(result_page, many=True)

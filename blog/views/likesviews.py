@@ -14,9 +14,9 @@ User = cast(type[CustomUser], get_user_model())
 # add a like view
 @swagger_auto_schema(method="get", responses={201: 'Created', 404: 'Blog or User Not Found'})
 @api_view(['GET'])
-def add_like(request, blog_id, user_id):
+def add_like(request, blog_slug, user_id):
     try:
-        blog = Blog.objects.get(id=blog_id)
+        blog = Blog.objects.get(slug=blog_slug)
         user = User.objects.get(id=user_id)
         blog.likes.add(user)
         return Response({'message': 'Like added successfully'}, status=status.HTTP_201_CREATED)
@@ -31,9 +31,9 @@ def add_like(request, blog_id, user_id):
 # delete a like view
 @swagger_auto_schema(method="delete", responses={204: 'No Content', 404: 'Blog or User Not Found'})
 @api_view(['DELETE'])
-def delete_like(request, blog_id, user_id):
+def delete_like(request, blog_slug, user_id):
     try:
-        blog = Blog.objects.get(id=blog_id)
+        blog = Blog.objects.get(slug=blog_slug)
         user = User.objects.get(id=user_id)
         blog.likes.remove(user)
         return Response({'message': 'Like removed successfully'}, status=status.HTTP_204_NO_CONTENT)

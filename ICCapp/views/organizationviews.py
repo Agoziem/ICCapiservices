@@ -22,9 +22,8 @@ from drf_yasg.utils import swagger_auto_schema
 def get_organizations(request):
     try:
         organizations = Organization.objects.all()
-        
         if not organizations.exists():
-            return Response({'error': 'No organizations found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response([], status=status.HTTP_200_OK)
             
         serializer = OrganizationSerializer(organizations, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

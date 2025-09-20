@@ -1,13 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view,parser_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
-
-import services
 from ..models import *
 from ..serializers import *
 from utils import normalize_img_field, parse_json_fields
-import json
 from rest_framework.pagination import PageNumberPagination
 from django.http import QueryDict
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -31,12 +28,8 @@ class DepartmentPagination(PageNumberPagination):
 def get_org_depts(request, organization_id):
     try:
         # Validate organization exists
-        organization = Organization.objects.get(id=organization_id)
-        departments = Department.objects.filter(organization=organization_id).order_by('id')
-        
-        if not departments.exists():
-            return Response({'error': 'No departments found for this organization'}, status=status.HTTP_404_NOT_FOUND)
-            
+        organization = get_object_or_404(Organization, id=organization_id)
+        departments = Department.objects.filter(organization=organization).order_by('id')
         paginator = DepartmentPagination()
         result_page = paginator.paginate_queryset(departments, request)
         serializer = DepartmentSerializer(result_page, many=True)

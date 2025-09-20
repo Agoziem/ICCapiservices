@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from ICCapp.models import Organization
 from ckeditor.fields import RichTextField
+from django.utils.text import slugify
 
 class Tag(models.Model):
     tag = models.CharField(max_length=100, blank=True, null=True)
@@ -39,6 +40,19 @@ class Blog(models.Model):
     
     class Meta:
         ordering = ['-updated_at']
+
+    # create a slug from the title if not provided, or if the title is changed
+    def save(self, *args, **kwargs):
+        if not self.slug:  # Only generate slug on creation
+            base_slug = slugify(self.title)
+            slug = base_slug
+            counter = 1
+            while Blog.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+
+        super().save(*args, **kwargs)
 
 
 

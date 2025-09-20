@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from ..models import *
 from ..serializers import *
 from rest_framework.decorators import api_view, permission_classes
@@ -25,12 +25,8 @@ class SubscriptionPagination(PageNumberPagination):
 def get_subscriptions(request, organization_id):
     try:
         # Validate organization exists
-        organization = Organization.objects.get(id=organization_id)
-        subscriptions = Subscription.objects.filter(organization=organization_id).order_by('-date_added')
-        
-        if not subscriptions.exists():
-            return Response({'error': 'No subscriptions found for this organization'}, status=status.HTTP_404_NOT_FOUND)
-            
+        organization = get_object_or_404(Organization, id=organization_id)
+        subscriptions = Subscription.objects.filter(organization=organization).order_by('-date_added')
         paginator = SubscriptionPagination()
         result_page = paginator.paginate_queryset(subscriptions, request)
         serializer = SubscriptionSerializer(result_page, many=True)

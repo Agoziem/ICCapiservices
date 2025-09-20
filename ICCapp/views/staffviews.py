@@ -1,5 +1,5 @@
 from rest_framework.parsers import MultiPartParser, FormParser
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from ..models import *
 from ..serializers import *
 from rest_framework.decorators import api_view,parser_classes, permission_classes
@@ -28,12 +28,8 @@ class StaffPagination(PageNumberPagination):
 def get_staffs(request, organization_id):
     try:
         # Validate organization exists
-        organization = Organization.objects.get(id=organization_id)
-        staffs = Staff.objects.filter(organization=organization_id).order_by('id')
-        
-        if not staffs.exists():
-            return Response({'error': 'No staff found for this organization'}, status=status.HTTP_404_NOT_FOUND)
-            
+        organization = get_object_or_404(Organization, id=organization_id)
+        staffs = Staff.objects.filter(organization=organization).order_by('id')
         paginator = StaffPagination()
         result_page = paginator.paginate_queryset(staffs, request)
         serializer = StaffSerializer(result_page, many=True)

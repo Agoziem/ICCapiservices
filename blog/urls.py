@@ -24,6 +24,6 @@ urlpatterns = [
     path('updatecomment/<int:comment_id>/', update_comment),
     path('deletecomment/<int:comment_id>/', delete_comment),
 
-    path('addlike/<int:blog_id>/<int:user_id>/', add_like),
-    path('deletelike/<int:blog_id>/<int:user_id>/', delete_like),
+    path('addlike/<slug:blog_slug>/<int:user_id>/', add_like),
+    path('deletelike/<slug:blog_slug>/<int:user_id>/', delete_like),
 ]

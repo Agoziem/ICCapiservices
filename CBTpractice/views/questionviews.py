@@ -1,10 +1,39 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from ..models import Question, Answer, Subject
 from ..serializers import CreateQuestionSerializer, QuestionSerializer, AnswerSerializer
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+
+@swagger_auto_schema(method="get", responses={200: QuestionSerializer(many=True), 404: 'Not Found'})
+@api_view(['GET'])
+@permission_classes([])
+def get_questions(request, subject_id):
+    try:
+        subject = Subject.objects.get(id=subject_id)
+        questions = subject.questions.all()
+        serializer = QuestionSerializer(questions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Subject.DoesNotExist:
+        return Response({'error': 'Subject not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error fetching questions: {str(e)}")
+        return Response({'error': 'An error occurred while fetching questions'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@swagger_auto_schema(method="get", responses={200: QuestionSerializer, 404: 'Not Found'})
+@api_view(['GET'])
+@permission_classes([])
+def get_question(request, question_id):
+    try:
+        question = Question.objects.get(id=question_id)
+        serializer = QuestionSerializer(question, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Question.DoesNotExist:
+        return Response({'error': 'Question not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error fetching question: {str(e)}")
+        return Response({'error': 'An error occurred while fetching question'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @swagger_auto_schema(method="post", request_body=CreateQuestionSerializer, responses={201: QuestionSerializer, 400: 'Bad Request', 404: 'Subject Not Found'})
 @api_view(['POST'])
