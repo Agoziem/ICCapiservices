@@ -211,4 +211,25 @@ class UpdateDepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
         exclude = ['organization']
+
+class RichTextEditorImagesSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(allow_null=True, required=False)
+    image_url = serializers.SerializerMethodField()
+    image_name = serializers.SerializerMethodField()
     
+    class Meta:
+        model = RichTextEditorImages
+        fields = '__all__'
+    
+    def get_image_url(self, obj):
+        return get_full_image_url(obj.image)
+    
+    def get_image_name(self, obj):
+        return get_image_name(obj.image)
+    
+class CreateRichTextEditorImagesSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(allow_null=True, required=False)
+    
+    class Meta:
+        model = RichTextEditorImages
+        exclude = ['id', 'uploaded_at']

@@ -204,3 +204,5 @@ def edit_terms_of_use(request, organization_id):
     except Exception as e:
         print(f"Error updating terms of use: {str(e)}")
         return Response({'error': 'An error occurred during terms of use update'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    

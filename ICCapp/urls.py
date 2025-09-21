@@ -1,4 +1,6 @@
 from django.urls import path
+
+from ICCapp.views import richtextimagesviews
 from .views import testimonialviews, staffviews, subscriptionviews, organizationviews, deptsviews
 
 urlpatterns = [
@@ -32,5 +34,10 @@ urlpatterns = [
     path('department/add/<int:organization_id>/', deptsviews.add_dept, name='add_department'),
     path('department/update/<int:department_id>/', deptsviews.update_dept, name='update_department'),
     path('department/delete/<int:department_id>/', deptsviews.delete_dept, name='delete_department'),
+
+    path("richtextimage/upload/", richtextimagesviews.upload_rich_text_image, name="upload_rich_text_image"),
+    path("richtextimage/all/", richtextimagesviews.get_rich_text_images, name="get_rich_text_images"),
+    path("richtextimage/delete/<int:image_id>/", richtextimagesviews.delete_rich_text_image, name="delete_rich_text_image"),
+
     
 ]
