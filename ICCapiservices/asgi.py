@@ -9,15 +9,13 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ICCapiservices.settings')
 django_asgi_app = get_asgi_application()
 
 from whatsappAPI import routing as whatsappAPI_routing
-from emails import routing as email_routing
 
 application = ProtocolTypeRouter({
   "http": django_asgi_app,
   "websocket": AllowedHostsOriginValidator(
         AuthMiddlewareStack(
             URLRouter(
-                whatsappAPI_routing.websocket_urlpatterns +
-                email_routing.websocket_urlpatterns
+                whatsappAPI_routing.websocket_urlpatterns
             )
         )
     ),

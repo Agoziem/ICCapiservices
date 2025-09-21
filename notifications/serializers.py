@@ -8,33 +8,26 @@ from .models import NotificationModified, NotificationRecipient
 User = get_user_model()
 
 # -----------------------------
-# 🔹 Base Notification Serializers
+# 🔹 Input Serializers
 # -----------------------------
 
-class NotificationBaseSerializer(serializers.ModelSerializer):
-    """Base notification fields - reusable across different serializers"""
+class NotificationCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating new notifications"""
     sender = serializers.IntegerField(required=False, allow_null=True)
     title = serializers.CharField(max_length=255)
     message = serializers.CharField()
     link = serializers.URLField(required=False, allow_null=True, allow_blank=True)
     image = serializers.ImageField(required=False, allow_null=True)
-
-    class Meta:
-        model = NotificationModified
-        fields = ['sender', 'title', 'message', 'link', 'image']
-
-# -----------------------------
-# 🔹 Input Serializers
-# -----------------------------
-
-class NotificationCreateSerializer(NotificationBaseSerializer):
-    """Serializer for creating new notifications"""
     user_ids = serializers.ListField(
         child=serializers.IntegerField(),
         required=False,
         default=list,
         help_text="List of user IDs to send notification to"
     )
+
+    class Meta:
+        model = NotificationModified
+        fields = ['sender', 'title', 'message', 'link', 'image', 'user_ids']
 
 
 class NotificationUpdateSerializer(serializers.ModelSerializer):

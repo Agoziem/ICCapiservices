@@ -26,7 +26,7 @@ class CreateEmailSerializer(serializers.ModelSerializer):
 class UpdateEmailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Email
-        fields = ['name', 'email', 'subject', 'message']
+        fields = ['name', 'email', 'subject', 'message','read']
 
 
 class EmailMessageSerializer(serializers.ModelSerializer):

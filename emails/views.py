@@ -106,28 +106,7 @@ def add_email(request, organization_id):
     try:
         # Validate organization exists
         organization = Organization.objects.get(id=organization_id)
-        
-        # Create email with validated data
         email = serializer.save(organization=organization)
-        
-        # Send WebSocket notification
-        try:
-            response_serializer = EmailSerializer(email)
-            general_room_name = 'emailapi'
-            channel_layer = get_channel_layer()
-            if channel_layer:
-                async_to_sync(channel_layer.group_send)(
-                    general_room_name,
-                    {
-                        'type': 'chat_message',
-                        'operation': 'create',
-                        'contact': response_serializer.data
-                    }
-                )
-        except Exception as ws_error:
-            print(f"WebSocket notification failed: {str(ws_error)}")
-            # Continue execution even if WebSocket fails
-        
         return Response(EmailSerializer(email).data, status=status.HTTP_201_CREATED)
         
     except Organization.DoesNotExist:
