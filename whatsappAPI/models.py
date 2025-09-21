@@ -57,7 +57,7 @@ class WAMessage(models.Model):
             if last_message:
                 # Manually serialize the last message
                 serialized_message = {
-                    'id': last_message.id,
+                    'id': last_message.pk,
                     'message_id': last_message.message_id,
                     'contact': last_message.contact.id,
                     'message_type': last_message.message_type,
@@ -84,7 +84,7 @@ class WAMessage(models.Model):
                     'unread_message_count': self.get_unread_message_count(self.contact)
                 }
 
-                print("am working now",serialized_contact)
+                print("am working now", serialized_contact)
 
                 # Send the message to the appropriate WebSocket room
                 room_name = 'whatsappapi_messages'

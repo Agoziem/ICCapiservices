@@ -29,6 +29,7 @@ class ContactSerializer(serializers.ModelSerializer):
                 'timestamp': DateFormat(last_message.timestamp).format('Y-m-d H:i:s')
             }
         return None
+    
 
     # Method to get the number of unread messages for the contact
     def get_unread_message_count(self, obj):
