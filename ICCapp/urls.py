@@ -37,7 +37,7 @@ urlpatterns = [
 
     path("richtextimage/upload/", richtextimagesviews.upload_rich_text_image, name="upload_rich_text_image"),
     path("richtextimage/all/", richtextimagesviews.get_rich_text_images, name="get_rich_text_images"),
-    path("richtextimage/delete/<int:image_id>/", richtextimagesviews.delete_rich_text_image, name="delete_rich_text_image"),
+    path("richtextimage/delete/", richtextimagesviews.delete_rich_text_image, name="delete_rich_text_image"),
 
     
 ]

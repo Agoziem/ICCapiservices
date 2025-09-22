@@ -261,14 +261,11 @@ def add_service(request, organization_id):
 
         # Extract and parse JSON fields from the QueryDict
         parsed_json_fields = parse_json_fields(data)
-        
-        # Add organization to parsed fields
-        parsed_json_fields['organization'] = organization_id
 
         # serialize the field
         serializer = CreateServiceSerializer(data=parsed_json_fields)
         serializer.is_valid(raise_exception=True)
-    
+
         # Retrieve the category object
         category_data = parsed_json_fields['category']
         category_id = category_data.get('id') if isinstance(category_data, dict) else category_data

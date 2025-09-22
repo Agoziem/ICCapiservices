@@ -1,3 +1,4 @@
+import os
 from django.shortcuts import render
 
 from authentication.serializers import SuccessResponseSerializer
@@ -71,13 +72,33 @@ def get_rich_text_images(request):
     }
 )
 @api_view(['DELETE'])
-def delete_rich_text_image(request, image_id):
-    try:
-        image = RichTextEditorImages.objects.get(id=image_id)
-        image.delete()
-        return Response({'message': 'Image deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-    except RichTextEditorImages.DoesNotExist:
-        return Response({'error': 'Image not found'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        print(f"Error deleting rich text image: {str(e)}")
-        return Response({'error': 'An error occurred during image deletion'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+def delete_rich_text_image(request):
+        """Deletes a file based on its file_url query parameter"""
+
+        file_url = request.query_params.get('file_url')  # Extract file_url from query parameters
+
+        if not file_url:
+            return Response({'error': 'file_url parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Extract relative file path
+        base_url = settings.DJANGO_IMAGE_URL.rstrip('/')  # Ensure no trailing slash
+        if not file_url.startswith(base_url):
+            return Response({'error': 'Invalid file URL'}, status=status.HTTP_400_BAD_REQUEST)
+
+        relative_path = file_url.replace(base_url, "").lstrip("/")  # Extract relative path
+        relative_path = file_url.split('/media/')[-1]  # gives "files/IMG_...jpg"
+
+        try:
+            file_instance = RichTextEditorImages.objects.get(image=relative_path)
+            file_path = os.path.join(settings.MEDIA_ROOT, file_instance.image.name)  # Full file path
+
+            # Delete from filesystem
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+            # Delete from database
+            file_instance.delete()
+            return Response({'message': 'File deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+        except RichTextEditorImages.DoesNotExist:
+            return Response({'error': 'File not found'}, status=status.HTTP_404_NOT_FOUND)

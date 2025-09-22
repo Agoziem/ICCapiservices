@@ -319,10 +319,12 @@ def add_video(request, organization_id):
 
         # Extract and parse JSON fields from the request data
         parsed_json_fields = parse_json_fields(data)
-        
+
         # Validate using serializer
         serializer = CreateVideoSerializer(data=parsed_json_fields)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            print(serializer.errors)
+            return Response({'error': 'Invalid data', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         # Validate and set category
         category_data = parsed_json_fields.get('category')

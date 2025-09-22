@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from ICCapp.serializers import OrganizationMiniSerializer
 from .models import *
 from utils import *
 
@@ -30,7 +32,7 @@ class CreateSubCategorySerializer(serializers.ModelSerializer):
         ref_name = "ProductCreateSubCategory"
 
 class ProductSerializer(serializers.ModelSerializer):
-    organization = serializers.SerializerMethodField()
+    organization = OrganizationMiniSerializer(read_only=True)
     img_url = serializers.SerializerMethodField()
     img_name = serializers.SerializerMethodField()
     product_url = serializers.SerializerMethodField()
@@ -47,9 +49,6 @@ class ProductSerializer(serializers.ModelSerializer):
             'product': {'allow_null': True, 'required': False},
         }
         ref_name = "ProductSerializer"
-
-    def get_organization(self, obj):
-        return {'id': obj.organization.id, 'name': obj.organization.name}
 
     def get_img_url(self, obj):
         return get_full_image_url(obj.preview)
@@ -83,9 +82,11 @@ class CreateProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'name', 'description', 'price', 'preview', 'product',
-            'category', 'subcategory', 'organization'
+            'category', 'subcategory', 'organization',
+            'digital', 'free'
         ]
         ref_name = "CreateProductSerializer"
+
 
 
 class UpdateProductSerializer(serializers.ModelSerializer):
@@ -98,7 +99,7 @@ class UpdateProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'name', 'description', 'price', 'preview', 'product',
-            'category', 'subcategory'
+            'category', 'subcategory', 'digital', 'free'
         ]
         ref_name = "UpdateProductSerializer"
 

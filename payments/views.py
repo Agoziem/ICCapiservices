@@ -86,6 +86,19 @@ def get_payment(request, payment_id):
         print(f"Error fetching payment: {str(e)}")
         return Response({'error': 'An error occurred while fetching payment'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+
+@api_view(['GET'])
+def get_payment_by_reference(request, reference):
+    try:
+        order = Orders.objects.get(reference=reference)
+        serializer = PaymentResponseSerializer(order, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Orders.DoesNotExist:
+        return Response({'error': 'Payment not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error fetching payment by reference: {str(e)}")
+        return Response({'error': 'An error occurred while fetching payment'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 # Add a payment to the Organization
 @swagger_auto_schema(
     method="post",
@@ -101,7 +114,7 @@ def add_payment(request, organization_id):
     # Validate required fields
     try:
         customer = request.data.get('customer')
-        amount = request.data.get('total')
+        amount = request.data.get('amount')
         services = request.data.get('services', [])
         products = request.data.get('products', [])
         videos = request.data.get('videos', [])
