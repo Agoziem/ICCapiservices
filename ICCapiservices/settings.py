@@ -109,6 +109,8 @@ ROOT_URLCONF = 'ICCapiservices.urls'
 
 PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY')
 
+SITE_DOMAIN = config('SITE_DOMAIN', default='http://localhost:8000')
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

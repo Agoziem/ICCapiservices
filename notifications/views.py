@@ -62,7 +62,6 @@ def create_notification(request):
             sender = User.objects.get(id=request.user.id)
 
         # Create the notification
-        print(f"Creating notification with sender: {sender}, user_ids: {user_ids}, data: {parsed_data}")
         notification = NotificationModified.objects.create(
             sender=sender,
             **parsed_data
