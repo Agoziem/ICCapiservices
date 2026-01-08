@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'storages',
     
     'services',
     'emails',
@@ -224,13 +225,11 @@ else:
     AWS_S3_OBJECT_PARAMETERS={'CacheControl':'max-age=86400'}
     AWS_S3_REGION_NAME = 'us-east-1'
     AWS_S3_FILE_OVERWRITE = False
-    AWS_DEFAULT_ACL = 'public-read'
-    AWS_QUERYSTRING_AUTH = False  # Don't add authentication to URLs
     STATICFILES_STORAGE = 'ICCapiservices.storages.StaticStore'
     DEFAULT_FILE_STORAGE = 'ICCapiservices.storages.MediaStore'
     AWS_LOCATION = 'static'
     STATICFILES_DIRS = [os.path.join(BASE_DIR, "assets"),]
-    STATIC_URL='https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN,AWS_LOCATION)
+    STATIC_URL= f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
 
 # Default primary key field type
