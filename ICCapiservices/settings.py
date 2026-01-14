@@ -1,11 +1,15 @@
 
+from re import A
+import dj_database_url
+from django.conf import settings
 from pathlib import Path
 import os
-from decouple import config
 from datetime import timedelta
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env file
 
 # Jazzmin settings
-from django.conf import settings
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -14,18 +18,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-DEBUG_ENV = config('DEBUG_ENV', default=False, cast=bool)
+DEBUG_ENV = os.getenv('DEBUG_ENV', 'False') == 'True'
 
 if DEBUG_ENV:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']
-    CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8000', 'http://127.0.0.1:8000']
+    CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000',
+                            'http://localhost:8000', 'http://127.0.0.1:8000']
 else:
-    ALLOWED_HOSTS = ['web-production-7d611.up.railway.app',"innovationscybercafe.com", "www.innovationscybercafe.com"]
+    ALLOWED_HOSTS = ['web-production-7d611.up.railway.app',
+                     "innovationscybercafe.com", "www.innovationscybercafe.com"]
     CSRF_TRUSTED_ORIGINS = [
         'https://web-production-7d611.up.railway.app',
         'https://innovationscybercafe.com',
@@ -48,7 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'storages',
-    
+
     'services',
     'emails',
     'payments',
@@ -100,7 +106,6 @@ SWAGGER_SETTINGS = {
 }
 
 
-
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -108,9 +113,9 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'ICCapiservices.urls'
 
-PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY')
+PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 
-SITE_DOMAIN = config('SITE_DOMAIN', default='http://localhost:8000')
+SITE_DOMAIN = os.getenv('SITE_DOMAIN', 'http://localhost:8000')
 
 TEMPLATES = [
     {
@@ -124,7 +129,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
-            "builtins": ["ICCapp.templatetags.customtags"], # <- HERE
+            "builtins": ["ICCapp.templatetags.customtags"],  # <- HERE
         },
     },
 ]
@@ -134,8 +139,8 @@ ASGI_APPLICATION = 'ICCapiservices.asgi.application'
 
 if DEBUG_ENV:
     CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer'
         }
     }
 else:
@@ -143,7 +148,7 @@ else:
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                "hosts": [(config('REDIS_URL', default='redis://'))],
+                "hosts": [(os.getenv('REDIS_URL', 'redis://'))],
             },
         },
     }
@@ -165,16 +170,14 @@ else:
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': "railway",
             'USER': "postgres",
-            'PASSWORD': config('PASSWORD'),
-            'HOST': config('HOST'),
-            'PORT': config('PORT'),
+            'PASSWORD': os.getenv('PASSWORD'),
+            'HOST': os.getenv('HOST'),
+            'PORT': os.getenv('PORT'),
         }
     }
 
 
-
-import dj_database_url
-db_from_env=dj_database_url.config(conn_max_age=600)
+db_from_env = dj_database_url.config(conn_max_age=600)
 DATABASES['default'].update(db_from_env)
 
 # Password validation
@@ -215,21 +218,40 @@ USE_TZ = True
 if DEBUG_ENV:
     STATIC_URL = '/static/'
     STATIC_ROOT = os.path.join(BASE_DIR, "static")
-    MEDIA_URL= '/media/'
+    MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 else:
-    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
-    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
-    AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
-    AWS_S3_CUSTOM_DOMAIN='%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
-    AWS_S3_OBJECT_PARAMETERS={'CacheControl':'max-age=86400'}
+    AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', '')
+    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', '')
+    AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME', '')
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
     AWS_S3_REGION_NAME = 'us-east-1'
     AWS_S3_FILE_OVERWRITE = False
-    STATICFILES_STORAGE = 'ICCapiservices.storages.StaticStore'
-    DEFAULT_FILE_STORAGE = 'ICCapiservices.storages.MediaStore'
-    AWS_LOCATION = 'static'
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                # Your S3-specific options here
+                "bucket_name": AWS_STORAGE_BUCKET_NAME,
+                "access_key": AWS_ACCESS_KEY_ID,
+                "secret_key": AWS_SECRET_ACCESS_KEY,
+                "location": "media",
+                # ... other options like 'location', 'default_acl', etc.
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                # Your S3-specific options for static files
+                "bucket_name": AWS_STORAGE_BUCKET_NAME,
+                "location": "static",
+                "access_key": AWS_ACCESS_KEY_ID,
+                "secret_key": AWS_SECRET_ACCESS_KEY,
+            },
+        },
+    }
     STATICFILES_DIRS = [os.path.join(BASE_DIR, "assets"),]
-    STATIC_URL= f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
+    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
 
 # Default primary key field type
@@ -243,10 +265,11 @@ JAZZMIN_SETTINGS = {
     "site_header": "Innovation CyberCafe",
     "welcome_sign": "Welcome to Innovation CyberCafe",
     "copyright": "ICC",
-    "search_model": settings.AUTH_USER_MODEL, 
+    "search_model": settings.AUTH_USER_MODEL,
     "user_avatar": "avatar",
     "topmenu_links": [
-        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Home", "url": "admin:index",
+            "permissions": ["auth.view_user"]},
         {
             "name": "Support",
             "url": "https://www.google.com",
@@ -285,20 +308,23 @@ CKEDITOR_CONFIGS = {
     }
 }
 
-DJANGO_IMAGE_URL = config('DJANGO_IMAGE_URL', default='http://127.0.0.1:8000')
+DJANGO_IMAGE_URL = os.getenv('DJANGO_IMAGE_URL', 'http://127.0.0.1:8000')
 FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024
 
 # whatsappAPI settings
-WHATSAPP_ACCESS_TOKEN = config('WHATSAPP_ACCESS_TOKEN')
-WHATSAPP_FROM_PHONE_NUMBER_ID = config('WHATSAPP_PHONENUMBER_ID')
-WHATSAPP_VERSION = config('WHATSAPP_VERSION')
-WHATSAPP_WEBHOOK_TOKEN = config('TOKEN')
+WHATSAPP_ACCESS_TOKEN = os.getenv('WHATSAPP_ACCESS_TOKEN')
+WHATSAPP_FROM_PHONE_NUMBER_ID = os.getenv('WHATSAPP_PHONENUMBER_ID')
+WHATSAPP_VERSION = os.getenv('WHATSAPP_VERSION')
+WHATSAPP_WEBHOOK_TOKEN = os.getenv('TOKEN')
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),      # Access token valid for 7 days
-    'REFRESH_TOKEN_LIFETIME': timedelta(weeks=4),    # Refresh token valid for 4 weeks
-    'ROTATE_REFRESH_TOKENS': True,                   # Generate new refresh token on refresh
+    # Access token valid for 7 days
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
+    # Refresh token valid for 4 weeks
+    'REFRESH_TOKEN_LIFETIME': timedelta(weeks=4),
+    # Generate new refresh token on refresh
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,               # Blacklist old refresh tokens
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
@@ -315,18 +341,24 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',
 }
 
-
- # Firebase Settings
-FIREBASE_TYPE = config("FIREBASE_TYPE", "service_account")
-FIREBASE_PROJECT_ID = config("FIREBASE_PROJECT_ID", "your-project-id")
-FIREBASE_PRIVATE_KEY_ID = config("FIREBASE_PRIVATE_KEY_ID", "your-private-key-id")
+# Firebase Settings
+FIREBASE_TYPE = os.getenv("FIREBASE_TYPE", "service_account")
+FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "your-project-id")
+FIREBASE_PRIVATE_KEY_ID = os.getenv(
+    "FIREBASE_PRIVATE_KEY_ID", "your-private-key-id")
 # Fix private key formatting by replacing literal \n with actual newlines
-_firebase_private_key = config("FIREBASE_PRIVATE_KEY", "your-private-key")
-FIREBASE_PRIVATE_KEY = _firebase_private_key.replace('\\n', '\n') if isinstance(_firebase_private_key, str) else _firebase_private_key
-FIREBASE_CLIENT_EMAIL = config("FIREBASE_CLIENT_EMAIL", "your-client-email")
-FIREBASE_CLIENT_ID = config("FIREBASE_CLIENT_ID", "your-client-id")
-FIREBASE_AUTH_URI = config("FIREBASE_AUTH_URI", "https://accounts.google.com/o/oauth2/auth")
-FIREBASE_TOKEN_URI = config("FIREBASE_TOKEN_URI", "https://oauth2.googleapis.com/token")
-FIREBASE_AUTH_PROVIDER_X509_CERT_URL = config("FIREBASE_AUTH_PROVIDER_X509_CERT_URL", "https://www.googleapis.com/oauth2/v1/certs")
-FIREBASE_CLIENT_X509_CERT_URL = config("FIREBASE_CLIENT_X509_CERT_URL", "your-client-cert-url")
-FIREBASE_UNIVERSE_DOMAIN = config("FIREBASE_UNIVERSE_DOMAIN", "googleapis.com")
+_firebase_private_key = os.getenv("FIREBASE_PRIVATE_KEY", "your-private-key")
+FIREBASE_PRIVATE_KEY = _firebase_private_key.replace('\\n', '\n') if isinstance(
+    _firebase_private_key, str) else _firebase_private_key
+FIREBASE_CLIENT_EMAIL = os.getenv("FIREBASE_CLIENT_EMAIL", "your-client-email")
+FIREBASE_CLIENT_ID = os.getenv("FIREBASE_CLIENT_ID", "your-client-id")
+FIREBASE_AUTH_URI = os.getenv(
+    "FIREBASE_AUTH_URI", "https://accounts.google.com/o/oauth2/auth")
+FIREBASE_TOKEN_URI = os.getenv(
+    "FIREBASE_TOKEN_URI", "https://oauth2.googleapis.com/token")
+FIREBASE_AUTH_PROVIDER_X509_CERT_URL = os.getenv(
+    "FIREBASE_AUTH_PROVIDER_X509_CERT_URL", "https://www.googleapis.com/oauth2/v1/certs")
+FIREBASE_CLIENT_X509_CERT_URL = os.getenv(
+    "FIREBASE_CLIENT_X509_CERT_URL", "your-client-cert-url")
+FIREBASE_UNIVERSE_DOMAIN = os.getenv(
+    "FIREBASE_UNIVERSE_DOMAIN", "googleapis.com")

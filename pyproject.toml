@@ -32,7 +32,7 @@ dependencies = [
     "google-cloud-storage==3.4.0",
     "google-cloud-firestore==2.21.0",
     "httpx==0.28.1",
-    "python-decouple>=3.8",
     "dj-database-url>=3.0.1",
     "djangorestframework-simplejwt>=5.5.1",
+    "python-dotenv>=1.2.1",
 ]
